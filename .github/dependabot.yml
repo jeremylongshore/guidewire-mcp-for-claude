@@ -8,8 +8,11 @@ updates:
       day: "monday"
     open-pull-requests-limit: 10
 
-  # Language: node — the skill will select the correct ecosystem
-  - package-ecosystem: "pip"
+  # Node / pnpm ecosystem (paperwork-phase: no manifest yet — dependabot
+  # finds nothing to update until E1 introduces package.json + the pnpm
+  # workspace; this entry is here so that day-1-of-E1 deps are tracked
+  # without a config change).
+  - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
