@@ -36,35 +36,10 @@ language operators already speak.
 For full context: [`000-docs/blueprint/01-BUSINESS-CASE.md`](./000-docs/blueprint/01-BUSINESS-CASE.md)
 (once filed).
 
-## Building in public
-
-**This repo is being built in the open from day one.** Demand is
-already here — two carrier-/MGA-side engineers reached out
-unprompted about wanting carrier-native MCP tooling for Guidewire,
-which is what kicked this project off (2026-05-04).
-
-If that sounds like work you'd want to use, fork, or contribute to:
-
-- **Watch the repo** for build-along progress.
-- **Open an issue** with the hardest question you'd want answered —
-  early questions shape **E2-E4** (PolicyCenter MCP, Harness, Customer
-  Profile template).
-- **DM the author** ([jeremylongshore.com](https://jeremylongshore.com))
-  if you're a carrier / MGA / SI exploring agent governance for your
-  Guidewire estate.
-- **Cowork-fork it** — the [`templates/cowork-fork-starter/`](./templates/)
-  pattern (lands in E4) is designed for non-Guidewire domains who
-  want the same architecture for their own work surface (trucking,
-  real estate, restaurant ops, e-comm).
-
-Status updates land here in the README, in the
-[CHANGELOG](./CHANGELOG.md), and in per-epic After-Action Reports at
-[`000-docs/blueprint/10-AAR/`](./000-docs/blueprint/10-AAR/).
-
-## Roadmap (10 public epics + marketplace publish)
+## Roadmap (11 public epics)
 
 See [`000-docs/blueprint/07-ROADMAP.md`](./000-docs/blueprint/07-ROADMAP.md)
-once filed. Tracked live in beads:
+for per-epic exit criteria + demo paths. Tracked live in beads:
 
 ```bash
 bd list --type=epic
@@ -137,19 +112,17 @@ To explore the design without cloning:
 
 - [Master blueprint](./000-docs/blueprint/00-MASTER-BLUEPRINT.md) — index + executive summary
 - [Architecture decisions](./000-docs/004-DR-DEC-architecture-decisions.md) — D-001 through D-015
-- [Persona red team](./000-docs/002-DR-CRIT-personas.md) — 8 perspectives that shaped v4
+- [Persona red team](./000-docs/002-DR-CRIT-personas.md) — 9 perspectives that shaped v4
 - [Public Guidewire docs map](./000-docs/005-DR-REF-guidewire-public-resources.md) — every public reference surface, librarian-curated
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md). The OSS process is in
-**build-in-public** mode — early questions shape **E2-E4**.
-
-For Guidewire-specific contributions (carrier-vocabulary tools, profile
-templates), the [5 specialist agents](./.claude/agents/) review designs
-against blast-radius, vocabulary authenticity, Cloud API correctness,
-harness contract semantics, and authoritative-doc citation. PRs that
-follow the agent-reviewed pattern land faster.
+See [CONTRIBUTING.md](./CONTRIBUTING.md). For Guidewire-specific
+contributions (carrier-vocabulary tools, profile templates), the
+[5 specialist agents](./.claude/agents/) review designs against
+blast-radius, vocabulary authenticity, Cloud API correctness,
+harness contract semantics, and authoritative-doc citation. PRs
+that follow the agent-reviewed pattern land faster.
 
 ## License
 
@@ -164,6 +137,5 @@ Jeremy Longshore — [intentsolutions.io](https://intentsolutions.io)
 
 ---
 
-*Build-in-public status updates: this README updates as epics land.
-[ROADMAP](./000-docs/blueprint/07-ROADMAP.md) and
+*[ROADMAP](./000-docs/blueprint/07-ROADMAP.md) and
 [blueprint](./000-docs/blueprint/) are the source of truth.*
