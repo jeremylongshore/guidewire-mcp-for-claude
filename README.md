@@ -1,10 +1,14 @@
 # Guidewire MCP for Claude
 
-> Carrier-native MCP servers + governance harness for Guidewire
-> estates. Built Claude/Anthropic-first.
+> Works with the Guidewire **InsuranceSuite** (PolicyCenter,
+> ClaimCenter, BillingCenter, etc.). Carrier-native MCP servers +
+> governance harness for Guidewire estates. Built
+> Claude/Anthropic-first. Will publish to the
+> [`claude-code-plugins-plus`](https://github.com/jeremylongshore/claude-code-plugins-plus)
+> marketplace.
 
-**Status:** Pre-MVP. Master blueprint paperwork in flight. Code lands
-once the staffed audit panel passes (see [`000-docs/blueprint/`](./000-docs/blueprint/)).
+**Status:** Master blueprint paperwork in flight. Code lands once the
+staffed audit panel passes (see [`000-docs/blueprint/`](./000-docs/blueprint/)).
 
 This repository is in **paperwork-first** mode. The architectural
 blueprint, audit memos, and observability/testing/security policies

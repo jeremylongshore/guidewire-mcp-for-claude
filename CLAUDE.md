@@ -9,6 +9,15 @@ This file provides guidance to Claude Code when working in this repo.
 MCP servers + governance harness for Guidewire estates, designed
 Claude/Anthropic-first.
 
+**Works with the Guidewire InsuranceSuite**: PolicyCenter (E2),
+ClaimCenter (E7), BillingCenter (E8), plus the producer / events /
+payments surfaces around them.
+
+**Marketplace target:** `claude-code-plugins-plus` — this repo will
+eventually be packaged for the marketplace. Plugin manifest +
+marketplace conventions land in a dedicated epic
+(`guidewire-mkt`, see roadmap).
+
 Local dir kept short as `guidewire/`; full name lives in the repo
 identity.
 
