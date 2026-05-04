@@ -3,12 +3,10 @@
 > *Stack, contracts, package layout, observability, NO MOCKS,
 > quality gates.*
 
-**Status:** SKELETON — full content lands in **GW-1.3** (alongside
-03-ARCHITECTURE) and **GW-1.10** / **GW-1.11** (testing + observability
-sections).
-**Bead:** `guidewire-7jt` → GW-1.3 / GW-1.10 / GW-1.11 sub-beads (TBD).
-**Inputs:** [`../003-DR-ARCH-oss-cowork.md`](../003-DR-ARCH-oss-cowork.md),
-[`../../CLAUDE.md`](../../CLAUDE.md) (Stack section).
+**Filed:** 2026-05-04
+**Bead:** `guidewire-z4j` (under epic `guidewire-7jt` — GH [#2](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/2))
+**Inputs:** [`./02-PRD.md`](./02-PRD.md) § 5, [`./03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) § 3 + § 5, [`../004-DR-DEC-architecture-decisions.md`](../004-DR-DEC-architecture-decisions.md), [`./audits/00-LIBRARIAN-CITATION-AUDIT.md`](./audits/00-LIBRARIAN-CITATION-AUDIT.md), [`../005-DR-REF-guidewire-public-resources.md`](../005-DR-REF-guidewire-public-resources.md), [`../../CLAUDE.md`](../../CLAUDE.md) Stack section, [`../../../CLAUDE.md`](../../../CLAUDE.md) IS Testing SOP.
+**Status:** authored content (replaces partial GW-1.1 skeleton).
 
 ---
 
@@ -16,8 +14,49 @@ sections).
 
 ### 1. Stack (table form)
 
-(Already enumerated in `CLAUDE.md`. This section preserves it as the
-governance artifact and adds version pinning + rationale.)
+The canonical stack lives verbatim in
+[`../../CLAUDE.md`](../../CLAUDE.md) § Stack. This section is the
+governance copy: same rows, plus version pin + rationale columns. The
+stack is a closed set — adding a new top-level dependency requires a
+new bead and a `D-NNN` decision-log entry; bumping a version inside
+the pin range is dependabot's job.
+
+| Layer | Choice | Version pin | Rationale |
+|---|---|---|---|
+| Language | TypeScript | `^5.5.0` | Strict mode + verbatim module syntax + const-type-parameters; required for Zod 3.23+ inference depth |
+| Runtime | Node.js | `>=22.0.0` (22 LTS) | LTS through 2027; native `fetch` + `--experimental-strip-types` available; matches the Anthropic SDK floor |
+| Package manager | pnpm | `>=9.0.0` | Workspace topology in `pnpm-workspace.yaml`; CAS store survives ecosystem-wide harness bumps with minimal duplicated install |
+| MCP | `@modelcontextprotocol/sdk` | `^1.0.0` | Official TypeScript SDK; covers stdio + HTTP transports without an Express/Fastify shim |
+| Schemas | Zod | `^3.23.0` | Single source of truth for tool args + profile YAML round-trip; pairs with the SDK's input schema convention |
+| HTTP | undici | `^6.0.0` | Native HTTP/1.1 + HTTP/2; the only client allowed in `packages/guidewire-client/` (axios / got banned by depcruise) |
+| Tests | Vitest | `^2.0.0` | Workspace-aware; first-class TS support; `vitest --coverage --reporter=verbose` is the L3 entry point |
+| Property-based | fast-check | `^3.20.0` | Powers the L3 invariants — JCS canonicalization round-trip, idempotency-key stability, hash-chain monotonicity |
+| Mutation | Stryker | `^8.0.0` | Per-module kill-rate floors set in `tests/TESTING.md`; harness floor is 85 (load-bearing) |
+| Lint/format | Biome | `^1.8.0` | One tool, one config, one process — replaces ESLint + Prettier + import-sort. Custom AST rules layer via `audit-harness` |
+| Dep-graph rules | dependency-cruiser | `^16.0.0` | Architecture rules per [`./03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) § 4 — `servers/**` cannot import `clients/**` directly |
+| Build (libs) | tsup | `^8.0.0` | esbuild-backed; emits dual ESM+CJS for the harness lib and the client SDK |
+| Build (dev) | tsx | `^4.0.0` | Watch-mode bootstrap for `servers/*` during local sandbox development |
+| Auth | openid-client | `^5.6.0` | OIDC discovery + JWT propagation per [`./02-PRD.md`](./02-PRD.md) § 6.1; pluggable per-tenant `auth.yaml` |
+| Queue | BullMQ on Redis (dev) → Cloud Tasks / SQS (prod) | `^5.0.0` (BullMQ) | Local-first; events plane uses at-least-once delivery + sharded ordering per [`./03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) § 3.2 |
+| Audit store | Postgres | `>=15` | Serializable transactions + `FOR UPDATE` on `audit_chain_heads` per [`./03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) § 3.3; pgTAP for L4-migration tests |
+| Migrations | node-pg-migrate | `^7.0.0` | Plain-SQL migrations under `packages/audit/migrations/`; replays in CI via testcontainers |
+| Secrets | SOPS + age | SOPS `^3.9` / age `^1.2` | Per IS standard ([global CLAUDE.md](../../../CLAUDE.md) SOPS initiative); never plaintext `.env` in commits |
+| Observability — traces | OpenTelemetry SDK | `^1.27.0` | `@opentelemetry/sdk-node`; exporter is OTLP (Honeycomb / Tempo / Jaeger user-configured) |
+| Observability — logs | pino | `^9.0.0` | Structured JSON to stdout in prod; `pino-pretty` in dev |
+| Observability — errors | `@sentry/node` | `^8.0.0` | DSN profile-driven; `AppError` typed class drives fingerprint per § 4.5 |
+| Container | Docker | `>=24` | Multi-stage builds; one image per `servers/*` member; harness CLI ships as a separate `harness` image |
+| Deploy | Cloud Run | n/a | TS-friendly serverless; supports stdio MCP transport via gRPC adapter; per-tenant process isolation per [`./03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) § 7.2 |
+| IaC | OpenTofu | `>=1.7` | Cloud Run + Postgres + Redis + Secret Manager modules under `infra/tofu/` |
+| Audit-harness | `@intentsolutions/audit-harness` | latest minor | Dev-dep per IS Testing SOP; CI calls `pnpm exec audit-harness …` — never `~/.claude/` paths |
+
+**Version-bump policy.** Patch + minor are dependabot PRs against
+`main` with the standard CI gate (lint → test → contract → escape-scan
+→ coverage → arch). Major bumps require an explicit bead with a
+`Blueprint:` reference plus an entry in
+[`../004-DR-DEC-architecture-decisions.md`](../004-DR-DEC-architecture-decisions.md).
+**Don't use Express/Fastify** for MCP servers — the SDK's stdio + HTTP
+transports are the supported surface; adding a framework around them
+is a depcruise REFUSE per [`./03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) § 4.
 
 ### 2. Package layout (the canonical map)
 
@@ -52,11 +91,419 @@ guidewire/
     └── tofu/
 ```
 
+#### 2.1 Per-package contracts
+
+Each package below has a stable public API surface, an epic owner, an
+allowed-imports list (enforced by depcruise), and a
+forbidden-imports list. The harness itself is the only package that
+crosses suite boundaries; everything else is single-purpose.
+
+| Package | Epic | Public API | Allowed imports | Forbidden imports |
+|---|---|---|---|---|
+| `packages/observability/` | E1 | `getObservability()`, `AppError`, refusal helpers | `pino`, `@opentelemetry/*`, `@sentry/node` | `clients/**`, `servers/**`, `packages/harness/**` |
+| `packages/schemas/` | E1 | Zod schemas for tool args, profile YAML, audit rows | `zod` only | Everything else (must be cycle-free root) |
+| `packages/auth/` | E1 | `getOAuthClient(profile.auth)`, JWT propagation helpers | `openid-client`, `packages/observability`, `packages/schemas` | `clients/**`, `packages/harness`, `servers/**` |
+| `packages/audit/` | E1 | `AuditStore` impl (Postgres), migrations under `migrations/`, `verifyChain()` | `pg`, `packages/schemas`, `packages/observability` | `clients/**`, `servers/**`, `packages/harness/**` |
+| `packages/guidewire-client/` | E1 | Per-suite read methods + write methods (PC/CC/BC); `GW-DBTransaction-ID` injection on writes | `undici`, `packages/auth`, `packages/observability`, `packages/schemas` | `servers/**`, `packages/harness/**`, `clients/**` (cross-vendor isolation) |
+| `packages/harness/` | E3 | `createHarness()`, `plan()`, `policy.evaluate()`, `approvals.*`, `execute()`, `audit.*`, `evidence.*`, `rollbackHint()` | `packages/audit`, `packages/observability`, `packages/schemas`, `packages/guidewire-client` (read-only — write injection is the sole exception) | `servers/**`, `clients/**` |
+| `clients/<vendor>/` | E5+ | Per-vendor client (e.g. `clients/one-inc/` for One Inc) | `packages/observability`, `packages/schemas` | `clients/<other-vendor>/`, `packages/guidewire-client/`, `packages/harness/`, `servers/**` |
+| `servers/<suite>-mcp/` | E2/E6/E7/E8/E9 | MCP tool registrations; per-tool Zod schemas; mode declarations | `@modelcontextprotocol/sdk`, `packages/harness` (the only path to writes), `packages/observability`, `packages/schemas` | `clients/**` (writes must travel through the harness), `packages/guidewire-client/**` (servers cannot bypass the harness) |
+
+The "forbidden" column is the depcruise contract — see § 4.7 for AST
+enforcement and [`./03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) § 4 for
+the full boundary table. **Crucially**, `servers/**` cannot import
+`packages/guidewire-client/**` directly; every Guidewire write must
+travel through `packages/harness/.execute()` or the gate is gone.
+
+#### 2.2 Audit-harness as a dev dep, not a runtime dep
+
+Per the IS Testing SOP ([`../../../CLAUDE.md`](../../../CLAUDE.md) §
+Intent Solutions Testing SOP),
+`@intentsolutions/audit-harness` is installed as a **dev**
+dependency in the workspace root and called from CI / pre-commit /
+the two skills (`/audit-tests`, `/implement-tests`). Hooks reference
+`pnpm exec audit-harness …` — never `~/.claude/` paths. This is the
+"enforcement travels with the code" rule per Hard Rule #7
+([`../../CLAUDE.md`](../../CLAUDE.md) § Hard Rules); a fresh clone of
+this repo reproduces every gate without any developer-machine setup.
+
+#### 2.3 Profiles directory — data only, no code
+
+`profiles/<tenant>/` ships **9 YAML files** per
+[`./02-PRD.md`](./02-PRD.md) § 6 (`auth`, `roles`, `lob`, `typelists`,
+`custom-entities`, `field-aliases`, `approval-matrix`, `pii-policy`,
+`events`). The escape-scan rule rejects any `.ts` / `.js` / `.sh` /
+`.py` file under `profiles/**` at boot — profiles are configuration,
+not adapters per [`../004-DR-DEC-architecture-decisions.md`](../004-DR-DEC-architecture-decisions.md)
+D-007. The `_template/` ships the empty-but-valid version; the
+`oss-demo/` ships a fully-populated example pointing at the sandbox
+tenant per § 6.10 of the PRD.
+
 ### 3. Contracts (TypeScript signatures)
 
-Per the PRD's tool / harness / profile contracts — concrete
-TypeScript interface definitions live here so `02-PRD.md` can stay
-prose.
+Every signature in this section is the **literal** form that lands in
+`packages/harness/src/index.ts` (or its peer modules) when E3 opens.
+The text is reproduced verbatim from [`./02-PRD.md`](./02-PRD.md) § 5
+so the PRD can stay prose; deviation requires a follow-up
+`010-DR-MEMO-harness-runtime-rev.md` with a `replaces:` link
+([`../009-DR-MEMO-harness-runtime.md`](../009-DR-MEMO-harness-runtime.md) § 11).
+
+The Zod schemas that round-trip the wire shapes live one level
+shallower in `packages/schemas/src/` — their module names (not the
+full schemas) are listed alongside each interface for traceability.
+
+#### 3.1 Plan — what the agent intends
+
+```ts
+export type ToolMode = 'read_only' | 'draft_only' | 'approved_execute';
+
+export interface PlanInput {
+  toolName: string;          // carrier-vocabulary
+  toolVersion: string;       // semver; idempotency keys version-pin
+  mode: ToolMode;
+  tenantId: string;          // customer profile slug
+  actorId: string;           // JWT sub
+  args: Record<string, unknown>;  // already Zod-validated
+  summary: string;           // surfaces in approval UIs + audit search
+  traceId: string;           // OpenTelemetry trace ID
+}
+
+export interface Plan extends Readonly<PlanInput> {
+  readonly planId: string;        // sha256 content hash, hex
+  readonly createdAt: string;
+  readonly idempotencyKey: string; // see § 3.4
+  readonly wire: {
+    readonly dbTransactionId: string;  // GW-DBTransaction-ID; see § 3.4
+  };
+}
+
+export function plan(input: PlanInput): Plan;
+```
+
+`plan()` is pure (no I/O). Hashing input → `planId` is the only side
+work. Plans pass by value; mutation throws.
+**Schema**: `packages/schemas/src/harness/plan.ts` — `PlanInputSchema`
++ `PlanSchema`. The `args` payload is `unknown` here because each
+tool's Zod schema is the local validator at the server boundary;
+`packages/harness/` treats args as opaque after the server has
+validated.
+
+The two-field idempotency split (`idempotencyKey` vs.
+`wire.dbTransactionId`) is the **librarian P1 correction** materialised
+in code. See § 3.4.
+
+#### 3.2 Policy — the gate decision
+
+```ts
+export type PolicyOutcome = 'allow' | 'deny' | 'require_approval';
+
+export type PolicyTier =
+  | 'tier_0_safe'      // read_only with no PII; no approval
+  | 'tier_1_draft'     // draft artifact; no approval
+  | 'tier_2_low'       // approved_execute, single approver
+  | 'tier_3_high'      // approved_execute, dual control (e.g. payments)
+  | 'tier_4_blocked';  // structurally refused (e.g. payments in OSS demo)
+
+export interface PolicyDecision {
+  readonly decisionId: string;       // sha256(planId + ruleSetVersion)
+  readonly planId: string;
+  readonly outcome: PolicyOutcome;
+  readonly tier: PolicyTier;
+  readonly reason: string;
+  readonly ruleSetVersion: string;
+  readonly evaluatedAt: string;
+  readonly requiredApprovers?: {
+    minCount: number;
+    rolesAllowed: readonly string[];
+  };
+}
+
+export interface PolicyEngine {
+  evaluate(plan: Plan): Promise<PolicyDecision>;
+}
+```
+
+Rules live in `profiles/<tenant>/policy/` plus a small core ruleset
+shipped by the harness (refuse on mode mismatch, refuse on missing
+PII redaction profile). Per
+[`../004-DR-DEC-architecture-decisions.md`](../004-DR-DEC-architecture-decisions.md)
+D-006 the harness refuses to call `execute()` without a
+`PolicyDecision` whose outcome is `allow` (or `require_approval`
+paired with an attached `Approval`). **Schema**:
+`packages/schemas/src/harness/policy.ts`.
+
+`tier_4_blocked` is the structural refusal — the OSS demo profile
+applies this tier to every `approved_execute` tool by default per
+[`./02-PRD.md`](./02-PRD.md) § 4.3 / 006 § 9.3. The block is a Plan-
+level structural decision, not a missing approval; an operator
+flipping the flag in their forked profile is the only way out.
+
+#### 3.3 Approval — blocking flow as state machine
+
+```ts
+export type ApprovalState = 'pending' | 'approved' | 'denied' | 'expired' | 'cancelled';
+
+export interface Approval {
+  readonly approvalId: string;        // sha256(planId + nonce)
+  readonly planId: string;
+  readonly decisionId: string;
+  readonly state: ApprovalState;
+  readonly requestedAt: string;
+  readonly expiresAt: string;         // default 24h, profile-overridable
+  readonly approvers: ReadonlyArray<{
+    actorId: string;
+    role: string;
+    decidedAt: string;
+    outcome: 'approved' | 'denied';
+    reason?: string;
+  }>;
+}
+
+export interface ApprovalSink {
+  request(plan: Plan, decision: PolicyDecision): Promise<Approval>;
+  wait(approvalId: string, opts?: { timeoutMs?: number }): Promise<Approval>;
+  decide(approvalId: string, vote: ApprovalVote): Promise<Approval>;
+}
+
+export interface ApprovalVote {
+  actorId: string;
+  role: string;
+  outcome: 'approved' | 'denied';
+  reason?: string;
+}
+```
+
+Approvals persist in the `approvals` Postgres table so a restart,
+network partition, or CLI session ending mid-wait does not lose the
+request. There is **no auto-approval bypass** — a missing approval is
+indistinguishable from a missing audit per
+[`../004-DR-DEC-architecture-decisions.md`](../004-DR-DEC-architecture-decisions.md)
+D-006. **Schema**: `packages/schemas/src/harness/approval.ts`.
+
+#### 3.4 Execute — side effect with idempotency (P1 librarian correction inline)
+
+```ts
+export interface ExecuteContext {
+  readonly plan: Plan;
+  readonly decision: PolicyDecision;
+  readonly approval?: Approval;
+  readonly span: import('@opentelemetry/api').Span;
+}
+
+export type SideEffect<T> = (ctx: ExecuteContext) => Promise<T>;
+
+export interface ExecuteResult<T> {
+  readonly outcome: 'executed' | 'replayed' | 'short_circuited';
+  readonly idempotencyKey: string;
+  readonly auditEntryId: string;
+  readonly value: T;
+  readonly evidenceBundleRef: string;
+}
+
+export function execute<T>(
+  plan: Plan,
+  decision: PolicyDecision,
+  effect: SideEffect<T>,
+  opts?: { approval?: Approval }
+): Promise<ExecuteResult<T>>;
+```
+
+`execute()` is the only function in the harness that performs an
+external write. The depcruise CI rule fails any `servers/**` file
+that imports `clients/**` directly, forcing all writes through the
+harness.
+
+##### 3.4.1 Two distinct keys, two distinct purposes (librarian P1)
+
+Per the librarian audit
+([`./audits/00-LIBRARIAN-CITATION-AUDIT.md`](./audits/00-LIBRARIAN-CITATION-AUDIT.md)
+§ 3 P1, finding F-PRD-015), Guidewire Cloud API does **not** use a
+Stripe-style `Idempotency-Key` header. The actual mechanism is the
+`GW-DBTransaction-ID` request header
+([Preventing duplicate database transactions, IS 202603](https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/request-headers/c_preventing-duplicate-database-transactions.html)),
+and a duplicate request **fails** with `AlreadyExecutedException` —
+it does not return the prior result. Two keys, two purposes:
+
+| Key | Where it lives | Purpose | On collision |
+|---|---|---|---|
+| `Plan.idempotencyKey` (`gwh1:` prefix) | Harness's Postgres `idempotency_keys` cache | Client-side replay short-circuit; never re-invokes the side effect | Returns prior result, writes `execute.replayed` audit entry, never reaches Cloud API |
+| `Plan.wire.dbTransactionId` | HTTP `GW-DBTransaction-ID` header on the Cloud API request | Server-side duplicate prevention enforced by Guidewire | Cloud API throws `AlreadyExecutedException` (the harness should never reach this in normal operation — its own cache short-circuits first) |
+
+Both keys are derived deterministically. `gwh1:` is the harness major-
+version tag so a future replay-store schema change is distinguishable;
+`canonicalize()` is JCS-style canonical JSON
+([RFC 8785](https://datatracker.ietf.org/doc/html/rfc8785)) so map-
+order doesn't matter:
+
+```
+idempotencyKey  = "gwh1:" + sha256(toolName + ':' + toolVersion + ':' +
+                                   tenantId + ':' + canonicalize(args) + ':' +
+                                   actorId)
+dbTransactionId = sha256(idempotencyKey)   # 64-hex chars; no prefix
+```
+
+**Wire format note** (unverified — sandbox-confirm at `guidewire-adj`):
+the exact accepted shape, length, and TTL of `GW-DBTransaction-ID` are
+not in the public docs. The harness derives a 64-hex-char value from
+the `gwh1:` key by hashing it; this is conservative and stable. The
+client wrapper (`packages/guidewire-client/`) is the **only** place
+that injects the header; servers cannot inject it (depcruise REFUSE).
+
+##### 3.4.2 Replay short-circuit
+
+On `idempotencyKey` match in the Postgres cache, `execute()`:
+
+1. Returns the prior `ExecuteResult.value` from the cache.
+2. Annotates the span with `harness.execute.replay = true`.
+3. Writes an `execute.replayed` audit entry referencing the original
+   `audit_entry_id`.
+4. **Never invokes the side effect.** The Cloud API is not contacted;
+   `GW-DBTransaction-ID` is not sent.
+
+If two operators race the same intent, they get **different** keys
+because `actorId` is part of the input. A contract-changing release
+does not replay across the boundary because `toolVersion` is part of
+the input.
+
+#### 3.5 Audit — hash-chained entry
+
+```ts
+export type AuditEventType =
+  | 'plan.created' | 'policy.decided'
+  | 'approval.requested' | 'approval.decided'
+  | 'execute.started' | 'execute.completed' | 'execute.failed' | 'execute.replayed'
+  | 'rollback.hint.issued';
+
+export interface AuditEntry {
+  readonly entryId: string;          // ULID
+  readonly tenantId: string;
+  readonly chainSeq: number;
+  readonly eventType: AuditEventType;
+  readonly planId: string;
+  readonly traceId: string;
+  readonly actorId: string;
+  readonly toolName: string;
+  readonly toolVersion: string;
+  readonly mode: ToolMode;
+  readonly idempotencyKey: string;
+  readonly recordedAt: string;
+  readonly prevHash: string;
+  readonly entryHash: string;
+  readonly blobRef?: string;
+}
+
+export interface AuditStore {
+  append(entry: Omit<AuditEntry, 'chainSeq' | 'prevHash' | 'entryHash'>): Promise<AuditEntry>;
+  verifyChain(tenantId: string, fromSeq?: number): Promise<ChainVerification>;
+  query(filter: AuditQuery): AsyncIterable<AuditEntry>;
+}
+```
+
+Linear hash chain per-tenant (NOT Merkle —
+[`../009-DR-MEMO-harness-runtime.md`](../009-DR-MEMO-harness-runtime.md)
+§ 2.1). Single-writer property is enforced via
+serializable-transaction `FOR UPDATE` on the `audit_chain_heads`
+row. The Postgres DDL lands as the canonical migration in
+`packages/audit/migrations/0001_init.sql`. **Schema**:
+`packages/schemas/src/harness/audit.ts`.
+
+A tampered chain in tenant A does not invalidate tenant B; an
+enterprise customer takes their chain on offboarding.
+
+#### 3.6 Rollback — hint, not magic
+
+```ts
+export interface RollbackHint {
+  readonly hintId: string;
+  readonly planId: string;
+  readonly auditEntryId: string;
+  readonly humanInstruction: string;       // 1-3 sentences
+  readonly suggestedTool?: string;         // e.g. "revert-reserve-change"
+  readonly suggestedArgs?: Record<string, unknown>;
+  readonly cautions: readonly string[];    // e.g. "this letter has already been mailed"
+  readonly issuedAt: string;
+}
+
+export function rollbackHint(
+  result: ExecuteResult<unknown>,
+  opts: { humanInstruction: string; cautions?: readonly string[] }
+): Promise<RollbackHint>;
+```
+
+Rollback is a *hint*, not an automated revert. Guidewire writes are
+rarely idempotent in reverse — a reserve change can be reversed; an
+issued denial letter cannot. The harness records that the hint was
+issued (`rollback.hint.issued` audit event); the human operator
+executes. **Schema**: `packages/schemas/src/harness/rollback.ts`.
+
+#### 3.7 Evidence bundle
+
+```ts
+export interface EvidenceBundle {
+  readonly bundleVersion: '1.0';
+  readonly traceId: string;
+  readonly tenantId: string;
+  readonly generatedAt: string;
+  readonly plan: Plan;
+  readonly decision: PolicyDecision;
+  readonly approval?: Approval;
+  readonly execution?: ExecuteResult<unknown>;
+  readonly auditEntries: readonly AuditEntry[];
+  readonly chainVerification: ChainVerification;
+  readonly spans: readonly OtelSpanSnapshot[];
+  readonly piiRedactionApplied: boolean;
+}
+
+export interface EvidenceExporter {
+  build(traceId: string, opts?: { includeSpans?: boolean }): Promise<EvidenceBundle>;
+  sign?(bundle: EvidenceBundle): Promise<SignedEvidenceBundle>;  // E3+
+}
+```
+
+The artifact a CISO or SOC 2 auditor receives. Reproducible from the
+audit chain alone. PII redaction runs at bundle export — not on the
+hot path of `execute()` — applying the profile's `pii-policy.yaml`
+rules. Bundle signing ships as `evidence.sign?` in v1 (forward-
+compatible surface; the operational story for KMS-resident Ed25519 is
+E3+ per
+[`../009-DR-MEMO-harness-runtime.md`](../009-DR-MEMO-harness-runtime.md)
+§ 5.5). **Schema**: `packages/schemas/src/harness/evidence.ts`.
+
+#### 3.8 Factory + result + error
+
+```ts
+export interface HarnessConfig {
+  audit: AuditStore;
+  policy: PolicyEngine;
+  approvals: ApprovalSink;
+  evidence: EvidenceExporter;
+  observability: import('@intentsolutions/guidewire-observability').Observability;
+  profile: { tenantId: string; ruleSetVersion: string };
+}
+
+export function createHarness(cfg: HarnessConfig): Harness;
+
+export class HarnessError extends Error {
+  readonly code:
+    | 'AUDIT_UNREACHABLE' | 'POLICY_UNREACHABLE' | 'POLICY_DENIED'
+    | 'APPROVAL_TIMEOUT' | 'APPROVAL_DENIED'
+    | 'IDEMPOTENCY_MISMATCH' | 'CHAIN_BROKEN'
+    | 'MODE_MISMATCH' | 'TENANT_UNKNOWN'
+    | 'GW_DBTRANSACTION_DUPLICATE';   // server-side duplicate from Cloud API
+  readonly planId?: string;
+  readonly decisionId?: string;
+}
+```
+
+`HarnessError` extends the `AppError` typed class shipped in
+`packages/observability/` — Sentry tagging groups failures by
+`[code, tool_name, mode]` so the same refusal across multiple tenants
+groups into one Sentry issue rather than fragmenting. The
+`GW_DBTRANSACTION_DUPLICATE` code is the librarian P1 corollary:
+should the Cloud API reject a duplicate `GW-DBTransaction-ID` (which
+the harness should never trigger in normal operation because its own
+cache short-circuits first), the failure is structurally distinct
+from `IDEMPOTENCY_MISMATCH` (which indicates a canonicalization bug).
 
 ### 4. Observability — span, log, error contract *(GW-1.11)*
 
@@ -93,7 +540,7 @@ mcp.tool.invoke (root span)
 
 Spans MUST be opened in this order; failure to open a span at a
 required step is **a CI failure**, not a runtime warning. Architecture
-rule enforcement: see § 4.6.
+rule enforcement: see § 4.7.
 
 #### 4.3 Required span attributes
 
@@ -109,6 +556,7 @@ Every span carries:
 | `mode` | enum | yes | `read_only` / `draft_only` / `approved_execute` |
 | `actor_id` | string | yes | `actor:<user-or-service>` — ties to JWT propagation |
 | `idempotency_key` | string | conditional | required when `mode != read_only`; format: `gwh1:<sha256-hex>` |
+| `db_transaction_id` | string | conditional | required on `client.guidewire.cloud.<endpoint>` write spans; format: 64-hex-char |
 | `policy_decision` | enum | conditional | required for `harness.policy.evaluate`; `allow` / `deny` / `require_approval` |
 | `evidence_bundle_id` | string | conditional | required for `harness.evidence.bundle`; format: `eb1:<ulid>` |
 
@@ -140,13 +588,13 @@ A failed tool call surfaces with one query: filter spans by
 Levels follow pino conventions: `10 trace · 20 debug · 30 info ·
 40 warn · 50 error · 60 fatal`. **Production code paths use level
 ≥30**; `console.log` and pino level 10/20 fail CI in production
-paths (see § 4.6).
+paths (see § 4.7).
 
 #### 4.5 `AppError` typed class + Sentry tagging
 
 Errors thrown in `servers/*` and `packages/harness/` MUST inherit
 from a single `AppError` class so Sentry receives consistent tags
-and the bead-pipeline (§ 4.7) can correlate.
+and the bead-pipeline (§ 4.8) can correlate.
 
 ```typescript
 // packages/observability/src/error.ts
@@ -169,6 +617,7 @@ export class AppError extends Error {
 export const refuseAuthExpired   = (ctx: ErrorCtx): AppError => /* … */;
 export const refuseSandboxDown   = (ctx: ErrorCtx): AppError => /* … */;
 export const refuseIdempMismatch = (ctx: ErrorCtx): AppError => /* … */;
+export const refuseDbTxnDuplicate = (ctx: ErrorCtx): AppError => /* … */;  // librarian P1
 // … and so on for every named refusal
 ```
 
@@ -209,6 +658,7 @@ non-negotiable:
 | `console.log` / `console.error` in production paths | dependency-cruiser regex rule | CI fails the PR |
 | `servers/*` cannot import from `clients/*` directly (must go through harness) | dependency-cruiser layer rule | CI fails the PR (matches `tests/TESTING.md` § arch.servers_must_invoke_via_packages_harness) |
 | Profiles cannot contain executable code (`.ts` / `.js` files banned) | depcruise + path-glob rule | CI fails the PR |
+| `GW-DBTransaction-ID` injection happens only in `packages/guidewire-client/` | AST call-site rule | CI fails the PR (servers / harness cannot inject) |
 
 These rules are hash-pinned in `tests/TESTING.md` § Hash manifest
 under `.dependency-cruiser.cjs`.
@@ -248,15 +698,23 @@ The `getObservability()` factory reads these via `secretsLoader`
 #### 4.10 Quick-start (when E1 lands)
 
 ```bash
-# Local dev: spin up OTLP collector + Jaeger
+# Local dev: spin up OTLP collector + Jaeger + Postgres + Redis
 docker-compose -f infra/docker/observability.yml up -d
-# Visit Jaeger: http://localhost:16686
+# Visit Jaeger:        http://localhost:16686
+# Visit Sentry (dev):  http://localhost:9000
+# Postgres on:         localhost:5432   (audit chain)
+# Redis on:            localhost:6379   (BullMQ events)
 
 # Run a server with observability wired in
 pnpm --filter servers/policycenter-mcp dev
 # Server emits spans to local OTLP, structured logs to stdout via pino-pretty,
 # errors to local Sentry (claude_ai_Sentry MCP host)
 ```
+
+The docker-compose layout under `infra/docker/observability.yml`
+ships with E1 and is the documented onboarding path — a fresh clone
+of the repo plus `docker-compose up` plus `pnpm install` plus the
+sandbox cred SOPS file is the entire local-dev setup.
 
 #### 4.11 What's deferred to later epics
 
@@ -270,26 +728,193 @@ pnpm --filter servers/policycenter-mcp dev
 
 ### 5. NO MOCKS — sandbox + recording-replay contract
 
-(Authored in **GW-1.3** alongside architecture.)
+> *Inputs: [D-008](../004-DR-DEC-architecture-decisions.md#d-008--no-mocks--real-guidewire-cloud-sandbox-from-day-1),
+> [`../008-DR-MEMO-guidewire-api.md`](../008-DR-MEMO-guidewire-api.md)
+> § 12 "avoid" item 11, librarian audit P2 / P5.*
 
-- `tests/recordings/*.json` filename provenance schema.
-- `MANIFEST.md` shape.
-- Replay framework selection (e.g. nock, msw, custom).
-- Live-sandbox CI job (post-merge, catches API drift).
-- `samples/` directory (read-only replay material, never test ground
-  truth).
+The hard rule per [D-008](../004-DR-DEC-architecture-decisions.md):
+no fixtures, real Cloud API recordings only. Hand-written
+`fixtures/*.json` is forbidden — escape-scan + manifest validator
+REFUSE such files at boot. CI fails loudly when sandbox is
+unreachable on the live-sandbox post-merge job; never silently
+degrades to mocks.
+
+#### 5.1 Recording filename provenance
+
+Every recording in `tests/recordings/` follows this filename schema
+so provenance is on-disk, not just in `MANIFEST.md`:
+
+```
+tests/recordings/<recording-name>.recorded-<YYYY-MM-DD>.from-sandbox-<tag>.json
+```
+
+Examples:
+
+```
+tests/recordings/find-submissions-waiting-on-me.recorded-2026-05-12.from-sandbox-jeremy-dev.json
+tests/recordings/summarize-this-loss.recorded-2026-05-14.from-sandbox-jeremy-dev.json
+tests/recordings/reconcile-this-payment.recorded-2026-06-02.from-sandbox-jeremy-dev.json
+```
+
+The `<tag>` is the SOPS-encrypted sandbox slug from
+`profiles/oss-demo/auth.yaml`. In a cowork-fork derivative, the tag
+becomes `<domain>-source-<vendor>` (e.g. `flatbed-source-mc-num`) —
+the schema is universal.
+
+#### 5.2 `tests/recordings/MANIFEST.md` schema
+
+`MANIFEST.md` is the human-readable index. Per recording:
+
+```markdown
+## find-submissions-waiting-on-me.recorded-2026-05-12.from-sandbox-jeremy-dev.json
+
+| Field | Value |
+|---|---|
+| Capture date | 2026-05-12 |
+| Source tenant | sandbox-jeremy-dev |
+| Suite | PolicyCenter |
+| Cloud release | Palisades (PC 202503) |
+| Endpoint | `GET /job/v1/jobs?subtype=Submission&assignedToMe=true&status=Open` |
+| HTTP method | GET |
+| Response status | 200 |
+| Response shape | List<Submission> |
+| Pagination | pageSize=20, pageOffset=0 |
+| Scrubbing applied | `*.namedInsured`, `*.contactInfo[*].email`, `*.taxId` (PII masks) |
+| Replay-fitness | Confidence-grade — pageSize/pageOffset AUTHORITATIVE per librarian P5 |
+| Captured by | scripts/record.ts (E1) |
+| Captured at trace | `01J9X4HN5G8RXKX7P0VGAR3G7T` (correlation to OTel) |
+```
+
+The validator (`pnpm exec audit-harness recordings-lint`) checks:
+
+- Filename matches the pattern in § 5.1.
+- Every recording has a row in `MANIFEST.md`.
+- `Cloud release` matches a release in
+  [`../005-DR-REF-guidewire-public-resources.md`](../005-DR-REF-guidewire-public-resources.md)
+  § 1 (Innsbruck / Las Leñas / Palisades).
+- No `latest/` URLs anywhere in the recording or manifest (per
+  [`../008-DR-MEMO-guidewire-api.md`](../008-DR-MEMO-guidewire-api.md)
+  § 12 "avoid" item 11).
+- PII scrubbing claims match a real scrubber pass (the recorder logs
+  what it stripped; the manifest must report it).
+
+#### 5.3 Capture pattern (`infra/recording/`)
+
+Recordings are captured by a one-off script that:
+
+1. Reads SOPS-encrypted creds from
+   `profiles/oss-demo/secrets.sops.yaml` (or the per-tenant equivalent)
+   via the standard `scripts/sops-env` wrapper.
+2. Runs the tool's read or write call against the real sandbox via
+   `packages/guidewire-client/`.
+3. Captures the full HTTP request + response (headers, body, status).
+4. Applies the PII scrubber from `packages/harness/redaction/`
+   (configured by the active profile's `pii-policy.yaml`).
+5. Writes the recording to `tests/recordings/` with the § 5.1 filename
+   and updates `MANIFEST.md`.
+
+The script lives under `infra/recording/record.ts` and ships in E1.
+Recordings are committed to git like any other test asset; they are
+the test ground truth.
+
+#### 5.4 Replay framework
+
+Contract tests (L4-contract per the IS Testing SOP taxonomy) replay
+recordings via a thin replayer in `packages/guidewire-client/test-utils/`:
+
+```typescript
+import { withRecording } from '@guidewire/client/test-utils';
+
+it('find-submissions-waiting-on-me round-trips', async () => {
+  await withRecording(
+    'find-submissions-waiting-on-me.recorded-2026-05-12.from-sandbox-jeremy-dev',
+    async (client) => {
+      const result = await client.policyCenter.findSubmissionsWaitingOnMe({
+        actorId: 'actor:underwriter@demo',
+      });
+      expect(result.length).toBeGreaterThan(0);
+    },
+  );
+});
+```
+
+The replayer matches request shape (method + URL + canonicalized
+query params + body shape) against the recorded request and serves
+the recorded response. **No mocking the harness, no mocking the
+client; only replaying the wire.** Mismatch in request shape =
+test failure, not a stub.
+
+#### 5.5 Librarian P2 — ClaimCenter uses Composite API, not Graph API
+
+Per the librarian audit
+([`./audits/00-LIBRARIAN-CITATION-AUDIT.md`](./audits/00-LIBRARIAN-CITATION-AUDIT.md)
+§ 3 P2, finding F-PRD-007 / F-API-014), the
+`summarize-this-loss` recording must use **CC Composite API**, not
+Graph API. ClaimCenter
+([CC 202411 apiref](https://docs.guidewire.com/cloud/cc/202411/apiref/))
+exposes Admin, Async, Claim, Common, **Composite**, System Tools —
+**no Graph API module**. PolicyCenter has Graph API; ClaimCenter does
+not. The recording filename for the canonical CC anchor:
+
+```
+tests/recordings/summarize-this-loss.recorded-<date>.from-sandbox-<tag>.json
+```
+
+…must record a **Composite API** call shape, not a Graph expansion.
+Schema constraint: the manifest row's `Endpoint` field must reference
+`/composite/v1/composite` (or the equivalent CC Composite surface
+confirmed at sandbox-provisioning time) when the suite is `ClaimCenter`.
+
+#### 5.6 Librarian P5 — pagination is confidence-grade
+
+Per the librarian audit § 3 P5 (finding F-API-005), `pageSize` and
+`pageOffset` are **AUTHORITATIVE** per the
+[IS 202603 pagination page](https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/query-parameters/c_the-pagination-query-parameters.html),
+not "practitioner knowledge — verify post-sandbox" as
+[`../008-DR-MEMO-guidewire-api.md`](../008-DR-MEMO-guidewire-api.md)
+§ 5 originally classified them. **Pagination contract tests are
+confidence-grade now**: the L4-contract suite includes pagination
+round-trip cases for every list-shaped tool, asserting that
+`pageSize` and `pageOffset` query params are sent in the canonical
+shape, with no `(unverified)` flag on the assertion. The "previous"
+and "next" link headers documented on the same page provide the
+secondary cursor surface; the client iterator follows them.
+
+#### 5.7 Live-sandbox CI job
+
+Two CI surfaces separate sandbox availability concerns:
+
+| Surface | Trigger | Behavior on sandbox unreachable |
+|---|---|---|
+| Per-PR contract tests | Pull request | Replay-only; sandbox not contacted; passes if recordings match |
+| Live-sandbox post-merge job | Merge to `main` | Re-runs the same contract suite **against the live sandbox**; **CI fails loudly** if sandbox unreachable. Records drift if API contract changed since the last recording. |
+
+The post-merge job is the API-drift detector — when Guidewire ships
+a release boundary (Palisades → next), the live job catches the
+contract change and produces a PR to refresh the recording.
+
+#### 5.8 `samples/` — read-only replay material, never test ground truth
+
+`samples/` (top-level) holds documentation-grade illustrative payloads
+(e.g. for the README, the cowork curriculum, blog posts). Tests do
+not load from `samples/`. Recordings in `tests/recordings/` are the
+only test ground truth. The escape-scan REFUSEs any test file that
+imports from `samples/`.
 
 ### 6. Quality gates (testing policy — `tests/TESTING.md`) *(GW-1.10)*
 
 > *Authored 2026-05-04. The full policy lives at
 > [`../../tests/TESTING.md`](../../tests/TESTING.md) (engineer-owned,
 > hash-pinned). This section summarizes the contract; the canonical
-> source is the TESTING.md file, which is the hash-pin target.*
+> source is the TESTING.md file, which is the hash-pin target.
+> Cite IS Testing SOP at [`../../../CLAUDE.md`](../../../CLAUDE.md)
+> § Intent Solutions Testing SOP.*
 
 #### 6.1 7-layer testing taxonomy applicability
 
-Per the IS Testing SOP (`~/000-projects/CLAUDE.md` § Intent
-Solutions Testing SOP) and the layer-applicability matrix:
+Per the IS Testing SOP ([`../../../CLAUDE.md`](../../../CLAUDE.md) §
+Intent Solutions Testing SOP) and the layer-applicability matrix at
+`~/.claude/skills/audit-tests/references/layer-applicability.md`:
 
 | Layer | Status | Applies to |
 |---|---|---|
@@ -313,26 +938,33 @@ overlay promotes L2, L4-contract, L5-sec, L7-UAT to ✅.
 
 | Gate | Repo-wide | Per-module override |
 |---|---|---|
-| Line coverage | 80 | — |
-| Branch coverage | 70 | — |
-| Mutation kill rate (Stryker) | 70 | `harness` 85, `audit` 85, `auth` 85, `observability` 80, `servers/*` 75, `clients/*` 70 |
-| CRAP (per-function) | prod ≤ 30, test ≤ 15 | — |
-| CRAP (project avg) | ≤ 10 | — |
+| Statement coverage | 80 | `harness` 90 (load-bearing per [`../009-DR-MEMO-harness-runtime.md`](../009-DR-MEMO-harness-runtime.md) § 2.6) |
+| Branch coverage | 75 | — |
+| Mutation kill rate (Stryker) | 70 (deferred initial enforcement to E1.5) | `harness` 85, `audit` 85, `auth` 85, `observability` 80, `servers/*` 75, `clients/*` 70 |
+| CRAP per function (prod) | ≤ 30 | — |
+| CRAP per function (test) | ≤ 15 | — |
+| CRAP project average | ≤ 10 | — |
 | Flaky tolerance | 0/3 runs | — |
 | Test complexity ceiling | 15 cyclomatic | — |
 | OWASP coverage | grade A | — |
+| Architecture rules (depcruise) | zero violations | — |
+| Bias count (escape-scan) | zero REFUSE, ≤ 3 CHALLENGE per PR | — |
 | Vocabulary linter (007 memo § 7) | api-verb-leak = 0, engineering-speak = 0 | — |
 | Persona density | ≥ 5 tools per declared persona | — |
 | Recordings | required for read AND write tools | — |
-| Architecture rules | servers/* cannot import clients/* directly | — |
+| Gherkin lint (E10 acceptance) | pass | — |
 | Bias guards | tautology = 0, over-mocked-modules = 0 | — |
 
 Higher harness/audit/auth mutation floors per
-[`009-DR-MEMO`](../009-DR-MEMO-harness-runtime.md) § hash-chain
-criticality and [`006-DR-MEMO`](../006-DR-MEMO-mcp-safety.md) §
-cross-cutting harness invariants.
+[`../009-DR-MEMO-harness-runtime.md`](../009-DR-MEMO-harness-runtime.md)
+§ hash-chain criticality and
+[`../006-DR-MEMO-mcp-safety.md`](../006-DR-MEMO-mcp-safety.md) §
+cross-cutting harness invariants. Mutation testing carries an
+intentionally lower bar at initial E1 release — mutation runs are
+expensive on a fresh codebase; the 70 floor lifts to module-specific
+floors at E1.5 once baseline mutation coverage is established.
 
-#### 6.3 Hash-pinning
+#### 6.3 Hash-pinning (engineer-only edits)
 
 All policy values above are hash-pinned via:
 
@@ -340,25 +972,62 @@ All policy values above are hash-pinned via:
 pnpm exec audit-harness init   # after engineer policy edits
 ```
 
+The harness stamps a manifest hash into `.harness-hash` (committed)
+covering every protected file in `tests/TESTING.md` § Hash manifest:
+
+```
+protected_files:
+  - tests/TESTING.md#policy
+  - features/*.feature
+  - .dependency-cruiser.cjs
+  - vitest.config.ts#thresholds
+  - .stryker.config.json
+```
+
 `escape-scan.sh` REFUSES any AI-proposed diff that touches policy
 lines unless preceded by engineer-initiated `audit-harness init`.
-Hash manifest lives at `.harness-hash` (committed). Protected files
-listed in `tests/TESTING.md` § Hash manifest.
+The pre-commit hook + the per-PR CI step both run the verifier.
+This is the anti-drift property: **AI cannot lower a threshold**.
 
-#### 6.4 NO MOCKS — mandatory recording-replay
+#### 6.4 `tests/TESTING.md` schema
 
-Per D-008 + 008 memo. Every `servers/*` test that touches the
-Guidewire Cloud API surface MUST replay against a real recording in
-`tests/recordings/` with `MANIFEST.md` provenance. Hand-written
-fixture JSON is forbidden (`recordings.fixture_files_forbidden:
-true` in `tests/TESTING.md`).
+Per the IS Testing SOP testing-md-spec
+(`~/.claude/skills/audit-tests/references/testing-md-spec.md`),
+`tests/TESTING.md` carries:
+
+- `## Classification (policy)` — repo type, languages, applicable
+  layers, waived layers, compliance overlay (engineer-edited).
+- `## Thresholds (policy, hash-pinned)` — the § 6.2 table in machine-
+  readable form.
+- `## Installed gates (observational)` — what L1/L2/L3/… are wired.
+- `## Frameworks (observational)` — Vitest/Stryker/Biome/depcruise
+  versions, per-tool config locations.
+- `## Last audit (observational)` — date, grade, P0/P1/P2 gap counts,
+  populated by `/audit-tests`.
+- `## Traceability (observational)` — RTM, personas, journeys (driven
+  by `audit-harness rtm`).
+- `## Hash manifest` — the protected-files block + the latest
+  `audit-harness init` timestamp + author.
+
+Engineer edits the policy sections; AI edits only the observational
+sections. The escape-scan boundary is enforced by an AST diff on the
+file's section headers.
+
+#### 6.5 Recording-replay enforcement (NO MOCKS)
+
+Per [D-008](../004-DR-DEC-architecture-decisions.md). Every
+`servers/*` test that touches the Guidewire Cloud API surface MUST
+replay against a real recording in `tests/recordings/` with
+`MANIFEST.md` provenance. Hand-written fixture JSON is forbidden
+(`recordings.fixture_files_forbidden: true` in `tests/TESTING.md`).
 
 CI fails loudly when sandbox is unreachable on the live-sandbox
-post-merge job; never silently degrades to mocks.
+post-merge job (per § 5.7); never silently degrades to mocks.
 
-#### 6.5 Vocabulary 8-rule PR-time checklist (per 007 memo § 7)
+#### 6.6 Vocabulary 8-rule PR-time checklist
 
-Mechanically enforced via `audit-harness vocab-lint`:
+Per [`../007-DR-MEMO-carrier-vocabulary.md`](../007-DR-MEMO-carrier-vocabulary.md)
+§ 7. Mechanically enforced via `audit-harness vocab-lint`:
 
 1. No API-verb prefixes (`search_*`, `get_*`, `list_*`, `fetch_*`,
    `query_*`, `update_*`, `create_*`, `delete_*`)
@@ -374,25 +1043,259 @@ Mechanically enforced via `audit-harness vocab-lint`:
    this?" test
 
 `carrier-vocabulary-curator` reviews the result at PR time when
-ambiguous; the linter handles deterministic rules.
+ambiguous; the linter handles deterministic rules. Tool-name
+canonical forms are pinned by
+[D-016](../004-DR-DEC-architecture-decisions.md).
+
+#### 6.7 CI gate ordering
+
+The CI workflow is parallel where possible, sequential where the gate
+depends on a prior step. Per-PR pipeline:
+
+```
+[lint:biome] [lint:tsc] [arch:depcruise] [escape-scan]   # parallel L2
+       │           │            │              │
+       └───────────┴────────────┴──────────────┘
+                          │
+              [unit:vitest --coverage]                    # L3
+                          │
+              [contract:replay]                           # L4-contract (replays only — no sandbox)
+                          │
+              [integration:testcontainers]                # L4-integration
+                          │
+              [migration:pgtap]                           # L4-migration
+                          │
+              [audit-harness harness-hash --verify]       # hash-pin check
+                          │
+              [audit-harness coverage --min=<floor>]      # floor enforcement
+                          │
+              [audit-harness vocab-lint]                  # tool-name vocabulary
+                          │
+              [audit-harness recordings-lint]             # MANIFEST.md schema
+                          │
+              [gemini-code-assist review]                 # external review (per CLAUDE.md hard rule)
+                          │
+              [1 human approval]                          # branch protection
+                          │
+                       [merge to main]
+                          │
+              [post-merge: contract:live-sandbox]         # API-drift detector (§ 5.7)
+              [post-merge: stryker --since=last-merge]    # mutation (post-merge only at E1.5+)
+```
+
+Branch protection on `main` requires every gate above + Gemini Code
+Assist + 1 human approval. **Gemini must complete before merge** per
+[`../../CLAUDE.md`](../../CLAUDE.md) Hard Rule "Gemini PR Review".
+
+#### 6.8 Pre-commit hooks
+
+Husky-style hooks under `.husky/`:
+
+| Hook | Action |
+|---|---|
+| `pre-commit` | `pnpm exec audit-harness escape-scan` (REFUSE on policy diff without re-init), `pnpm exec biome check --staged`, `pnpm exec audit-harness harness-hash --verify` |
+| `commit-msg` | Conventional Commits validation via commitlint |
+| `pre-push` | `pnpm test --run` (unit only); `pnpm exec audit-harness arch` |
+
+**Every command above calls `pnpm exec audit-harness …` — never
+`~/.claude/` paths.** Enforcement travels with the code per
+[`../../CLAUDE.md`](../../CLAUDE.md) Hard Rule #7.
+
+#### 6.9 Cowork-fork inheritance
+
+`templates/cowork-fork-starter/` (E4) ships with:
+
+- `tests/TESTING.md` (the same engineer-owned policy file, pre-
+  populated for a fresh fork)
+- `.husky/` (the same hook contract)
+- `@intentsolutions/audit-harness` as a dev dep in the root
+  `package.json`
+- The CI workflow file under `.github/workflows/ci.yml` (depcruise +
+  audit-harness gates wired)
+- `.harness-hash` initialized via the template's bootstrap script
+
+Cohort forks ship with the same gates from clone-zero. A cohort
+member who renames `find-submissions-waiting-on-me` to
+`search_submissions` finds their PR fails the same `audit-harness
+vocab-lint` rule it would fail in this repo — the architecture is the
+lesson, the carrier domain is the example
+([`./02-PRD.md`](./02-PRD.md) § 7.3).
 
 ### 7. Build / deploy
 
-- pnpm workspaces topology + build order.
-- Docker image strategy (per-server vs. monorepo).
-- Cloud Run deployment manifests.
-- OpenTofu IaC modules.
-- Secret loading (SOPS+age) at runtime.
+#### 7.1 pnpm workspace topology
+
+`pnpm-workspace.yaml`:
+
+```yaml
+packages:
+  - 'packages/*'
+  - 'servers/*'
+  - 'clients/*'
+  - 'profiles/*'
+  - 'templates/*'
+```
+
+Build order (topological, derived by pnpm from per-package
+dependencies):
+
+```
+schemas → observability → audit → auth → guidewire-client → harness → servers/* → clients/*
+```
+
+`pnpm -r build` walks the order; `pnpm -r --parallel test` runs
+test suites concurrently after build.
+
+#### 7.2 Docker image strategy
+
+One image per `servers/*` member (e.g.
+`ghcr.io/jeremylongshore/policycenter-mcp:<git-sha>`). Multi-stage:
+
+1. `builder` stage runs `pnpm install --frozen-lockfile` and `pnpm
+   --filter <server> build`.
+2. `runtime` stage copies the built artifact + minimal Node 22 LTS
+   runtime + the per-server `package.json`.
+
+Harness CLI ships as a separate image
+(`ghcr.io/jeremylongshore/guidewire-harness:<git-sha>`) so operators
+can run approval flows independently of the servers.
+
+#### 7.3 Cloud Run deployment
+
+`infra/cloud-run/<server>.yaml` per server. Per-tenant process
+isolation per [`./03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) § 7.2:
+each carrier customer runs their own service revision with their own
+profile mounted. Concurrency capped to 1 per instance for the harness
+CLI service (to keep approval flows simple); servers can scale
+horizontally because the harness is the only write boundary.
+
+#### 7.4 OpenTofu IaC modules
+
+`infra/tofu/`:
+
+- `modules/cloud-run/` — service + revision + IAM + env wiring
+- `modules/postgres/` — Cloud SQL Postgres 15 with serializable-tx
+  defaults
+- `modules/redis/` — Memorystore for events queue
+- `modules/secret-manager/` — secret bindings (the SOPS-encrypted
+  files decrypt on the runtime side via `secretsLoader`; Secret
+  Manager only carries the age private key)
+
+#### 7.5 Secrets at runtime (SOPS + age)
+
+Per IS standard ([global CLAUDE.md](../../../CLAUDE.md) § SOPS
+initiative):
+
+1. `runbook/secrets.<env>.sops.yaml` is committed (encrypted) under
+   each profile.
+2. The age private key is delivered to the runtime via Cloud Run
+   Secret Manager binding — never in the container image.
+3. `secretsLoader` (in `packages/auth/`) decrypts the SOPS file at
+   process boot, populates env vars in-process, never writes to disk.
+4. The `eval "$(sops -d ... | sed -nE 's/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/export \1=\2/p')"`
+   pattern (anchored regex) is the only allowed shell-side surface
+   per the global CLAUDE.md OPS-8ft postmortem.
 
 ### 8. Security posture
 
-(Authored alongside `security-auditor` audit memo in GW-1.8.)
+> *Co-authored alongside the `security-auditor` audit memo at GW-1.8.*
 
-- Auth model — OAuth + JWT propagation.
-- Audit hash-chain — implementation contract.
-- Secret rotation cadence.
-- BAA path (when applicable LOBs).
-- Threat model.
+#### 8.1 Auth model — OAuth + JWT propagation
+
+Guidewire Hub OAuth via `openid-client`. Per-tenant `auth.yaml`
+declares the OIDC discovery URL; the `packages/auth/` factory pulls
+the JWKS, rotates tokens at 80% of lifetime (proactive refresh per
+[`../008-DR-MEMO-guidewire-api.md`](../008-DR-MEMO-guidewire-api.md)
+§ 10), and propagates the actor JWT through to Cloud API as the
+`Authorization: Bearer <jwt>` header. The `actor_claim`
+(default `sub`) is the JWT field carrying actor identity for audit-
+chain attribution.
+
+Token endpoint URL, scopes catalog, and JWKS URI are sandbox-blocked
+per librarian P6 — `auth.yaml` cannot be finalized until
+`guidewire-adj` (sandbox) closes.
+
+#### 8.2 Audit hash-chain — implementation contract
+
+Per `packages/audit/` and
+[`../009-DR-MEMO-harness-runtime.md`](../009-DR-MEMO-harness-runtime.md)
+§ 2:
+
+```sql
+-- packages/audit/migrations/0001_init.sql (excerpt)
+CREATE TABLE audit_chain_heads (
+  tenant_id        TEXT PRIMARY KEY,
+  current_seq      BIGINT NOT NULL DEFAULT 0,
+  current_hash     TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE audit_entries (
+  entry_id         TEXT PRIMARY KEY,         -- ULID
+  tenant_id        TEXT NOT NULL,
+  chain_seq        BIGINT NOT NULL,
+  event_type       TEXT NOT NULL,
+  plan_id          TEXT NOT NULL,
+  trace_id         TEXT NOT NULL,
+  actor_id         TEXT NOT NULL,
+  tool_name        TEXT NOT NULL,
+  tool_version    TEXT NOT NULL,
+  mode             TEXT NOT NULL,
+  idempotency_key  TEXT,
+  recorded_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  prev_hash        TEXT NOT NULL,
+  entry_hash       TEXT NOT NULL,
+  blob_ref         TEXT,
+  UNIQUE (tenant_id, chain_seq)
+);
+```
+
+Append protocol: serializable transaction; `SELECT … FOR UPDATE` on
+`audit_chain_heads` row; compute `entry_hash = sha256(prev_hash ||
+canonical_serialization(entry_fields))`; insert row; update
+`current_seq` and `current_hash`. Single-writer per tenant; concurrent
+appends serialize on the head row.
+
+`verifyChain(tenantId)` walks the chain forward and recomputes hashes;
+any mismatch = `chain_broken`, harness refuses all writes for that
+tenant until `chain.repair.acknowledged` (manual operator action).
+
+#### 8.3 Secret rotation cadence
+
+| Secret | Rotation | Mechanism |
+|---|---|---|
+| Guidewire OAuth client secret | per carrier policy (typical 90 days) | rotate in SOPS file; PR; redeploy; old token gracefully expires |
+| Age private key | annual | re-encrypt all SOPS files with new recipient; commit; deploy; delete old key from Secret Manager |
+| Sentry DSN | rotate on suspected exposure | DSN per env; rotation is in Sentry org admin |
+| Postgres password | quarterly | rotate via Cloud SQL; OpenTofu manages binding |
+| GitHub Actions `GUIDEWIRE_SANDBOX_TOKEN` | per sandbox tenant policy | regenerate in Guidewire Console; update in GH org Secrets |
+
+Per `~/.claude/CLAUDE.md` `feedback_no_redundant_rotation_asks.md` —
+do not propose secondary rotation cycles unless a specific exposure is
+identified.
+
+#### 8.4 BAA path (health LOBs)
+
+When `pii-policy.yaml.baa_required: true` (set by carriers running
+health LOBs), the tool catalog filters down to BAA-cleared tools
+only. Health-LOB carrier profiles MUST set this — the harness
+refuses to load a profile carrying health LOBs without
+`baa_required: true`. The `mcp-safety-reviewer` GW-1.8 lane verifies
+the carve-out is honored at boot.
+
+#### 8.5 Threat model — bounded summary
+
+| Threat | Mitigation |
+|---|---|
+| Compromised agent host issues unauthorized writes | Three-mode declaration + harness gate + `approved_execute` requires policy + approval + audit; even a fully compromised agent cannot write without an approver vote |
+| Compromised harness DB | Linear hash chain + serializable single-writer makes tampering tamper-evident; `verifyChain` detects; cross-tenant isolation contains blast radius |
+| Token leak | Tokens never written to disk; SOPS-encrypted at rest; proactive refresh limits stale-token blast radius |
+| Replay attacks against Guidewire | Two-key idempotency: harness short-circuits replay; `GW-DBTransaction-ID` is the secondary safety net (librarian P1) |
+| Profile-data injection | Zod validation at boot; escape-scan refuses non-YAML files in `profiles/**`; depcruise refuses cross-profile imports |
+| PII exfil through read tools | Read-side audit + `pii-policy.yaml` redaction at response time + bundle-time redaction at evidence export |
+| Unauthorized money movement | Out-of-scope — `payments-mcp` is a separate future repo with dual-control approval ([D-018](../004-DR-DEC-architecture-decisions.md)) |
+
+The full threat model lands in the `security-auditor` GW-1.8 audit
+memo; this section is the bounded summary.
 
 ---
 
