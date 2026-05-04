@@ -13,7 +13,7 @@ Claude/Anthropic-first.
 ClaimCenter (E7), BillingCenter (E8), plus the producer / events /
 payments surfaces around them.
 
-**Marketplace target:** `claude-code-plugins-plus` — this repo will
+**Marketplace target:** `claude-code-plugins-plus-skills` — this repo will
 eventually be packaged for the marketplace. Plugin manifest +
 marketplace conventions land in a dedicated epic
 (`guidewire-mkt`, see roadmap).
@@ -37,10 +37,19 @@ Audiences (priority order):
 
 ## Hard Rules (these don't bend)
 
+> **Status:** these rules are **codified now, enforced when E1 lands.**
+> Until E1 introduces `packages/`, `servers/`, and CI/CD, the rules
+> are policy — not yet machine-enforced. From E1 onward, the
+> `audit-harness` + architecture rules in CI fail any change that
+> violates them.
+
 1. **Blueprint-first.** No code in `servers/` / `packages/` until the
    master blueprint at `000-docs/blueprint/` exists, the staffed audit
    panel has filed memos, and FAILs are resolved or accepted in
-   `000-docs/blueprint/audits/00-AUDIT-RESPONSES.md`.
+   `000-docs/blueprint/audits/00-AUDIT-RESPONSES.md` (this file lands
+   when GW-1.9 closes — see
+   [`audits/README.md`](./000-docs/blueprint/audits/README.md) for
+   the gate criteria).
 
 2. **Carrier-vocabulary tools, not API verbs.** Tool names underwriters
    / claims / billing operators actually say. `find-submissions-waiting-on-me`
