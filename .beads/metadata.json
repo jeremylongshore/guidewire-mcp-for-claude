@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "guidewire",
+  "project_id": "c31a4045-4944-4eeb-94b2-91e179a7c542"
+}
