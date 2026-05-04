@@ -1,0 +1,65 @@
+name: Link Check
+
+# Runs lychee weekly across all markdown files. Catches dead
+# external links + broken relative paths in the Guidewire reference
+# doc, blueprint, and 000-docs/ as docs move.
+#
+# Triggers:
+#   - schedule (Sunday 13:00 UTC, low-traffic window)
+#   - workflow_dispatch (manual on demand)
+#   - PR — only when *.md files change (paths filter; otherwise skipped)
+#
+# Failures don't block PRs (continue-on-error: true) — they file an
+# issue via the lychee action's --create-issue path.
+
+on:
+  schedule:
+    - cron: "0 13 * * 0"
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "**/*.md"
+      - ".github/workflows/link-check.yml"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  lychee:
+    name: lychee
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Restore lychee cache
+        uses: actions/cache@v4
+        with:
+          path: .lycheecache
+          key: cache-lychee-${{ github.sha }}
+          restore-keys: cache-lychee-
+
+      - name: Run lychee
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        continue-on-error: true
+        with:
+          args: >-
+            --cache
+            --max-cache-age 14d
+            --no-progress
+            --verbose
+            --exclude-mail
+            --exclude-path node_modules
+            --exclude-path .git
+            './**/*.md'
+          fail: false  # don't block — the issue-creation step surfaces failures
+
+      - name: Create issue on failure
+        if: env.lychee_exit_code != 0
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "Link Check Report — ${{ github.event.repository.updated_at }}"
+          content-filepath: ./lychee/out.md
+          labels: documentation, automated
