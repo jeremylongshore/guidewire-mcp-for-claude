@@ -1,5 +1,12 @@
 # Guidewire MCP for Claude
 
+[![CI](https://github.com/jeremylongshore/guidewire-mcp-for-claude/actions/workflows/ci.yml/badge.svg)](https://github.com/jeremylongshore/guidewire-mcp-for-claude/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+[![Status: Paperwork-First](https://img.shields.io/badge/Status-Paperwork--First-orange)](./000-docs/blueprint/)
+[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-7c3aed)](https://modelcontextprotocol.io)
+[![Built with Claude](https://img.shields.io/badge/Built%20with-Claude-d4a857)](https://claude.ai)
+[![Marketplace target](https://img.shields.io/badge/Marketplace-claude--code--plugins--plus--skills-success)](https://github.com/jeremylongshore/claude-code-plugins-plus-skills)
+
 > Works with the Guidewire **InsuranceSuite** (PolicyCenter,
 > ClaimCenter, BillingCenter, etc.). Carrier-native MCP servers +
 > governance harness for Guidewire estates. Built
@@ -29,13 +36,38 @@ language operators already speak.
 For full context: [`000-docs/blueprint/01-BUSINESS-CASE.md`](./000-docs/blueprint/01-BUSINESS-CASE.md)
 (once filed).
 
-## Roadmap (10 public epics)
+## Building in public
+
+**This repo is being built in the open from day one.** Demand is
+already here — two carrier-/MGA-side engineers reached out
+unprompted about wanting carrier-native MCP tooling for Guidewire,
+which is what kicked this project off (2026-05-04).
+
+If that sounds like work you'd want to use, fork, or contribute to:
+
+- **Watch the repo** for build-along progress.
+- **Open an issue** with the hardest question you'd want answered —
+  early questions shape **E2-E4** (PolicyCenter MCP, Harness, Customer
+  Profile template).
+- **DM the author** ([jeremylongshore.com](https://jeremylongshore.com))
+  if you're a carrier / MGA / SI exploring agent governance for your
+  Guidewire estate.
+- **Cowork-fork it** — the [`templates/cowork-fork-starter/`](./templates/)
+  pattern (lands in E4) is designed for non-Guidewire domains who
+  want the same architecture for their own work surface (trucking,
+  real estate, restaurant ops, e-comm).
+
+Status updates land here in the README, in the
+[CHANGELOG](./CHANGELOG.md), and in per-epic After-Action Reports at
+[`000-docs/blueprint/10-AAR/`](./000-docs/blueprint/10-AAR/).
+
+## Roadmap (10 public epics + marketplace publish)
 
 See [`000-docs/blueprint/07-ROADMAP.md`](./000-docs/blueprint/07-ROADMAP.md)
 once filed. Tracked live in beads:
 
 ```bash
-bd list --type=feature
+bd list --type=epic
 ```
 
 | Epic | Title | Status |
@@ -50,6 +82,7 @@ bd list --type=feature
 | E8 | BillingCenter + Payments | planned |
 | E9 | Producer-side MCP (MGA / broker scope) | planned |
 | E10 | Onboarding + certification CLI | planned |
+| E11+ | Publish to `claude-code-plugins-plus-skills` marketplace | planned |
 
 ## Hard rules
 
@@ -77,7 +110,9 @@ See [`CLAUDE.md`](./CLAUDE.md) for the full hard-rules list.
 
 ```
 000-docs/blueprint/   # Master paperwork (lands first, before any code)
-servers/              # Per-Guidewire-suite MCP servers
+000-docs/             # Phase 0 design inputs + Guidewire public-docs reference
+.claude/agents/       # 5 project-level specialist agents
+servers/              # Per-Guidewire-suite MCP servers (E2, E7, E8, E9, E6)
 packages/             # harness, observability, schemas, auth, audit, client
 profiles/             # Per-customer config (auth/roles/LOB/typelists/etc.)
 templates/            # cowork-fork-starter
@@ -98,15 +133,29 @@ cd guidewire-mcp-for-claude
 bd ready    # see what's next; install bd from gastownhall/beads
 ```
 
+To explore the design without cloning:
+
+- [Master blueprint](./000-docs/blueprint/00-MASTER-BLUEPRINT.md) — index + executive summary
+- [Architecture decisions](./000-docs/004-DR-DEC-architecture-decisions.md) — D-001 through D-015
+- [Persona red team](./000-docs/002-DR-CRIT-personas.md) — 8 perspectives that shaped v4
+- [Public Guidewire docs map](./000-docs/005-DR-REF-guidewire-public-resources.md) — every public reference surface, librarian-curated
+
 ## Contributing
 
-CONTRIBUTING.md will land in **E1**. Until then, watch the repo,
-file issues that ask hard questions, or DM the author. The OSS
-process is in build-in-public mode — early questions shape E2-E4.
+See [CONTRIBUTING.md](./CONTRIBUTING.md). The OSS process is in
+**build-in-public** mode — early questions shape **E2-E4**.
+
+For Guidewire-specific contributions (carrier-vocabulary tools, profile
+templates), the [5 specialist agents](./.claude/agents/) review designs
+against blast-radius, vocabulary authenticity, Cloud API correctness,
+harness contract semantics, and authoritative-doc citation. PRs that
+follow the agent-reviewed pattern land faster.
 
 ## License
 
-Apache-2.0 (planned for `LICENSE` file in E1).
+[Apache-2.0](./LICENSE) — same license as the Guidewire developer
+documentation paths we cite, and as Anthropic's reference Claude
+plugins.
 
 ## Author
 
@@ -116,4 +165,5 @@ Jeremy Longshore — [intentsolutions.io](https://intentsolutions.io)
 ---
 
 *Build-in-public status updates: this README updates as epics land.
-ROADMAP and blueprint are the source of truth.*
+[ROADMAP](./000-docs/blueprint/07-ROADMAP.md) and
+[blueprint](./000-docs/blueprint/) are the source of truth.*
