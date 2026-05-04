@@ -1,5 +1,10 @@
 name: CI
 
+# Paperwork-phase guard: jobs no-op until E1 introduces package.json + the
+# pnpm workspace. GW-2.3 (E1 sub-bead) replaces the npm scaffolding here
+# with the full pnpm + Biome + Vitest + @intentsolutions/audit-harness
+# pipeline.
+
 on:
   push:
     branches: [main]
@@ -10,8 +15,27 @@ permissions:
   contents: read
 
 jobs:
+  preflight:
+    name: Preflight (paperwork-phase)
+    runs-on: ubuntu-latest
+    outputs:
+      has_package_json: ${{ steps.check.outputs.has_package_json }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if [ -f package.json ]; then
+            echo "has_package_json=true" >> "$GITHUB_OUTPUT"
+            echo "package.json found — full CI will run."
+          else
+            echo "has_package_json=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::package.json not present yet — CI in paperwork-phase no-op mode. Real CI lands in GW-2.3."
+          fi
+
   lint:
     name: Lint
+    needs: preflight
+    if: needs.preflight.outputs.has_package_json == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +54,8 @@ jobs:
 
   test:
     name: Test (Node ${{ matrix.node-version }})
+    needs: preflight
+    if: needs.preflight.outputs.has_package_json == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

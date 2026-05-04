@@ -1,5 +1,11 @@
 name: Release
 
+# Manual-only during paperwork phase. The default /repo-dress template
+# auto-cuts on push to main, which doesn't fit a paperwork-first repo
+# where merges are routine and releases are not. Re-enable the push
+# trigger in GW-2.3 (E1 CI/CD sub-bead) once the repo has shippable
+# code and version bumps mean something.
+
 on:
   workflow_dispatch:
     inputs:
@@ -18,8 +24,6 @@ on:
         required: false
         default: false
         type: boolean
-  push:
-    branches: [main]
 
 permissions:
   contents: write
