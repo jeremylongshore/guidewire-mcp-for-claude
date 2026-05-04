@@ -673,8 +673,22 @@ demo path per [02-PRD § 3.3](./02-PRD.md#33-billingcenter-mcp--billingcenter-e8
    `reconcile-this-payment`, the L4 call is a Cloud API write
    (canonical shape `POST /billing/v1/payments/{id}/applications`,
    async per [02-PRD § 3.3](./02-PRD.md#33-billingcenter-mcp--billingcenter-e8)).
-   Idempotency key is included in the request per
-   [008 § 5](../008-DR-MEMO-guidewire-api.md#5-pagination--rate-limit-posture).
+   The Cloud-API request carries a `GW-DBTransaction-ID` header
+   ([Guidewire IS Consumer Guide — Preventing duplicate database
+   transactions](https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/request-headers/c_preventing-duplicate-database-transactions.html)).
+   **Two distinct keys, two distinct purposes:** the harness's own
+   `gwh1:` key (step 5) governs *harness-side* replay short-circuit
+   against the Postgres idempotency cache (returns prior result on
+   collision); `GW-DBTransaction-ID` is Guidewire's *server-side*
+   duplicate-prevention header that **fails** with
+   `AlreadyExecutedException` on collision rather than returning a
+   prior result. The two are complementary safety nets, not the same
+   mechanism. Per the librarian audit
+   [`./audits/00-LIBRARIAN-CITATION-AUDIT.md` § 3 P1](./audits/00-LIBRARIAN-CITATION-AUDIT.md),
+   the harness client wrapper (`packages/guidewire-client/`) is
+   responsible for deriving and injecting `GW-DBTransaction-ID` on
+   every write; the harness's `gwh1:` key is unrelated to the wire
+   format.
 7. **L3** Harness writes `execute.completed` audit entry to the
    per-tenant hash chain in a serializable transaction
    ([009 § 2.3](../009-DR-MEMO-harness-runtime.md#23-append-protocol)).
