@@ -1,0 +1,67 @@
+name: Deploy Pages
+
+# Publishes the live architecture diagram to GitHub Pages.
+#
+# URL on success: https://jeremylongshore.github.io/guidewire-mcp-for-claude/
+#
+# Triggers on push-to-main when either the static page or the diagram source
+# changes; can also be invoked manually via workflow_dispatch.
+#
+# One-time operator step (after this PR merges):
+#   Settings → Pages → Source: "GitHub Actions"
+# Or via gh CLI:
+#   gh api -X POST repos/jeremylongshore/guidewire-mcp-for-claude/pages \
+#     -f build_type=workflow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pages/**"
+      - "000-docs/blueprint/09-DR-DIAG-architecture.mmd"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build static site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp pages/index.html _site/index.html
+          cp 000-docs/blueprint/09-DR-DIAG-architecture.mmd _site/09-DR-DIAG-architecture.mmd
+          # Future: copy any additional pages/* assets (favicons, css) here.
+          echo "Built site at _site/:"
+          ls -la _site/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
