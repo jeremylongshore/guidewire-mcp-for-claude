@@ -138,12 +138,65 @@ within tool-selection budget).
 NEVER write. `approved_execute` requires plan + policy gate + human
 approval + idempotency key + audit. Hard rule: no audit = no write.
 
+## Persona 9 — Underwriting Manager *(added 2026-05-04 per `007-DR-MEMO-carrier-vocabulary.md`)*
+
+> "Your tools serve the line underwriter. Fine. Where's *my* view? I
+> need to see *who* referred me *what* this week, what my team's
+> bind ratio looks like by class, which of my UWs are stacking
+> referrals, and where we're concentrated. `explain-why-this-got-
+> referred` tells me the rule trace on one risk — that's a leaf, not
+> a tree. I need the portfolio view, the staff view, and the
+> authority-overrides view. Otherwise I'm running a black box and
+> the line UWs are running the show."
+
+**Attacks:** persona-coverage gap (the manager role is implicit in
+`explain-why-this-got-referred` — referrals go *to* a manager — but
+has no dedicated tool surface), tool-density gap on the receiving
+side of the referral flow, and the assumption that one persona
+(Persona 2 the line underwriter) covers underwriting authority
+hierarchy.
+
+**v4 fix:** dedicated `underwriting-manager` subsection in PRD § 3
+(Personas) + dedicated tool surface in `policycenter-mcp` for the
+manager view. Tool surface should at minimum cover:
+
+- `show-referrals-routed-to-me` (the manager's queue, opposite end of
+  Persona 2's `find-submissions-waiting-on-me`)
+- `whats-my-team-bind-ratio` (by class / by UW / by quarter)
+- `show-uws-stacking-referrals` (operational signal — which line UW
+  is escalating disproportionately)
+- `whats-our-concentration-on-this-class` (portfolio view —
+  appetite enforcement at the manager level)
+- `what-authority-overrides-this-quarter` (audit trail of the
+  manager's own approved exceptions)
+
+These names pass the `carrier-vocabulary-curator` rubric (operator-
+voice + possessive-scope + question-form). They land in **GW-1.2**
+PRD authoring as part of the PolicyCenter tool catalog under a new
+"underwriting-manager view" subsection.
+
+**Why surfaced now (and not in v3 plan):** the v3 architecture
+focused on the 8 critique perspectives that *attack* the plan from
+*outside* the line-underwriter role. Persona 9 is an *inside*
+attack — same building, different floor. The carrier-vocabulary
+memo (007) caught the gap by noting that `producer-mcp` had a
+density problem (Persona 4's "portal scrap" complaint) but
+`policycenter-mcp` had a *role-coverage* problem (manager view
+absent) that wasn't even on the v3 radar.
+
 ## Cross-cutting finding
 
-Seven of eight personas attack assumptions the original plan does not
-fully answer. Persona 2 is the user's own pivot question dressed up
-in an underwriter's voice. **The center of gravity is wrong** — the
-architecture is organized around Guidewire APIs, not around carrier
-work. Carrier-vocabulary tools become the dominant abstraction in
-v4; adapters survive only at the API-client and vendor-partner
-layers.
+**Eight of nine personas** attack assumptions the original plan does
+not fully answer. Persona 2 is the user's own pivot question dressed
+up in an underwriter's voice; Persona 9 was caught downstream by the
+specialist memo pass after this red team's first publication. **The
+center of gravity is wrong** — the architecture is organized around
+Guidewire APIs, not around carrier work. Carrier-vocabulary tools
+become the dominant abstraction in v4; adapters survive only at the
+API-client and vendor-partner layers.
+
+Adding Persona 9 reinforces the meta-finding: vocabulary-grounded
+tools are the abstraction, *and* role-coverage within the carrier
+hierarchy (line UW vs UW manager vs portfolio risk officer) needs
+the same density treatment that cross-role hierarchy (carrier vs
+producer/MGA, carrier vs SI partner) already gets.
