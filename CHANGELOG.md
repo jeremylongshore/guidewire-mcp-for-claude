@@ -1,5 +1,18 @@
 # Changelog
 
+## [v0.0.1] - 2026-05-04
+
+- chore(repo-dress): fill-gaps standard governance + CI/CD (#18) (c0a5d99)
+- docs: fix marketplace repo name + clarify forward refs + qualify hard rules (#17) (9940cbd)
+- chore(agents): create 4 Phase 0 specialist agent definitions (.claude/agents/) (#16) (937bd15)
+- docs(GW-1.1): scaffold master blueprint paperwork (000-docs/blueprint/) (#15) (15d1bbb)
+- docs: file Phase 0 design inputs (4 docs, 000-docs/) (#13) (dc8ca0e)
+- chore(beads): mirror 12 epics to GitHub Issues #1-#12 (0377304)
+- chore(beads): seed 12-epic roadmap (Phase 0 + Blueprint + E1–E10) (2432cde)
+- chore: project scaffold — README, CLAUDE.md, expanded .gitignore (19e168d)
+- bd init: initialize beads issue tracking (eed0ce3)
+
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
