@@ -34,6 +34,20 @@ that feed the blueprint authoring (GW-1.2-1.7), then re-run as
 auditors in GW-1.8 against the finished blueprint. Two passes, one
 agent definition each.
 
+### Support specialist (NOT an auditor — supports the panel)
+
+A 5th specialist exists in `.claude/agents/` —
+[`guidewire-reference-librarian`](../../../.claude/agents/guidewire-reference-librarian.md)
+— who maintains the canonical map of public Guidewire docs at
+[`000-docs/005-DR-REF-guidewire-public-resources.md`](../../005-DR-REF-guidewire-public-resources.md).
+The librarian does NOT file an audit memo. It serves the 11
+auditors above (especially #6 `mcp-safety-reviewer`, #7
+`carrier-vocabulary-curator`, #8 `guidewire-api-archaeologist`, #9
+`harness-runtime-architect`) by providing release-versioned URL
+citations on demand. Use it any time you need to verify a Guidewire
+claim or ground a design decision in published docs without sandbox
+access.
+
 ---
 
 ## Memo file format
