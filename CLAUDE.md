@@ -191,6 +191,48 @@ The librarian's knowledge base is
 (11 categories, every public Guidewire surface). Use it directly, or
 invoke the librarian for dynamic Q&A.
 
+## Source-doc citation discipline (MANDATORY for every authoring bead)
+
+**Any claim about Cloud API endpoints, request/response syntax,
+typelist values, LOB codes, custom-entity shape, App Events,
+Integration Gateway, Cloud Console, Hub OAuth flows, GT Framework,
+or any other Guidewire technical surface MUST cite an authoritative
+public reference** — typically a release-versioned URL from
+[`000-docs/005-DR-REF-guidewire-public-resources.md`](./000-docs/005-DR-REF-guidewire-public-resources.md).
+
+When opening any blueprint authoring bead (GW-1.3 architecture,
+GW-1.5 user journeys, GW-1.10 testing, etc.) or when drafting tool
+schemas / profile YAMLs / contract recordings, the workflow is:
+
+1. **Before writing the API/integration claim:** consult the
+   `guidewire-reference-librarian` agent OR read
+   `005-DR-REF-guidewire-public-resources.md` directly to find the
+   authoritative source.
+2. **If a public source exists:** cite it inline (release-versioned
+   URL preferred — e.g., "Palisades Cloud API reference §
+   /policy/v1/policies").
+3. **If no public source exists:** explicitly mark the claim as
+   `(unverified — practitioner knowledge, sandbox-confirm at
+   guidewire-adj)` so the GW-1.8 staffed audit + post-blueprint
+   `/validate-consistency` red-team panel know what's load-bearing
+   on assumption vs. citation.
+4. **Never invent endpoint shapes, typelist names, or syntax.** If
+   the librarian KB has a gap, the librarian agent's job is to
+   fill it (research + add to the KB) — not the authoring agent's
+   job to guess.
+
+**Enforcement:** every PR that touches `000-docs/blueprint/` or
+adds `servers/` / `packages/` code must pass a librarian
+citation-coverage check before merge. The check is:
+> "Every API/integration/syntax claim in the diff is either (a)
+> backed by a `005-DR-REF` citation, or (b) explicitly marked
+> `(unverified — sandbox-confirm)`."
+
+This rule is **non-negotiable** because the OSS repo's credibility
+artifact value to inbound carrier / SI / MGA reviewers depends
+entirely on the technical content being grounded in real published
+Guidewire surfaces. Drift here kills the lead-magnet thesis.
+
 ## Workflow
 
 ```bash
