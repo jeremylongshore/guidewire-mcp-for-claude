@@ -207,3 +207,111 @@ or augment prior ones, with a `replaces:` link.
   for Claude/Anthropic-native positioning.
 - **because:** Per Jeremy's call 2026-05-04 — short local, descriptive
   remote.
+
+## D-016 — Tool-vocabulary canonical names (carrier-vocabulary-curator renames + adjuster split)
+
+- **decided:** 2026-05-04
+- **decision:** The following 5 renames + 1 new tool from
+  [`007-DR-MEMO-carrier-vocabulary.md § 2`](./007-DR-MEMO-carrier-vocabulary.md)
+  are the canonical names for the project. Anywhere a tool name
+  appears (PRD § 3, 04-USER-JOURNEY when authored, 07-ROADMAP epic
+  exit criteria, README marketing copy, cowork curriculum, blog
+  posts), it uses these forms:
+
+  | Was (initial PRD draft) | Canonical | Rationale |
+  |---|---|---|
+  | `propose-endorsement` | `draft-endorsement` | Mode-name in tool: `draft_only` mode is the contract; verb matches |
+  | `whats-the-payment-status` | `where-are-we-on-this-payment` | How a billing operator actually phrases the question — "where are we on" is the carrier verb |
+  | `find-billing-issues-for-this-policy` | `whats-going-on-with-this-account` | Scope is account-level, not policy-level; matches how AR speaks |
+  | `replay-event` | `show-event-payload` | Replay is a developer verb; show-payload is the integration-engineer's question |
+  | (none) | `show-activity-on-this-claim` | NEW. Adjuster-path complement to `find-events-for-claim` (integration-engineer path). Different persona, different question, different answer shape — vocabulary distinction, not just a synonym. |
+
+- **because:** Tool names ARE the architecture in this repo (per
+  [D-001](#d-001--architecture-organized-around-carrier-vocabulary-not-api-verbs)).
+  Treating renames as "routine catalog edits" leaves the names
+  vulnerable to bikeshedding rebounds (someone renames
+  `draft-endorsement` back to `propose-endorsement` because nothing
+  pins it). A decision-log entry is the only durable structure.
+  The `show-activity-on-this-claim` addition is structural — it
+  creates a vocabulary distinction between the adjuster path and
+  the integration-engineer path, not a synonym pair.
+- **attacked-by:** Persona 2 (the underwriter — pushed for vocabulary
+  rigor in the first place).
+- **scope:** Applies retroactively to the merged 02-PRD (already
+  uses canonical names) and forward to all blueprint authoring.
+  GW-1.8 staffed audit (`carrier-vocabulary-curator` lane) is the
+  enforcement check.
+
+## D-017 — Persona 9 (underwriting manager) tools land in a fresh sub-epic E2.5, not E2 or E5
+
+- **decided:** 2026-05-04
+- **decision:** The 5 underwriting-manager tools introduced by
+  [`002-DR-CRIT-personas.md` Persona 9](./002-DR-CRIT-personas.md) +
+  [`007-DR-MEMO-carrier-vocabulary.md § 4.6`](./007-DR-MEMO-carrier-vocabulary.md)
+  ship as a dedicated tranche **E2.5 — Aggregate-query tools**, not
+  bundled into E2 or deferred into E5.
+- **because:** They are a coherent capability tranche
+  (loss-ratio / aggregate-exposure / declination-pattern queries)
+  with one prerequisite the rest of E2 doesn't share: UWCenter
+  sandbox breadth + aggregation API mappings, both unknown until
+  `guidewire-adj` (sandbox) closes. Three options considered:
+  - **E2 (rejected):** bloats the first read-only cut from 5-7 → 12
+    tools and forces it to wait on the unknown sandbox-breadth
+    prereq. Delays the first "we shipped" moment.
+  - **E5 (rejected):** bundles aggregate-query tools (`read_only`)
+    with drafting tools (`draft_only`) — different mode profiles,
+    different governance shape, confused narrative.
+  - **E2.5 (chosen):** clean break, ships when the prereq is known,
+    keeps E2 fast and E5 focused on drafting.
+- **roadmap impact:** [`07-ROADMAP.md`](./blueprint/07-ROADMAP.md)
+  needs an E2.5 entry inserted between E2 and E3 with: "Ships the
+  5 underwriting-manager aggregate-query tools when UWCenter
+  sandbox breadth + aggregation API surface confirmed via
+  `guidewire-adj` follow-up."
+
+## D-018 — Reconcile-payment vs. money-movement boundary (sharpened pre-audit)
+
+- **decided:** 2026-05-04
+- **decision:** Sharpen the boundary now (rather than deferring to
+  the GW-1.8 `mcp-safety-reviewer` Mode B audit response). The
+  carve:
+
+  **`reconcile-this-payment` is `approved_execute` because it:**
+  - Mutates BillingCenter ledger state (payment→account assignment).
+  - Has a known final state — idempotency key over
+    `paymentId + accountId + amount`.
+  - Does NOT cross a banking integration boundary (no ACH
+    instruction, no card capture, no wire, no external rail call).
+  - Failure mode is a misallocation that is reversible by another
+    `reconcile-this-payment` call against the corrected target.
+
+  **Money movement is OUT-OF-SCOPE for `billingcenter-mcp` and
+  belongs in a future `payments-mcp` because it:**
+  - Crosses an irreversible banking integration boundary.
+  - Has a failure mode (unauthorized debit/credit) that is NOT
+    reversible in-system; reversal requires an external rail
+    operation with its own approval flow.
+  - Requires dual-control (two-human approval), not single-approver
+    `approved_execute` — out of band of the harness's current
+    approval contract per
+    [`009-DR-MEMO-harness-runtime.md`](./009-DR-MEMO-harness-runtime.md).
+
+- **because:** The line between reconciliation and money movement
+  is exactly where a CISO reads the doc. Defining it under audit
+  pressure (GW-1.8 Mode B) means the audit response itself becomes
+  the regulatory artifact — that is not the document we want to be
+  the proof. Defining it from first principles now means E3
+  (harness contract) and E8 (BillingCenter MCP) ship with the
+  right boundaries instead of re-litigating mid-build.
+- **operational consequences:**
+  - BillingCenter MCP can ship `approved_execute` mode in E8
+    without compliance gate-keeping payments work.
+  - `payments-mcp` stays a separate future repo with stronger
+    controls (dual-control approval, harder hardware-attested
+    audit, separate compliance review).
+  - `reconcile-this-payment` is the canonical canary for
+    `approved_execute` per
+    [`006-DR-MEMO-mcp-safety.md § 3.4`](./006-DR-MEMO-mcp-safety.md)
+    — confirmed.
+- **attacked-by:** Persona 5 (CISO) + `mcp-safety-reviewer` Mode B
+  at GW-1.8.
