@@ -42,10 +42,13 @@ jobs:
         run: |
           mkdir -p _site
           cp pages/index.html _site/index.html
+          cp pages/CNAME _site/CNAME
           cp 000-docs/blueprint/09-DR-DIAG-architecture.mmd _site/09-DR-DIAG-architecture.mmd
           # Future: copy any additional pages/* assets (favicons, css) here.
           echo "Built site at _site/:"
           ls -la _site/
+          echo "CNAME content:"
+          cat _site/CNAME
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
