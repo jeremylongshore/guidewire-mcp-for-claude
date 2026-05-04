@@ -1,6 +1,7 @@
 # 005-DR-REF — Guidewire public reference resources
 
 **Filed:** 2026-05-04
+**Updated:** 2026-05-04 (librarian citation audit — see `blueprint/audits/00-LIBRARIAN-CITATION-AUDIT.md`)
 **Maintainer:** `guidewire-reference-librarian` agent + Jeremy
 **Bead:** `guidewire-oq2`
 **Status:** Living document — agent updates this as new public surfaces appear or URLs change.
@@ -37,9 +38,26 @@ primary substitute for sandbox-driven contract drafting.**
 
 | Suite | Latest reference | Module set |
 |---|---|---|
-| **PolicyCenter** | <https://docs.guidewire.com/cloud/pc/202503/apiref/> | Product Definition, Admin, Job, Policy, Account, Async, Common, System Tools |
-| **ClaimCenter** | <https://docs.guidewire.com/cloud/cc/202411/apiref/> | Admin, Async, Common, Claim, System Tools |
-| **InsuranceSuite (cross)** | <https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/introduction-to-Cloud-API/c_endpoints.html> | Cross-suite endpoint primer |
+| **PolicyCenter** | <https://docs.guidewire.com/cloud/pc/202503/apiref/> | Product Definition, Admin, Job, Policy, Account, Async, Common, Composite, Graph, System Tools |
+| **ClaimCenter** | <https://docs.guidewire.com/cloud/cc/202411/apiref/> | Admin, Async, Claim, Common, **Composite**, System Tools |
+| **BillingCenter** | <https://docs.guidewire.com/cloud/bc/202411/apiref/> | Admin, Async, **Billing**, Common, Composite, System Tools |
+| **BillingCenter (202503)** | <https://docs.guidewire.com/cloud/bc/202503/apiref/> | Same module set as 202411 |
+| **InsuranceSuite (cross, Palisades)** | <https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/introduction-to-Cloud-API/c_endpoints.html> | Cross-suite endpoint primer + BillingCenter Consumer Guide |
+
+**Critical notes on the module tables (verified 2026-05-04):**
+
+- **ClaimCenter does NOT have a Graph API module.** The `summarize-this-loss`
+  tool and any other CC tool that needs multi-resource reads in one round
+  trip must use **Composite API**, which IS present in CC 202411.
+- **BillingCenter has its own per-version `apiref/`** at the same path
+  pattern as PC/CC. This was missing from the original KB. The BC module
+  called **Billing API** (not "BillingCenter API") contains account-level
+  endpoints (`/billing/v1/accounts/...`). Commission plan endpoints live
+  in the BC **Admin API** (`/admin/v1/commission-plans/...`), not in the
+  Billing API.
+- **PolicyCenter has both Composite API and Graph API.** Use Graph for
+  single-aggregate-root reads (wide object expansion); use Composite for
+  multi-resource batch reads within a suite.
 
 ### Versioning convention
 
@@ -53,9 +71,9 @@ docs.guidewire.com/cloud/{pc|cc|bc}/{YYYYRR}/apiref/
 
 Examples seen in 2025-2026:
 - `202302` Innsbruck (PolicyCenter)
-- `202411` Las Leñas (ClaimCenter)
-- `202503` PolicyCenter (Las Leñas track for PC)
-- `202603` InsuranceSuite (Palisades — current as of 2026-05)
+- `202411` Las Leñas (ClaimCenter, BillingCenter)
+- `202503` Las Leñas (PC) / BillingCenter
+- `202603` InsuranceSuite cross-suite docs (Palisades-track, current as of 2026-05)
 
 **When citing a doc URL in the codebase, blueprint, or recordings,
 always use the versioned path.** Generic paths (e.g.
@@ -66,12 +84,83 @@ always use the versioned path.** Generic paths (e.g.
 | What | URL |
 |---|---|
 | Common typelist endpoint shape | <https://docs.guidewire.com/cloud/cc/202011/apiref/docs/specDocs/CommonAPI/typelists--typelist-> |
-| Per-suite typelist catalog | inside each `apiref/` page above |
+| Per-suite typelist catalog | inside each `apiref/` page above (Common API module per suite) |
 
 **Critical caveat (per `guidewire-api-archaeologist`):** typelists are
 extensible per customer. The base catalog is portable; carrier
 extensions are not. Profile `typelists.yaml` files in
 `profiles/<customer>/` map per-customer values.
+
+### Pagination query parameters (AUTHORITATIVE)
+
+| What | URL |
+|---|---|
+| Pagination parameters | <https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/query-parameters/c_the-pagination-query-parameters.html> |
+
+**Confirmed parameters (verified 2026-05-04 from the above URL):**
+
+- `pageSize` — limits the number of resources returned per page
+- `pageOffset` — specifies which page of resources to return
+- `totalCount` — returned in response to indicate total result set size
+- Navigation links: "previous" and "next" links in response for page traversal
+
+**These are AUTHORITATIVE, not practitioner knowledge.** The IS Consumer
+Guide's pagination page explicitly documents them. Implementors of
+`packages/guidewire-client/` can build the paginator now with high
+confidence; no sandbox needed for the parameter names.
+
+### Write safety — preventing duplicate database transactions (AUTHORITATIVE)
+
+| What | URL |
+|---|---|
+| Preventing duplicate DB transactions | <https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/request-headers/c_preventing-duplicate-database-transactions.html> |
+
+**Critical design note (verified 2026-05-04):**
+
+Guidewire Cloud API uses the **`GW-DBTransaction-ID`** request header to
+prevent duplicate database writes — NOT an `Idempotency-Key` header.
+
+Key behavioral difference from Stripe-style idempotency:
+- First call with a given `GW-DBTransaction-ID`: succeeds normally.
+- Subsequent calls with the **same** `GW-DBTransaction-ID`: **fail** with
+  `AlreadyExecutedException` — they do NOT replay the prior result.
+- The transaction ID must be globally unique across all clients, APIs, and
+  web services.
+
+**Implication for harness design:** The harness's own Postgres-backed
+`idempotency_keys` table is a client-side guard that prevents the harness
+from calling the same Guidewire endpoint twice for the same logical action.
+The `GW-DBTransaction-ID` header is a secondary server-side safety net for
+bypass scenarios. Both serve different purposes:
+
+1. Harness idempotency key: prevents re-invoking the side effect callback
+   at all (harness-layer replay short-circuit).
+2. `GW-DBTransaction-ID`: Guidewire-server-side rejection of repeated writes
+   (different semantic — fails rather than replays).
+
+Every `approved_execute` tool that writes to a Guidewire API MUST include a
+`GW-DBTransaction-ID` in its Cloud API call. The value should be derived from
+the harness's `idempotencyKey` or `planId` for traceability. Verify exact
+TTL and uniqueness scope at `guidewire-adj` sandbox landing.
+
+### BillingCenter Consumer Guide — key endpoint pages
+
+| What | URL |
+|---|---|
+| BC accounts querying (`/billing/v1/accounts`) | <https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/BillingCenter/billing/accounts/c_querying_for_accounts.html> |
+| BC payment instruments (`/billing/v1/accounts/{id}/payment-instruments`) | <https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/BillingCenter/billing/accounts/c_payment_instruments.html> |
+| BC commission plans (`/admin/v1/commission-plans`) | <https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/BillingCenter/plans/commission-plans/c_working-with-commission-plans.html> |
+
+**Confirmed path patterns (verified 2026-05-04):**
+
+- `/billing/v1/accounts` — AUTHORITATIVE (querying for accounts)
+- `/billing/v1/accounts/{accountId}/payment-instruments` — AUTHORITATIVE
+- `/admin/v1/commission-plans` — AUTHORITATIVE (NOT `/billing/v1/commission*`)
+- Commission sub-plans: `/admin/v1/commission-plans/{commissionPlanId}/commission-sub-plans`
+
+The PRD's `whats-my-commission-status` tool must use `/admin/v1/commission-plans`,
+not the `/billing/v1/commission*` path originally assumed. See audit
+finding F-PRD-012.
 
 ---
 
@@ -107,6 +196,20 @@ sub-pages on `developer.guidewire.com/...` paths still resolve.
 | Outbound integrations (Part 2) | <https://www.guidewire.com/resources/blog/developers/simplifying-outbound-integrations-in-insurancesuite-cloud-part-2> |
 | Cloud Integration Framework: tools | <https://www.guidewire.com/resources/blog/technology/cloud-integration-framework-the-right-tools-for-the-job> |
 
+**Confirmed quotes from the App Events overview (AUTHORITATIVE, verified 2026-05-04):**
+
+> "App Events makes it easy to publish events and full claim graph
+> snapshots from the InsuranceSuite apps to downstream systems."
+
+> "Events are delivered at least once."
+
+> "Events are safe-ordered by the primary object that they are
+> associated with."
+
+> Webhooks subscriptions and Integration Gateway Camel route subscriptions
+> are isolated — failures don't cascade. Consumers do not affect the
+> performance of InsuranceSuite.
+
 **Why this matters for our project:**
 
 - App Events Webhooks → maps directly onto our `events-mcp` (E6)
@@ -115,6 +218,8 @@ sub-pages on `developer.guidewire.com/...` paths still resolve.
   out-of-scope for our MCP (we don't replace IG; we coexist).
 - Per persona-7 finding (Anthropic / MCP architect), event ingestion
   belongs in infra, not MCP. App Events docs reinforce that decision.
+- Per-primary-object safe ordering confirms the `shard_by: primaryObject.id`
+  requirement in `events.yaml` profile config.
 
 ---
 
@@ -277,6 +382,7 @@ agent:
 ## Cross-references
 
 - Agent: [`.claude/agents/guidewire-reference-librarian.md`](../.claude/agents/guidewire-reference-librarian.md)
+- Citation audit: [`./blueprint/audits/00-LIBRARIAN-CITATION-AUDIT.md`](./blueprint/audits/00-LIBRARIAN-CITATION-AUDIT.md)
 - Sandbox application playbook: bead `guidewire-adj` ↔ GH issue [#1](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/1)
 - NO MOCKS rule: [`./blueprint/05-TECHNICAL-SPEC.md`](./blueprint/05-TECHNICAL-SPEC.md)
 - v4 architecture: [`./003-DR-ARCH-oss-cowork.md`](./003-DR-ARCH-oss-cowork.md)
