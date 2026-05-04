@@ -26,6 +26,7 @@
 |---|---|---|---|---|
 | E1 | Foundation — `mcp-runtime`, `schemas`, `auth`, `audit`, `client-sdk`, `observability` | `guidewire-4rd` | [#3](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/3) | MVP |
 | E2 | PolicyCenter MCP (read-only) | `guidewire-0qf` | [#4](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/4) | MVP |
+| E2.5 | Aggregate-query tools (underwriting manager tranche) | TBD | TBD | MVP |
 | E3 | Harness library + CLI | `guidewire-jpu` | [#5](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/5) | MVP |
 | E4 | Customer profile template + fork starter | `guidewire-86h` | [#6](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/6) | MVP |
 | E5 | Drafting tools | `guidewire-413` | [#7](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/7) | Buildout |
@@ -146,6 +147,67 @@ Architecture § L2, §04 Journeys § J-1 underwriter triage.
 **Memo inputs:** 007 § PolicyCenter authenticity (5/7 AUTHENTIC, 2
 PASSABLE) + 008 § per-customer-config-dependence spectrum + 006 §
 read-side audit emission rule.
+
+---
+
+## E2.5 — Aggregate-query tools (underwriting manager tranche)
+
+**Why this exists as its own sub-epic** (per [D-017](../004-DR-DEC-architecture-decisions.md#d-017--persona-9-underwriting-manager-tools-land-in-a-fresh-sub-epic-e25-not-e2-or-e5)):
+the 5 underwriting-manager tools introduced by [Persona 9](../002-DR-CRIT-personas.md)
++ [007-DR-MEMO § 4.6](../007-DR-MEMO-carrier-vocabulary.md) are a
+coherent capability tranche (loss-ratio / aggregate-exposure /
+declination-pattern queries) with one prerequisite the rest of E2
+doesn't share: **UWCenter sandbox breadth + aggregation API
+mappings**, both unknown until `guidewire-adj` (sandbox provisioning
+— [GH #1](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/1))
+closes. Bundling into E2 would bloat the first read-only cut from
+5-7 → 12 tools and force E2 to wait on the unknown prereq; deferring
+to E5 would mix `read_only` aggregate tools with `draft_only`
+drafting tools (confused governance shape). E2.5 keeps E2 fast and
+sequences the manager tools when the prereq lands.
+
+**Done when:**
+
+- 5 underwriting-manager tools shipping in `policycenter-mcp`,
+  all `read_only`, all backed by sandbox recordings:
+  - `whats-our-aggregate-on-this-class`
+  - `whats-our-loss-ratio-on-this-segment`
+  - `whats-our-declination-pattern-by-region`
+  - `find-similar-risks-we-declined`
+  - `whats-the-cycle-time-on-our-submissions`
+  (final names confirmed against the [`carrier-vocabulary-curator`](../../.claude/agents/carrier-vocabulary-curator.md)
+  agent before E2.5 opens — D-016 canonical-name discipline applies)
+- UWCenter aggregation endpoints mapped in
+  [`005-DR-REF`](../005-DR-REF-guidewire-public-resources.md) (or
+  flagged unverified per the citation discipline if still
+  sandbox-blocked at the time of the build)
+- `profiles/_template/lob.yaml` extended with aggregation-grouping
+  fields (LOB-rollup definitions, segment dimensions) needed by the
+  tools
+
+**Demo path:** an underwriting manager asks *"what's our aggregate
+on this builder's risk class?"* and gets a real-shape answer with
+audit trail and source-recording provenance.
+
+**Out of scope (deliberate):**
+
+- Anything `draft_only` or `approved_execute` (those are E5+)
+- Per-tool drill-down into individual submissions (those are E2's
+  per-submission tools — composable in the agent host's session
+  rather than sub-call from the aggregate tool)
+- Cross-suite aggregates (e.g. claim-side loss-ratio rollups — that's
+  E7 with its own aggregate tool surface)
+
+**Prereq gate:** `guidewire-adj` must be at least at "sandbox
+breadth confirmed for UWCenter aggregation surface" before this
+epic opens. If `guidewire-adj` closes with insufficient UWCenter
+breadth, E2.5 may slip behind E5/E6/E7 with no MVP impact.
+
+**Cross-references:**
+[D-017](../004-DR-DEC-architecture-decisions.md#d-017--persona-9-underwriting-manager-tools-land-in-a-fresh-sub-epic-e25-not-e2-or-e5),
+[02-PRD § 3.1.2](./02-PRD.md#312-policycenter-mcp--persona-9-underwriting-manager),
+[002-DR-CRIT-personas Persona 9](../002-DR-CRIT-personas.md),
+[007-DR-MEMO § 4.6](../007-DR-MEMO-carrier-vocabulary.md).
 
 ---
 
