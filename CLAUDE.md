@@ -171,6 +171,26 @@ guidewire/
 
 Public roadmap committed in `000-docs/blueprint/07-ROADMAP.md`.
 
+## Project-level specialist agents
+
+Five purpose-built specialists live in `.claude/agents/` (project-
+scoped, committed). They run in two modes — Phase 0 design memos
+(feed blueprint authoring) and GW-1.8 staffed-audit memos (review
+the finished blueprint).
+
+| Agent | Lane |
+|---|---|
+| [`mcp-safety-reviewer`](./.claude/agents/mcp-safety-reviewer.md) | Per-tool blast radius, three-mode design, refusal scenarios, harness gating |
+| [`carrier-vocabulary-curator`](./.claude/agents/carrier-vocabulary-curator.md) | Tool-name authenticity ("would an operator say this?") + missing carrier-vocabulary surface |
+| [`guidewire-api-archaeologist`](./.claude/agents/guidewire-api-archaeologist.md) | Cloud API mapping correctness, LOB/typelist/custom-entity assumptions, App Events vs polling |
+| [`harness-runtime-architect`](./.claude/agents/harness-runtime-architect.md) | Harness lib/CLI surface, plan/policy/approval/execute/audit/rollback semantics, hash-chain integrity |
+| [`guidewire-reference-librarian`](./.claude/agents/guidewire-reference-librarian.md) | Authoritative public Guidewire docs map; cites release-versioned URLs; primary substitute for sandbox-driven contract drafting until `guidewire-adj` closes |
+
+The librarian's knowledge base is
+[`000-docs/005-DR-REF-guidewire-public-resources.md`](./000-docs/005-DR-REF-guidewire-public-resources.md)
+(11 categories, every public Guidewire surface). Use it directly, or
+invoke the librarian for dynamic Q&A.
+
 ## Workflow
 
 ```bash
