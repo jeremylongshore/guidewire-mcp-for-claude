@@ -1,17 +1,15 @@
 name: Deploy Pages
 
-# Publishes the live architecture diagram to GitHub Pages.
+# Publishes the demo hub + per-project diagram pages to GitHub Pages.
 #
-# URL on success: https://jeremylongshore.github.io/guidewire-mcp-for-claude/
+# Custom domain: https://demo.intentsolutions.io/
+#   /                       → hub index (lists available diagrams)
+#   /guidewire-mcp/         → guidewire architecture diagram (this repo)
+#   /<future-project>/      → future demo (added by appending a card to the
+#                             hub's pages/index.html and a subdir under pages/)
 #
-# Triggers on push-to-main when either the static page or the diagram source
-# changes; can also be invoked manually via workflow_dispatch.
-#
-# One-time operator step (after this PR merges):
-#   Settings → Pages → Source: "GitHub Actions"
-# Or via gh CLI:
-#   gh api -X POST repos/jeremylongshore/guidewire-mcp-for-claude/pages \
-#     -f build_type=workflow
+# Triggers on push-to-main when the static pages or the diagram source change;
+# also workflow_dispatch for manual rebuilds.
 
 on:
   push:
@@ -41,13 +39,17 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
-          cp pages/index.html _site/index.html
-          cp pages/CNAME _site/CNAME
-          cp 000-docs/blueprint/09-DR-DIAG-architecture.mmd _site/09-DR-DIAG-architecture.mmd
-          # Future: copy any additional pages/* assets (favicons, css) here.
-          echo "Built site at _site/:"
-          ls -la _site/
-          echo "CNAME content:"
+          # 1. Hub index, CNAME, and any future top-level assets
+          cp -r pages/* _site/
+          # 2. Per-project diagram source(s) — each project's .mmd lives in
+          #    its repo's blueprint dir and is copied to the matching subdir.
+          cp 000-docs/blueprint/09-DR-DIAG-architecture.mmd \
+             _site/guidewire-mcp/09-DR-DIAG-architecture.mmd
+          # Future projects: add additional `cp <project>/.../diagram.mmd
+          # _site/<project-slug>/diagram.mmd` lines here.
+          echo "Built site:"
+          find _site -type f | sort
+          echo "CNAME:"
           cat _site/CNAME
 
       - name: Configure Pages
