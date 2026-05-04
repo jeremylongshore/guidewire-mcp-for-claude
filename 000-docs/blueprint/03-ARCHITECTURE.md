@@ -19,9 +19,14 @@
 
 ### 2. Layered model
 
-(Will be embedded — diagram lands in
-[`09-DR-DIAG-architecture.svg`](./09-DR-DIAG-architecture.md) via
-`/engineer-design-diagram` in **GW-1.4**.)
+The full architectural diagram (5 layers + 4 cross-cutting planes +
+cowork-fork relationship) lives at
+[`./09-DR-DIAG-architecture.md`](./09-DR-DIAG-architecture.md) — it
+renders inline on GitHub as a Mermaid block. The Mermaid source is
+[`./09-DR-DIAG-architecture.mmd`](./09-DR-DIAG-architecture.mmd).
+
+When this section lands content (GW-1.3), the diagram should embed
+inline below as well so contributors don't have to navigate away.
 
 Five layers, top-down:
 

@@ -57,3 +57,8 @@ otel-trace.json
 
 # AI tool sessions
 .claude/sessions/
+
+# Mermaid render artifacts (regenerable from .mmd source via mmdc)
+000-docs/blueprint/*.svg
+000-docs/blueprint/*.png
+000-docs/blueprint/*.pdf

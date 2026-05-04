@@ -1,0 +1,135 @@
+%% Guidewire MCP for Claude — System Architecture
+%% Source-of-truth diagram. Renders natively on GitHub (mermaid block in
+%% the embedding markdown) + as SVG via `mmdc -i 09-DR-DIAG-architecture.mmd
+%% -o 09-DR-DIAG-architecture.svg -t dark -b transparent`.
+%%
+%% Layers (top→bottom) + cross-cutting planes (right side).
+%% Planes attach via dotted arrows to make the data-flow vs governance
+%% distinction visible.
+
+flowchart TB
+    %% ─── Layer 1 — Agent host ──────────────────────────────────────
+    subgraph L1 ["L1 · Agent host"]
+        direction LR
+        AH["Claude Desktop · Claude Code · Cursor<br/>(MCP client)"]
+    end
+
+    %% ─── Layer 2 — MCP servers (per Guidewire suite) ──────────────
+    subgraph L2 ["L2 · MCP servers (per Guidewire suite)"]
+        direction LR
+        PC["policycenter-mcp<br/>(E2 read-only · E5 drafts)"]
+        CC["claimcenter-mcp<br/>(E7)"]
+        BC["billingcenter-mcp<br/>(E8)"]
+        PR["producer-mcp<br/>(E9 · MGA / broker)"]
+        EV["events-mcp<br/>(E6 · query-only)"]
+        PM["payments-mcp<br/>(E8 · separate, dual-control<br/>NOT in OSS demo)"]:::dashed
+    end
+
+    %% ─── Layer 3 — Harness (library + CLI, NOT an MCP server) ─────
+    subgraph L3 ["L3 · packages/harness (library + CLI · governance)"]
+        direction LR
+        HARN["plan → policy → approval → execute<br/>→ audit (hash-chain) → rollback hint<br/>→ evidence bundle (JSON)"]
+    end
+
+    %% ─── Layer 4 — Clients ────────────────────────────────────────
+    subgraph L4 ["L4 · Clients (HTTP + protocol mapping; no business logic)"]
+        direction LR
+        GWC["packages/guidewire-client<br/>(Cloud API)"]
+        SUITE_CL["clients/{policycenter,claimcenter,<br/>billingcenter}<br/>(per-suite wrappers)"]
+        VENDOR["clients/{one-inc, smart-comms, ...}<br/>(vendor wrappers)"]
+    end
+
+    %% ─── Layer 5 — Customer profiles ──────────────────────────────
+    subgraph L5 ["L5 · profiles/&lt;customer&gt;/ (config only · never code)"]
+        direction LR
+        PROF["auth · roles · lob · typelists<br/>custom-entities · field-aliases<br/>approval-matrix · pii-policy · events"]
+    end
+
+    %% ─── External — Guidewire Cloud + vendors ─────────────────────
+    GW_CLOUD[("Guidewire Cloud<br/>PolicyCenter / ClaimCenter /<br/>BillingCenter / Hub OAuth<br/>App Events")]:::external
+    VENDOR_API[("Vendor APIs<br/>(One Inc, Smart Comms, ...)")]:::external
+
+    %% ─── Cross-cutting plane — Audit ──────────────────────────────
+    subgraph PLANE_AUDIT ["Audit plane"]
+        direction TB
+        AUD_DB[("Postgres<br/>linear hash-chain · per-tenant")]
+        AUD_BUNDLE["Evidence bundle export<br/>(JSON · reproducible from trace_id)"]
+    end
+
+    %% ─── Cross-cutting plane — Observability ──────────────────────
+    subgraph PLANE_OBS ["Observability plane"]
+        direction TB
+        OTEL["OpenTelemetry collector<br/>(user-configured endpoint)"]
+        PINO["pino → user log sink<br/>(stdout JSON)"]
+        SENTRY["Sentry<br/>(typed AppError → bead via bd-sync)"]
+    end
+
+    %% ─── Cross-cutting plane — Events ─────────────────────────────
+    subgraph PLANE_EVENTS ["Events plane"]
+        direction LR
+        WEBHOOK["Webhook receiver"]
+        QUEUE["BullMQ on Redis<br/>(sharded by primaryObject.id)"]
+    end
+
+    %% ─── Cross-cutting plane — Auth ───────────────────────────────
+    subgraph PLANE_AUTH ["Auth plane"]
+        direction TB
+        OAUTH["Guidewire Hub OAuth<br/>(per-tenant client + secret · SOPS)"]
+        JWT["JWT propagation<br/>(actor_id · scopes)"]
+    end
+
+    %% ─── Cowork-fork relationship ─────────────────────────────────
+    subgraph FORKS ["Cowork-fork derivatives (one master · N forks)"]
+        direction LR
+        FLATBED["flatbed-mcp<br/>(trucking · Jeremy)"]:::fork
+        MLS["mls-mcp<br/>(real estate)"]:::fork
+        FLOOR["floor-mcp<br/>(restaurant ops)"]:::fork
+        DOTS["..."]:::fork
+    end
+
+    %% ─── Synchronous data-plane edges ─────────────────────────────
+    AH ==>|MCP / stdio · HTTP| PC & CC & BC & PR & EV
+    AH -. "(opt-in, mature deployments)" .-> PM
+    PC & CC & BC & PR & EV ==> HARN
+    PM -. dashed .-> HARN
+    HARN ==> GWC & SUITE_CL & VENDOR
+    HARN ==> PROF
+    GWC ==> GW_CLOUD
+    SUITE_CL ==> GW_CLOUD
+    VENDOR ==> VENDOR_API
+
+    %% ─── Async events plane (right-side, dotted) ──────────────────
+    GW_CLOUD -. App Events .-> WEBHOOK
+    WEBHOOK ==> QUEUE
+    QUEUE -. shard by primaryObject.id .-> CC & BC & PC
+    QUEUE -. query / replay .-> EV
+
+    %% ─── Audit + observability fan-in (governance, dotted) ────────
+    HARN -. audit · hash-chain .-> AUD_DB
+    HARN -. evidence bundle .-> AUD_BUNDLE
+    PC & CC & BC & PR & EV & HARN -. spans · logs · errors .-> OTEL
+    PC & CC & BC & PR & EV & HARN -. structured logs .-> PINO
+    PC & CC & BC & PR & EV & HARN -. AppError .-> SENTRY
+
+    %% ─── Auth ──────────────────────────────────────────────────────
+    OAUTH -. token .-> HARN
+    HARN -. JWT .-> GWC & SUITE_CL & VENDOR
+
+    %% ─── Cowork-fork relationship ─────────────────────────────────
+    L1 -. "templates/cowork-fork-starter +<br/>pnpm guidewire init &lt;domain&gt;" .-> FORKS
+
+    %% ─── Styling ──────────────────────────────────────────────────
+    classDef external fill:#1a1a2e,stroke:#9d4edd,color:#e0e0ff
+    classDef dashed fill:#1a1a2e,stroke:#ff6b6b,stroke-dasharray:5 5,color:#ffd0d0
+    classDef fork fill:#0f1f0f,stroke:#52b788,color:#d0ffd0,stroke-dasharray:3 3
+
+    style L1 fill:#0d1b2a,stroke:#1b9aaa,color:#e0e0ff
+    style L2 fill:#0d1b2a,stroke:#1b9aaa,color:#e0e0ff
+    style L3 fill:#1a0d2a,stroke:#9d4edd,color:#e0e0ff
+    style L4 fill:#0d1b2a,stroke:#1b9aaa,color:#e0e0ff
+    style L5 fill:#1a1a0d,stroke:#f9c74f,color:#fffde0
+    style PLANE_AUDIT fill:#2a0d0d,stroke:#e76f51,color:#ffe0d0
+    style PLANE_OBS fill:#0d2a1a,stroke:#52b788,color:#d0ffd0
+    style PLANE_EVENTS fill:#0d2a2a,stroke:#76c893,color:#d0fff0
+    style PLANE_AUTH fill:#2a1a0d,stroke:#f9844a,color:#ffe0d0
+    style FORKS fill:#0a1a0a,stroke:#52b788,color:#d0ffd0
