@@ -11,7 +11,7 @@ ClaimCenter, BillingCenter, plus the producer / events / payments
 surfaces around them.
 **Owner:** Jeremy Longshore — Intent Solutions IO
 **Status:** Blueprint authoring in flight (GW-1.x)
-**Marketplace target:** [`claude-code-plugins-plus`](https://github.com/jeremylongshore/claude-code-plugins-plus)
+**Marketplace target:** [`claude-code-plugins-plus-skills`](https://github.com/jeremylongshore/claude-code-plugins-plus-skills)
 **Last updated:** 2026-05-04
 
 ---
@@ -23,7 +23,7 @@ servers + a governance harness for Guidewire estates. **Works with
 the Guidewire InsuranceSuite** (PolicyCenter, ClaimCenter,
 BillingCenter, plus producer / events / payments surfaces). Built
 Claude/Anthropic-first. Targets the
-[`claude-code-plugins-plus`](https://github.com/jeremylongshore/claude-code-plugins-plus)
+[`claude-code-plugins-plus-skills`](https://github.com/jeremylongshore/claude-code-plugins-plus-skills)
 marketplace for distribution.
 
 **Why it exists.** Underwriters, claims operators, and billing teams
@@ -137,7 +137,7 @@ Initial mirror (2026-05-04):
 | `guidewire-zgu` | [#10](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/10) | [E8] BillingCenter + Payments |
 | `guidewire-2ha` | [#11](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/11) | [E9] Producer-side MCP |
 | `guidewire-dua` | [#12](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/12) | [E10] Onboarding + certification |
-| `guidewire-qqx` | [#14](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/14) | [E11+] Publish to `claude-code-plugins-plus` marketplace |
+| `guidewire-qqx` | [#14](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/14) | [E11+] Publish to `claude-code-plugins-plus-skills` marketplace |
 
 Operating discipline: every `bd note` / `bd close` uses `bd-sync` so
 updates fan out across all layers. PRs use `Refs #N` while children
@@ -189,4 +189,5 @@ paperwork set is reviewed by an 11-auditor staffed panel. See
 target files, and gate criteria. E1 (`guidewire-4rd` / GH #3) is
 **blocked** until all FAILs are resolved or accepted in
 [`./audits/00-AUDIT-RESPONSES.md`](./audits/00-AUDIT-RESPONSES.md)
-(filed in GW-1.9).
+(this file lands when GW-1.9 closes; until then see
+[`./audits/README.md`](./audits/README.md) for the gate criteria).

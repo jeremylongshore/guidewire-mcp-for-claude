@@ -4,7 +4,7 @@
 > ClaimCenter, BillingCenter, etc.). Carrier-native MCP servers +
 > governance harness for Guidewire estates. Built
 > Claude/Anthropic-first. Will publish to the
-> [`claude-code-plugins-plus`](https://github.com/jeremylongshore/claude-code-plugins-plus)
+> [`claude-code-plugins-plus-skills`](https://github.com/jeremylongshore/claude-code-plugins-plus-skills)
 > marketplace.
 
 **Status:** Master blueprint paperwork in flight. Code lands once the
@@ -52,6 +52,11 @@ bd list --type=feature
 | E10 | Onboarding + certification CLI | planned |
 
 ## Hard rules
+
+These rules are **codified now, enforced when E1 lands**. Until E1
+introduces `packages/`, `servers/`, and CI/CD, the rules are policy
+— not yet machine-enforced. From E1 onward the `audit-harness` and
+architecture rules in CI fail any change that violates them.
 
 This isn't a fixture-toy. From day 1:
 

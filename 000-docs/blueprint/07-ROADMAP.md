@@ -23,7 +23,7 @@
 | E8 | BillingCenter + Payments (separate `payments-mcp`) | `guidewire-zgu` | [#10](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/10) | Buildout |
 | E9 | Producer-side MCP — MGA / broker scope | `guidewire-2ha` | [#11](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/11) | Buildout |
 | E10 | Onboarding + certification CLI | `guidewire-dua` | [#12](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/12) | Buildout |
-| E11+ | Publish to `claude-code-plugins-plus` marketplace (plugin manifest, schema validator, marketplace README) | `guidewire-qqx` | [#14](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/14) | Distribution |
+| E11+ | Publish to `claude-code-plugins-plus-skills` marketplace (plugin manifest, schema validator, marketplace README) | `guidewire-qqx` | [#14](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/14) | Distribution |
 
 Plus the Phase 0 prereqs:
 
