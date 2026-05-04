@@ -83,7 +83,7 @@ downloads).
 | [`06-STATUS.md`](./06-STATUS.md) | Live status (auto-updates from beads) | skeleton | GW-1.7 | — |
 | [`07-ROADMAP.md`](./07-ROADMAP.md) | 10 epics with exit criteria + cowork tie-ins (source of truth) | skeleton | GW-1.6 | — |
 | [`08-COWORK-CURRICULUM.md`](./08-COWORK-CURRICULUM.md) | How epics map to cowork sessions / fork-starter docs | skeleton | GW-1.6 | — |
-| [`09-DR-DIAG-architecture.{svg,mmd}`](./09-DR-DIAG-architecture.md) | Architectural diagram (placeholder; final via `/engineer-design-diagram`) | placeholder | GW-1.4 | — |
+| [`09-DR-DIAG-architecture.{md,mmd}`](./09-DR-DIAG-architecture.md) | Architectural diagram — 5 layers + 4 cross-cutting planes + cowork-fork relationship; renders inline as Mermaid on GitHub | landed | GW-1.4 | (this PR) |
 | [`10-AAR/`](./10-AAR/) | Per-epic after-action reports | scaffolded | each Ex closure | — |
 | [`audits/`](./audits/) | Staffed 11-auditor review memos + responses | scaffolded | GW-1.8, GW-1.9 | — |
 
