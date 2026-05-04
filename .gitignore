@@ -1,5 +1,59 @@
-
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db
 .beads-credential-key
+
+# Node / pnpm
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript / build outputs
+dist/
+build/
+*.tsbuildinfo
+.tsbuildinfo
+coverage/
+.nyc_output/
+
+# Test / mutation outputs
+.vitest-cache/
+stryker-tmp/
+reports/
+
+# Env / secrets — plaintext only; *.sops.* IS committed
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+!age.key.pub
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Audit harness runtime state (committed: .harness-hash; ignored: caches)
+.audit-harness/cache/
+
+# OpenTelemetry / debug captures
+otel-trace.json
+.otel/
+
+# AI tool sessions
+.claude/sessions/
