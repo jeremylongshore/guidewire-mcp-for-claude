@@ -1,296 +1,180 @@
-# CLAUDE.md — Guidewire MCP for Claude
+# CLAUDE.md
 
-This file provides guidance to Claude Code when working in this repo.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## What This Is
+## What this is
 
-**Guidewire MCP for Claude** — public OSS repo at
-`github.com/jeremylongshore/guidewire-mcp-for-claude`. Carrier-native
-MCP servers + governance harness for Guidewire estates, designed
-Claude/Anthropic-first.
+**Guidewire MCP for Claude** — a Claude Code plugin (`/plugin install
+jeremylongshore/guidewire-mcp-for-claude`) + carrier-native MCP server
+for the Guidewire **InsuranceSuite** (PolicyCenter, ClaimCenter,
+BillingCenter). v0.1.0 ships **read-only PolicyCenter** with 5
+carrier-vocabulary tools. Live architecture diagram:
+[guidewire-mcp.intentsolutions.io](https://guidewire-mcp.intentsolutions.io/).
 
-**Works with the Guidewire InsuranceSuite**: PolicyCenter (E2),
-ClaimCenter (E7), BillingCenter (E8), plus the producer / events /
-payments surfaces around them.
+The thesis: tool names are operator questions
+(`find-submissions-waiting-on-me`), never API verbs (`search_policies`).
+A governance harness gates all writes via plan → policy → approval →
+execute → audit → rollback (E3, planned). The audit hash-chain + the
+carrier vocabulary are the durable moats.
 
-**Marketplace target:** `claude-code-plugins-plus-skills` — this repo will
-eventually be packaged for the marketplace. Plugin manifest +
-marketplace conventions land in a dedicated epic
-(`guidewire-mkt`, see roadmap).
+## Build / test / run
 
-Local dir kept short as `guidewire/`; full name lives in the repo
-identity.
+pnpm workspace, Node 22 LTS, TypeScript 5.5+, Vitest, Biome (single
+linter+formatter, no ESLint+Prettier).
 
-## Why This Exists
-
-OSS lead magnet for custom carrier / MGA / SI build engagements. The
-repo is a credibility artifact, not a complete product. README +
-ROADMAP credibility matters more than end-to-end completeness.
-
-Audiences (priority order):
-1. Confirmed inbound (2 unprompted contacts as of 2026-05-04) +
-   future carrier / MGA / SI inbound — primary economic driver
-2. Anthropic Enterprise + SI partner credibility
-3. Cowork cohort (Claude Code & Cowork Accelerator) using as template
-   + curriculum
-4. Broad OSS reach (stars, forks, npm)
-
-## Hard Rules (these don't bend)
-
-> **Status:** these rules are **codified now, enforced when E1 lands.**
-> Until E1 introduces `packages/`, `servers/`, and CI/CD, the rules
-> are policy — not yet machine-enforced. From E1 onward, the
-> `audit-harness` + architecture rules in CI fail any change that
-> violates them.
-
-1. **Blueprint-first.** No code in `servers/` / `packages/` until the
-   master blueprint at `000-docs/blueprint/` exists, the staffed audit
-   panel has filed memos, and FAILs are resolved or accepted in
-   `000-docs/blueprint/audits/00-AUDIT-RESPONSES.md` (this file lands
-   when GW-1.9 closes — see
-   [`audits/README.md`](./000-docs/blueprint/audits/README.md) for
-   the gate criteria).
-
-2. **Carrier-vocabulary tools, not API verbs.** Tool names underwriters
-   / claims / billing operators actually say. `find-submissions-waiting-on-me`
-   not `search_policies`. Reject API-shaped names at PR review.
-
-3. **NO MOCKS.** No hand-written `fixtures/` JSON. The OSS does NOT
-   ship a Jeremy-controlled sandbox tenant (per [D-021](./000-docs/004-DR-DEC-architecture-decisions.md#d-021--no-jeremy-provisioned-sandbox-oss-pivots-to-inbound-brings-their-own-tenant-model)).
-   First integration engagement (carrier / SI / MGA inbound) brings
-   their own Guidewire Cloud tenant credentials — that's the
-   validation environment. Where end-to-end testing happens against
-   that tenant, `tests/recordings/` holds HTTP recordings captured
-   with provenance. Until that engagement opens, design is grounded
-   in **public Guidewire docs only** via the
-   `guidewire-reference-librarian` KB.
-
-4. **Three execution modes per tool**: `read_only`, `draft_only`,
-   `approved_execute`. Selected per-tool via customer profile. No
-   audit = no write. No policy decision = no write. No idempotency
-   key = no write.
-
-5. **Harness governs writes.** Plan → policy gate → human approval →
-   execute → audit trail (hash-chain) → rollback hint. Harness is a
-   library + CLI, NOT an MCP server (recursive + breaks tool
-   selection).
-
-6. **Observability from day 1.** OpenTelemetry tracing + pino
-   structured logs + Sentry error capture. Every public function in
-   `servers/*` and `packages/harness/` opens a span. Architecture
-   rules enforce this in CI.
-
-7. **Enforcement travels with the code.** `@intentsolutions/audit-harness`
-   installed as dev dep; CI calls `pnpm exec audit-harness …` — never
-   `~/.claude/` paths. Hash-pin policy via `audit-harness init` after
-   any policy edit.
-
-8. **Beads for ALL task tracking.** Never TodoWrite / TaskCreate /
-   markdown TODO. Every bead carries a `Blueprint:` reference to the
-   relevant `000-docs/blueprint/` section.
-
-## Stack
-
-| Layer | Choice |
-|---|---|
-| Language | TypeScript 5.5+ on Node 22 LTS |
-| Package manager | pnpm with workspaces |
-| MCP | `@modelcontextprotocol/sdk` (official TS) |
-| Schemas | Zod |
-| HTTP | undici (native) |
-| Tests | Vitest |
-| Lint/format | Biome (single tool, no ESLint+Prettier) |
-| Build | tsup (lib), tsx (dev) |
-| Auth | openid-client (Guidewire Hub OAuth) |
-| Queue | BullMQ on Redis (dev) → Cloud Tasks / SQS (prod) |
-| Audit store | Postgres + hash-chain |
-| Secrets | SOPS + age (per IS standard) |
-| Observability | OpenTelemetry + pino + Sentry |
-| Container | Docker |
-| Deploy | Cloud Run (TS-friendly serverless) |
-| IaC | OpenTofu |
-
-**Don't use Express/Fastify** for MCP servers — use the SDK's stdio +
-HTTP transports directly.
-
-## Repo Layout (planned, lands incrementally)
-
-```
-guidewire/
-├── 000-docs/blueprint/        # Master paperwork (lands FIRST, before any code)
-│   ├── 00-MASTER-BLUEPRINT.md
-│   ├── 01-BUSINESS-CASE.md
-│   ├── 02-PRD.md
-│   ├── 03-ARCHITECTURE.md
-│   ├── 04-USER-JOURNEY.md
-│   ├── 05-TECHNICAL-SPEC.md
-│   ├── 06-STATUS.md
-│   ├── 07-ROADMAP.md
-│   ├── 08-COWORK-CURRICULUM.md
-│   ├── 09-DR-DIAG-architecture.{svg,mmd}
-│   ├── 10-AAR/                # Per-epic after-action reports
-│   └── audits/                # Staffed audit panel memos (11 auditors)
-├── servers/
-│   ├── policycenter-mcp/      # E2 (read-only first)
-│   ├── claimcenter-mcp/       # E7
-│   ├── billingcenter-mcp/     # E8
-│   ├── producer-mcp/          # E9
-│   └── events-mcp/            # E6 (query-only)
-├── packages/
-│   ├── harness/               # E3 — library + CLI, NOT an MCP server
-│   ├── observability/         # E1 — OTel + pino + Sentry factory
-│   ├── guidewire-client/      # Cloud API client
-│   ├── auth/                  # E1
-│   ├── audit/                 # E1
-│   └── schemas/               # Zod schemas, shared
-├── clients/                   # Vendor wrappers (One Inc, etc.)
-├── profiles/                  # Per-customer config (auth, roles, LOB
-│   ├── _template/             #   mappings, typelists, custom entities,
-│   └── ...                    #   field aliases, approval matrix, PII)
-├── templates/
-│   └── cowork-fork-starter/   # E4 — `pnpm guidewire init <domain>`
-├── tests/
-│   ├── recordings/            # Real Guidewire sandbox HTTP recordings
-│   ├── TESTING.md             # Coverage/mutation/CRAP/arch policy
-│   └── ...
-└── infra/
-    ├── docker/
-    ├── cloud-run/
-    └── tofu/
+```bash
+pnpm install                                    # prepare hook builds all workspaces
+pnpm -r build                                   # rebuild all 7 workspaces (6 packages + 1 server)
+pnpm -r test                                    # 54 tests across all workspaces
+pnpm --filter @intentsolutions/guidewire-audit test                            # single workspace
+pnpm --filter @intentsolutions/guidewire-audit test -- audit-store.test.ts     # single test file
+pnpm typecheck                                  # tsc --noEmit across all workspaces
+pnpm lint                                       # biome check .
+pnpm format                                     # biome format --write .
+pnpm smoke-reach                                # ping librarian-cataloged Cloud endpoints with dev-tier creds
+node servers/policycenter-mcp/dist/cli.js                              # boot with in-memory default profile
+node servers/policycenter-mcp/dist/cli.js --profile profiles/oss-demo  # boot with on-disk profile
 ```
 
-## 11-Epic Public Roadmap
+The `prepare` script (`pnpm -r build || true` in root `package.json`)
+fires on every `pnpm install` so plugin-install end-users get a built
+`dist/` automatically. `dist/` is gitignored; CI rebuilds in workflows.
 
-| Epic | Title |
-|---|---|
-| E1 | Foundation (mcp-runtime, schemas, auth, audit, client-sdk, observability) |
-| E2 | PolicyCenter MCP (read-only) — 5-7 carrier-vocabulary tools |
-| E2.5 | Aggregate-query tools (underwriting manager tranche, per D-017) |
-| E3 | Harness library + CLI (plan / approve / execute / audit / rollback) |
-| E4 | Customer profile template + cowork fork starter |
-| E5 | Core writes — drafting tools (`draft-referral-note`, `draft-endorsement`) |
-| E6 | Workflow + Events (webhook receiver + queue + events-mcp query) |
-| E7 | ClaimCenter MCP |
-| E8 | BillingCenter + Payments (separate `payments-mcp` with dual control) |
-| E9 | Producer-side MCP (MGA / broker scope) |
-| E10 | Onboarding + certification CLI |
-| E11+ | Publish to `claude-code-plugins-plus-skills` marketplace |
+## Architecture big-picture
 
-Public roadmap committed in `000-docs/blueprint/07-ROADMAP.md`.
+**5 layers, top to bottom** (the live diagram visualizes this):
 
-## Project-level specialist agents
+1. **Agent host** — Claude Code, Claude Desktop, Anthropic API
+2. **MCP servers** — `servers/<suite>-mcp/` (only `policycenter-mcp`
+   built; claimcenter / billingcenter / producer / events planned)
+3. **Harness** — `packages/harness/` (E3, planned). Gates writes.
+   Library + CLI, **NOT an MCP server** (recursion + tool-selection problem).
+4. **E1 foundation packages** (all built; `packages/`):
+   - `@intentsolutions/guidewire-schemas` — Zod schemas + TS contracts
+   - `@intentsolutions/guidewire-observability` — OTel + pino + Sentry factory
+   - `@intentsolutions/guidewire-auth` — Hub OAuth + JWT propagation
+   - `@intentsolutions/guidewire-audit` — Postgres + hash-chain audit store
+   - `@intentsolutions/guidewire-client` — undici Cloud API client with
+     two-key idempotency (harness `gwh1:` cache key + Guidewire
+     `GW-DBTransaction-ID` wire header — never reuse the same value)
+   - `@intentsolutions/guidewire-mcp-runtime` — MCP SDK wrapper
+5. **External** — Guidewire Cloud API, Hub OAuth, Postgres (audit chain),
+   OTLP collector + Sentry
 
-Five purpose-built specialists live in `.claude/agents/` (project-
-scoped, committed). They run in two modes — Phase 0 design memos
-(feed blueprint authoring) and GW-1.8 staffed-audit memos (review
-the finished blueprint).
+**Profile system** (loader + scaffold landed; full per-tenant story is E4):
 
-| Agent | Lane |
-|---|---|
-| [`mcp-safety-reviewer`](./.claude/agents/mcp-safety-reviewer.md) | Per-tool blast radius, three-mode design, refusal scenarios, harness gating |
-| [`carrier-vocabulary-curator`](./.claude/agents/carrier-vocabulary-curator.md) | Tool-name authenticity ("would an operator say this?") + missing carrier-vocabulary surface |
-| [`guidewire-api-archaeologist`](./.claude/agents/guidewire-api-archaeologist.md) | Cloud API mapping correctness, LOB/typelist/custom-entity assumptions, App Events vs polling |
-| [`harness-runtime-architect`](./.claude/agents/harness-runtime-architect.md) | Harness lib/CLI surface, plan/policy/approval/execute/audit/rollback semantics, hash-chain integrity |
-| [`guidewire-reference-librarian`](./.claude/agents/guidewire-reference-librarian.md) | Authoritative public Guidewire docs map; cites release-versioned URLs; **the OSS substitute for sandbox-driven contract drafting** (per [D-021](./000-docs/004-DR-DEC-architecture-decisions.md#d-021--no-jeremy-provisioned-sandbox-oss-pivots-to-inbound-brings-their-own-tenant-model) the OSS has no Jeremy-controlled sandbox; first integration engagement brings their own tenant) |
+- **Plug-and-play default**: `createDefaultProfile()` in
+  `servers/policycenter-mcp/src/profile.ts` returns an in-memory
+  profile covering all 5 v0.1.0 read-only tools. **Zero YAML editing
+  required for the 80% case.** This is what the Claude Code plugin
+  install uses.
+- **Per-tenant override**: `loadProfile(path)` reads 9 YAMLs from
+  `profiles/<tenant>/` (auth, roles, lob, typelists, custom-entities,
+  field-aliases, approval-matrix, pii-policy, events; per PRD § 6.1-6.9),
+  validates each via Zod schemas in `packages/schemas/src/profile/`.
+  Customers copy `profiles/_template/` → `profiles/<their-tenant>/`,
+  edit, run with `--profile <path>`.
+- `profiles/oss-demo/` is a fully-populated reference. Read-only — never
+  the production path.
 
-The librarian's knowledge base is
-[`000-docs/005-DR-REF-guidewire-public-resources.md`](./000-docs/005-DR-REF-guidewire-public-resources.md)
-(11 categories, every public Guidewire surface). Use it directly, or
-invoke the librarian for dynamic Q&A.
+**Three execution modes per tool** (selected per-tool via profile):
+`read_only` (E2 ships these), `draft_only` (E5), `approved_execute`
+(E3 + harness). The harness is the only path to writes — depcruise
++ AST rules in CI prevent server code from importing
+`packages/guidewire-client` write methods except inside an
+`execute()` callback.
 
-## Source-doc citation discipline (MANDATORY for every authoring bead)
+## Hard rules
 
-**Any claim about Cloud API endpoints, request/response syntax,
-typelist values, LOB codes, custom-entity shape, App Events,
-Integration Gateway, Cloud Console, Hub OAuth flows, GT Framework,
-or any other Guidewire technical surface MUST cite an authoritative
-public reference** — typically a release-versioned URL from
-[`000-docs/005-DR-REF-guidewire-public-resources.md`](./000-docs/005-DR-REF-guidewire-public-resources.md).
+These travel with the code; CI workflows in `.github/workflows/`
+enforce what's enforceable.
 
-When opening any blueprint authoring bead (GW-1.3 architecture,
-GW-1.5 user journeys, GW-1.10 testing, etc.) or when drafting tool
-schemas / profile YAMLs / contract recordings, the workflow is:
-
-1. **Before writing the API/integration claim:** consult the
-   `guidewire-reference-librarian` agent OR read
-   `005-DR-REF-guidewire-public-resources.md` directly to find the
-   authoritative source.
-2. **If a public source exists:** cite it inline (release-versioned
-   URL preferred — e.g., "Palisades Cloud API reference §
-   /policy/v1/policies").
-3. **If no public source exists:** explicitly mark the claim as
-   `(unverified — practitioner knowledge from public docs; first
-   integration engagement validates)` so the GW-1.8 staffed audit
-   + post-blueprint `/validate-consistency` red-team panel know
-   what's load-bearing on assumption vs. citation. Per [D-021](./000-docs/004-DR-DEC-architecture-decisions.md#d-021--no-jeremy-provisioned-sandbox-oss-pivots-to-inbound-brings-their-own-tenant-model)
-   there is no Jeremy-controlled sandbox to confirm against; first
-   inbound engagement provides the validation tenant.
-4. **Never invent endpoint shapes, typelist names, or syntax.** If
-   the librarian KB has a gap, the librarian agent's job is to
-   fill it (research + add to the KB) — not the authoring agent's
-   job to guess.
-
-**Enforcement:** every PR that touches `000-docs/blueprint/` or
-adds `servers/` / `packages/` code must pass a librarian
-citation-coverage check before merge. The check is:
-> "Every API/integration/syntax claim in the diff is either (a)
-> backed by a `005-DR-REF` citation, or (b) explicitly marked
-> `(unverified — sandbox-confirm)`."
-
-This rule is **non-negotiable** because the OSS repo's credibility
-artifact value to inbound carrier / SI / MGA reviewers depends
-entirely on the technical content being grounded in real published
-Guidewire surfaces. Drift here kills the lead-magnet thesis.
+1. **Carrier-vocabulary tool names.** Tool names are the question an
+   operator would actually ask. Reject API-shaped names (`search_*`,
+   `list_*`, `get_*`) at PR review.
+2. **NO MOCKS.** Real Guidewire Cloud endpoints from day one. No
+   hand-written `fixtures/`. `tests/recordings/` holds HTTP recordings
+   captured from real dev-tier sandbox calls with provenance metadata.
+   Per [D-008](./000-docs/004-DR-DEC-architecture-decisions.md) +
+   [D-021](./000-docs/004-DR-DEC-architecture-decisions.md#d-021).
+3. **No write without audit, policy, idempotency.** Hash-chained
+   audit per tenant; tamper-resistant via three Postgres roles
+   (writer / reader / verifier) per
+   [D-019](./000-docs/004-DR-DEC-architecture-decisions.md#d-019).
+   E1 ships a testcontainers test asserting `audit_writer` cannot
+   `UPDATE` / `DELETE` (per audit-response triage AR-7 in
+   [`audits/00-AUDIT-RESPONSES.md`](./000-docs/blueprint/audits/00-AUDIT-RESPONSES.md)).
+4. **Observability from line 1.** Every public function in
+   `servers/*` and `packages/harness/` opens a span. Every `throw`
+   uses a typed `AppError` in `packages/observability/`. CI fails on
+   raw `console.log` in production code paths.
+5. **Source-doc citation discipline.** Every claim about Cloud API
+   endpoints, typelist values, LOB codes, custom-entity shape, App
+   Events, or any Guidewire technical surface must cite an
+   authoritative public reference (typically a release-versioned URL
+   from
+   [`000-docs/005-DR-REF-guidewire-public-resources.md`](./000-docs/005-DR-REF-guidewire-public-resources.md))
+   OR explicitly mark the claim `(unverified — practitioner knowledge
+   from public docs; first integration engagement validates)`. Never
+   invent endpoint shapes or syntax.
+6. **Beads for ALL task tracking.** Never `TodoWrite`,
+   `TaskCreate`, or markdown TODO. Each bead carries a `Blueprint:`
+   reference to the relevant `000-docs/blueprint/` section.
 
 ## Workflow
 
 ```bash
-bd ready              # Find available work
-bd show <id>          # Read issue + blueprint reference
-bd update <id> --claim
-# work on a feature branch
-bd close <id> -r "evidence"
+bd ready                                   # find available work
+bd update <id> --status=in_progress
+git checkout -b <type>/<short-description>
+# work
+bd close <id> -r "evidence" && git add ... && git commit ... && git push -u origin <branch>
+gh pr create --title "..." --body "..."
+gh pr merge <N> --squash --auto --delete-branch     # auto-merges after Gemini review + checks
 ```
 
-Every bead's notes carry `Blueprint:` reference to the relevant
-section so post-compaction `bd show <id>` rehydrates context without
-grep.
+**Gemini Code Assist** is the required external review for every PR.
+Branch protection on `main` requires Gemini pass + 1 human approval.
+Never merge before Gemini completes.
 
-## Pre-Plan Discipline
+**5 specialist agents** in [`.claude/agents/`](./.claude/agents/) (project-scoped)
+auto-review designs:
+[`mcp-safety-reviewer`](./.claude/agents/mcp-safety-reviewer.md),
+[`carrier-vocabulary-curator`](./.claude/agents/carrier-vocabulary-curator.md),
+[`guidewire-api-archaeologist`](./.claude/agents/guidewire-api-archaeologist.md),
+[`harness-runtime-architect`](./.claude/agents/harness-runtime-architect.md),
+[`guidewire-reference-librarian`](./.claude/agents/guidewire-reference-librarian.md).
+Spawn the librarian before drafting any tool / profile / recording
+that asserts a Cloud API shape — it consults the public-docs KB and
+flags `unverified` gaps.
 
-PRs and commits are pre-planned per blueprint section. Each blueprint
-section maps to one bead with a stable branch name + pre-stated
-commit list + pre-stated PR title. See
-`000-docs/blueprint/00-MASTER-BLUEPRINT.md` for the table.
+## Where to look (canonical sources of truth)
 
-## Gemini PR Review
+| Topic | File |
+|---|---|
+| Architectural decisions D-001..D-021 | [`000-docs/004-DR-DEC-architecture-decisions.md`](./000-docs/004-DR-DEC-architecture-decisions.md) |
+| Public Guidewire docs map | [`000-docs/005-DR-REF-guidewire-public-resources.md`](./000-docs/005-DR-REF-guidewire-public-resources.md) |
+| Profile schema (9 YAMLs) | [`000-docs/blueprint/02-PRD.md`](./000-docs/blueprint/02-PRD.md) § 6.1-6.9 |
+| Per-tool spec (5 v0.1.0 tools) | [`000-docs/blueprint/02-PRD.md`](./000-docs/blueprint/02-PRD.md) § 3 + § 4 |
+| Operator user journeys | [`000-docs/blueprint/04-USER-JOURNEY.md`](./000-docs/blueprint/04-USER-JOURNEY.md) |
+| Stack + observability + quality gates | [`000-docs/blueprint/05-TECHNICAL-SPEC.md`](./000-docs/blueprint/05-TECHNICAL-SPEC.md) |
+| 11-epic public roadmap | [`000-docs/blueprint/07-ROADMAP.md`](./000-docs/blueprint/07-ROADMAP.md) |
+| 11-auditor staffed panel + response register | [`000-docs/blueprint/audits/`](./000-docs/blueprint/audits/) |
+| Audit response triage state | [`000-docs/blueprint/audits/00-AUDIT-RESPONSES.md`](./000-docs/blueprint/audits/00-AUDIT-RESPONSES.md) (Themes 2 + 3 closed; Themes 1 + 4 remain) |
 
-Gemini Code Assist GitHub App is the required external review for
-every PR. Branch protection on `main` requires Gemini review pass +
-1 human approval. Never merge before Gemini completes (per global
-feedback memory).
+## Plugin / installation surface
 
-## NO MOCKS — dev-tier credentials + real endpoints
-
-Per [D-021](./000-docs/004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints).
-"Sandbox" earlier meant a Guidewire-provisioned isolated tenant —
-that's not what an MCP integration needs. **What we actually need:**
-
-1. **Dev-tier OAuth credentials** (client ID + secret) from the
-   Guidewire developer program. Stored in
-   `runbook/secrets.prod.sops.yaml` (SOPS + age) for local + GitHub
-   Actions secret for CI.
-2. **Real Cloud API endpoint URLs** — already enumerated in the
-   librarian KB at
-   [`000-docs/005-DR-REF-guidewire-public-resources.md`](./000-docs/005-DR-REF-guidewire-public-resources.md).
-
-The MCP server runs on whatever host (the dev box, a user's machine,
-a Cloud Run service) and hits the real endpoints. Production
-validation against a specific carrier tenant defers to the first
-integration engagement. **NO MOCKS still holds** — no fixtures, no
-invented endpoint shapes, no fake responses. We call real URLs;
-what comes back is what comes back.
+The repo ships as a Claude Code plugin via
+[`.claude-plugin/plugin.json`](./.claude-plugin/plugin.json) +
+[`.mcp.json`](./.mcp.json). End-users run `/plugin install ...`,
+set 4 env vars (`GUIDEWIRE_OAUTH_CLIENT_ID`,
+`GUIDEWIRE_OAUTH_CLIENT_SECRET`, `GUIDEWIRE_TOKEN_ENDPOINT`,
+`GUIDEWIRE_PC_BASE_URL`), and ask Claude carrier questions in their
+session. The plugin path is the primary product surface; the
+`pnpm install && pnpm dev` flow is the developer / contributor path.
 
 ## Author
 
-Jeremy Longshore, Intent Solutions IO.
+Jeremy Longshore, Intent Solutions IO ·
+[intentsolutions.io](https://intentsolutions.io) ·
+`jeremy@intentsolutions.io`

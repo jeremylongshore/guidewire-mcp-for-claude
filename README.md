@@ -100,7 +100,15 @@ Full per-epic exit criteria:
 ## Hard rules
 
 - **No mocks.** Real Guidewire Cloud endpoints from day one.
-- **No API-verb tools.** Carrier-vocabulary names only.
+- **Carrier vocabulary, not API verbs.** Tool names are the question
+  an operator would actually ask (`find-submissions-waiting-on-me`),
+  never API-shaped (`search_policies`). The tool's *implementation*
+  hits real Guidewire endpoints (`GET /job/v1/jobs?subtype=Submission&...`)
+  and the profile's `field-aliases.yaml` translates Guidewire's raw
+  field names back to operator-speak before the response returns.
+  Outside layer = operator-speak; inside layer = Guidewire-speak;
+  translation is the product. PR review rejects `search_*`, `get_*`,
+  `list_*` tool names.
 - **Three execution modes per tool:** `read_only`, `draft_only`,
   `approved_execute` — selected via customer profile.
 - **No write without audit, policy, idempotency.** Hash-chained audit
