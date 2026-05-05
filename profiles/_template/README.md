@@ -36,7 +36,7 @@ and the failing field path — not a generic "profile invalid" message.
 
 `manifest.yaml` carries `schemaVersion`:
 
-- `v1.0` — the 9 YAMLs above. Default for all cowork-fork derivatives.
+- `v1.0` — the 9 YAMLs above. Default for per-tenant deployments.
   Sufficient for E1, E2, E3, E4, E5–E10 per-submission tools.
 - `v2.0` — v1.0 plus an `aggregations:` block inside `lob.yaml` (no 10th
   file; the 9-file count is preserved). Required by E2.5 underwriting-

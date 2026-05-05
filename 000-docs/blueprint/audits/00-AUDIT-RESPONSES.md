@@ -262,6 +262,33 @@ After GW-1.9 lands the response edits, the **single re-pass** is:
    sandbox terminology, `audits/README.md` renumber, epic
    count, F-CON-001/002/003 fixes) is internally consistent.
 
+### Re-pass closure (2026-05-05)
+
+Both re-pass memos filed:
+- [`14-AR-RE-PASS-architecture-review.md`](./14-AR-RE-PASS-architecture-review.md)
+- [`15-CC-RE-PASS-consistency-review.md`](./15-CC-RE-PASS-consistency-review.md)
+
+Aggregate findings: **1 CHALLENGE + 5 NOTEs** (F-CON-005 through
+F-CON-010 plus the architect-reviewer's inputs that overlapped with
+the consistency checker's). All six were resolved in the same PR
+that filed the re-pass memos:
+
+| ID | Severity | Title | Disposition |
+|---|---|---|---|
+| F-CON-005 | NOTE | README roadmap table omits E11+ | fixed — added E11+ row |
+| F-CON-006 | NOTE | PRD § 6.1 `auth.yaml` "once sandbox lands" survives CC-4 | fixed — rewritten to D-021 framing |
+| F-CON-007 | NOTE | `manifest.ts` `tenantId` JSDoc uses `sandbox-jeremy-dev` example | fixed — replaced with generic carrier slug; same fix applied to `profile.ts` |
+| F-CON-008 | CHALLENGE | PRD § 7 / ROADMAP § E4 / 08-COWORK-CURRICULUM present cowork scope as live | fixed — surgical removal across PRD § 7, PRD § 8.4, ROADMAP § E4, BUSINESS-CASE § 3 (4 audiences → 3), MASTER-BLUEPRINT, USER-JOURNEY (J-5 dropped), ARCHITECTURE diagram, TECHNICAL-SPEC, STATUS, profile template, librarian KB, librarian agent. `08-COWORK-CURRICULUM.md` reduced to deprecation stub |
+| F-CON-009 | NOTE | `manifest.ts` header "GW-1.9 will codify" forward reference | fixed — rewritten to past tense citing PR #78 |
+| F-CON-010 | NOTE | CLAUDE.md triage state stale ("Themes 1 + 4 remain") | fixed — updated to "all 4 themes closed" with re-pass links |
+
+**GW-1.9 is fully closed.** All 25 CHALLENGE rows resolved (24 in
+the original triage PRs; AR-4 / BZ-3 already accepted with rationale)
+plus 5 follow-up NOTEs and 1 follow-up CHALLENGE landed in the re-
+pass PR. The blueprint paperwork epic (`guidewire-7jt` / GH #2) is
+ready to close. E1 (`guidewire-4rd` / GH #3) unblocks at merge of
+this PR.
+
 If both re-passes return clean, GW-1.9 closes and E1
 (`guidewire-4rd` / GH #3) unblocks.
 

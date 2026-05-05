@@ -42,7 +42,7 @@ import {
 import jsYaml from 'js-yaml';
 
 export interface ProfileHandle {
-  /** Stable tenant slug (e.g. `sandbox-jeremy-dev`). */
+  /** Stable tenant slug (e.g. `acme-insurance-pc-dev`). */
   readonly tenantId: string;
   /** Profile schema version (e.g. `v1.0`, `v2.0` per D-020). */
   readonly schemaVersion: string;

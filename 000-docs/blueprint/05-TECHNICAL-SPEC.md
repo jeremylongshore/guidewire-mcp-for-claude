@@ -80,8 +80,6 @@ guidewire/
 ├── profiles/                  # Per-customer config
 │   ├── _template/             # E4
 │   └── ...
-├── templates/
-│   └── cowork-fork-starter/   # E4
 ├── tests/
 │   ├── recordings/            # Real Guidewire sandbox HTTP recordings
 │   └── TESTING.md             # Coverage / mutation / CRAP / arch
@@ -1021,9 +1019,8 @@ tests/recordings/reconcile-this-payment.recorded-2026-06-02.from-sandbox-jeremy-
 ```
 
 The `<tag>` is the SOPS-encrypted sandbox slug from
-`profiles/oss-demo/auth.yaml`. In a cowork-fork derivative, the tag
-becomes `<domain>-source-<vendor>` (e.g. `flatbed-source-mc-num`) —
-the schema is universal.
+`profiles/oss-demo/auth.yaml`. The schema is universal across
+deployments.
 
 #### 5.2 `tests/recordings/MANIFEST.md` schema
 
@@ -1160,7 +1157,7 @@ contract change and produces a PR to refresh the recording.
 #### 5.8 `samples/` — read-only replay material, never test ground truth
 
 `samples/` (top-level) holds documentation-grade illustrative payloads
-(e.g. for the README, the cowork curriculum, blog posts). Tests do
+(e.g. for the README, blog posts). Tests do
 not load from `samples/`. Recordings in `tests/recordings/` are the
 only test ground truth. The escape-scan REFUSEs any test file that
 imports from `samples/`.
@@ -1364,26 +1361,6 @@ Husky-style hooks under `.husky/`:
 **Every command above calls `pnpm exec audit-harness …` — never
 `~/.claude/` paths.** Enforcement travels with the code per
 [`../../CLAUDE.md`](../../CLAUDE.md) Hard Rule #7.
-
-#### 6.9 Cowork-fork inheritance
-
-`templates/cowork-fork-starter/` (E4) ships with:
-
-- `tests/TESTING.md` (the same engineer-owned policy file, pre-
-  populated for a fresh fork)
-- `.husky/` (the same hook contract)
-- `@intentsolutions/audit-harness` as a dev dep in the root
-  `package.json`
-- The CI workflow file under `.github/workflows/ci.yml` (depcruise +
-  audit-harness gates wired)
-- `.harness-hash` initialized via the template's bootstrap script
-
-Cohort forks ship with the same gates from clone-zero. A cohort
-member who renames `find-submissions-waiting-on-me` to
-`search_submissions` finds their PR fails the same `audit-harness
-vocab-lint` rule it would fail in this repo — the architecture is the
-lesson, the carrier domain is the example
-([`./02-PRD.md`](./02-PRD.md) § 7.3).
 
 ### 7. Build / deploy
 

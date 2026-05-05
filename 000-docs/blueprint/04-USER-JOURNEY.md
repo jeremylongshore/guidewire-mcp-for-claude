@@ -1,12 +1,12 @@
 # 04 — User Journeys
 
 > *End-to-end journeys for the underwriter, claims adjuster, billing
-> operator, MGA broker, and the cowork-fork developer — written from
-> the operator's chair, not the API console.*
+> operator, MGA broker, and the carrier integration engineer — written
+> from the operator's chair, not the API console.*
 
 **Filed:** 2026-05-04
 **Bead:** `guidewire-318` (under epic `guidewire-7jt` — GH [#2](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/2))
-**Inputs:** [`./02-PRD.md`](./02-PRD.md) § 3 / § 4 / § 6 / § 7,
+**Inputs:** [`./02-PRD.md`](./02-PRD.md) § 3 / § 4 / § 6,
 [`./03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) § 5,
 [`../002-DR-CRIT-personas.md`](../002-DR-CRIT-personas.md),
 [`../004-DR-DEC-architecture-decisions.md`](../004-DR-DEC-architecture-decisions.md),
@@ -19,9 +19,9 @@
 ## 0. TL;DR + how to read this doc
 
 The architecture is only useful if the operator can recognize their
-day in it. Six journeys anchor the rest of the blueprint: four
-carrier-side (PolicyCenter / ClaimCenter / BillingCenter / Producer),
-two toolchain-side (cowork fork, carrier integration onboarding). The
+day in it. Five journeys anchor the rest of the blueprint: four
+carrier-side (PolicyCenter / ClaimCenter / BillingCenter / Producer)
+and one toolchain-side (carrier integration onboarding). The
 canonical tool names from
 [D-016](../004-DR-DEC-architecture-decisions.md#d-016--tool-vocabulary-canonical-names-carrier-vocabulary-curator-renames--adjuster-split)
 appear verbatim in every journey; tool catalog and Cloud-API claims
@@ -35,7 +35,6 @@ and the librarian KB at
 | J-2 Claims summary + reserve check | Persona 8 (Kim) + Persona 3 (claims VP) | E7 | read_only |
 | J-3 Billing reconciliation | Persona 5 (CISO oversight) + AR operator | E8 | read_only → approved_execute |
 | J-4 Producer book review | Persona 4 (MGA broker) | E9 | read_only |
-| J-5 Cowork-fork developer | (cohort member) | E4 + E10 | n/a (toolchain) |
 | J-6 Carrier integration onboarding | (SI engineer) | E10 | n/a (toolchain) |
 
 **How journeys are structured.** Each journey opens with a verbatim
@@ -574,116 +573,6 @@ property.
 
 ---
 
-## J-5 — Cowork-fork developer onboarding (E4 + E10)
-
-> *"I want an MCP for my domain. I'm not Guidewire. I run flatbed
-> trucks / a real-estate brokerage / a restaurant. Walk me to a
-> green test on my own fork in an afternoon."*
-
-**Persona:** A cohort member from the Claude Code & Cowork
-Accelerator. Not a carrier, not an SI engineer — a domain operator
-with a real business and real vocabulary.
-**Epic context:** E4 (cowork fork starter) + E10 (onboarding +
-certification CLI).
-**Modes used:** n/a — this is the toolchain journey. The forked
-repo's *own* tools will use the three modes; the forking process
-itself doesn't.
-**Preconditions:** Node 22 LTS + pnpm installed; a cohort member
-who has a domain in mind and at least one or two real questions
-they want to ask their data; the canonical layout in this repo
-(everything `pnpm guidewire init` is going to copy).
-
-### Narrative
-
-Jeremy's flatbed trucking business is the worked example for E4
-per [D-011](../004-DR-DEC-architecture-decisions.md#d-011--cowork-integration--fork-starter-template--curriculum)
-+ [02-PRD § 7.4](./02-PRD.md#74-one-worked-fork-example-e4-milestone).
-Real DOT/FMCSA compliance: DQF, HOS, ELDs, IFTA, IRP, UCR, BOC-3,
-drug-and-alcohol consortium, CSA-score management, 49 CFR 393
-cargo securement, oversize/overweight permits, 2290 HVUT. Flatbed
-only, never dry-van. The vocabulary is completely different from a
-carrier underwriter's — but the **architecture** is identical, and
-that's the lesson the cohort member is buying.
-
-The cohort member runs `pnpm guidewire init flatbed-mcp`. The init
-script per [02-PRD § 7.1](./02-PRD.md#71-the-init-script) copies
-the canonical layout to a sibling directory, renames
-`servers/policycenter-mcp` → `servers/flatbed-mcp`, substitutes
-carrier-domain placeholders in three stubbed `read_only` tools,
-drops `profiles/_template/` and the `packages/` set unchanged,
-updates `package.json` workspace + READMEs, then runs
-`pnpm install && pnpm -r test` as smoke.
-
-The cohort member fills the three stubs in flatbed vocabulary:
-
-- `find-loads-near-me` — read-only. The dispatcher's morning
-  question.
-- `whats-the-rate-on-this-lane` — read-only. Rate-confirmation
-  before booking.
-- `show-my-ifta-by-state` — read-only. Quarterly fuel-tax prep.
-
-Stretch tool: `whats-my-csa-score` — DOT operators check weekly;
-CSA score affects insurance, broker acceptance, audit risk.
-
-The grammatical shape stays identical — question-form, possessive
-scope, hyphen-coupled sentence-readable name. The 8-rule vocabulary
-checklist (`pnpm exec audit-harness vocab-lint`) is enforced on the
-fork without modification per
-[02-PRD § 7.3](./02-PRD.md#73-what-stays-carrier-vocabulary-shaped-the-lesson)
-+ CLAUDE.md hard rule 7. When a cohort member ships a tool named
-`search_loads_by_id`, lint fails the same way it would fail here.
-Enforcement travels with the code.
-
-### Tool call sequence (the toolchain side)
-
-1. **`pnpm guidewire init flatbed-mcp`** — copies the canonical
-   layout, renames the primary suite, runs the smoke test.
-2. **`pnpm exec audit-harness vocab-lint`** — runs against the
-   newly-stubbed tools; cohort member iterates names until lint
-   passes.
-3. **`pnpm exec audit-harness arch`** — verifies that the harness-
-   imposed dependency rules still hold in the fork (no
-   `servers/**` import of `clients/**`, etc.).
-4. **`pnpm -r test`** — runs the cohort member's first contract
-   tests against their own recordings (NO MOCKS — recordings of
-   real load-board responses, real IFTA exports).
-5. **`pnpm exec audit-harness verify`** — checks the hash-pinned
-   policy manifest still matches.
-
-### Audit + idempotency
-
-The fork inherits the harness verbatim. If the cohort member ever
-adds an `approved_execute` tool (e.g. `book-this-load` against
-their TMS), they get the same `gwh1:` replay short-circuit, the
-same Postgres hash-chained audit, the same evidence bundle
-exporter, and the same `GW-DBTransaction-ID` discipline at the
-wire layer (whatever wire-layer idempotency convention their
-upstream uses). The architecture is the lesson; the carrier domain
-was just the example.
-
-### Acceptance criteria
-
-- `pnpm guidewire init flatbed-mcp` produces a working monorepo in
-  a sibling directory; `pnpm install && pnpm -r test` passes from
-  a fresh clone of the cohort member's fork.
-- The flatbed-mcp worked example (Jeremy's trucking domain) sits
-  in `templates/cowork-fork-starter/` as the milestone proof —
-  three stubbed trucking tools, all in trucking vocabulary, all
-  passing vocab-lint.
-- A cohort member with no Guidewire experience, given the template
-  + a 30-minute walkthrough, can get to a green `pnpm -r test` on
-  their own fork. Acceptance is per
-  [02-PRD § 7.3](./02-PRD.md#73-what-stays-carrier-vocabulary-shaped-the-lesson)
-  + 003-DR-ARCH § Cowork integration.
-- The fork's `tests/recordings/` directory ships at least one
-  recording of a real domain-source response (load board, MLS,
-  POS export — never hand-written fixture).
-- The harness packages (`packages/harness/`, `packages/audit/`,
-  `packages/observability/`, `packages/schemas/`) ship unchanged
-  in the fork — diff confirms zero modification.
-
----
-
 ## J-6 — Carrier integration onboarding (E10)
 
 > *"My company is Acme Insurance. I have a Guidewire estate. I want
@@ -873,7 +762,7 @@ Six journeys, one set of cross-cutting properties. The journeys are
 Per the GW-1.8 staffed-audit panel:
 
 - **`business-analyst`** — journey realism. Would a real line UW,
-  Kim, AR operator, MGA broker, SI engineer, or cohort member
+  Kim, AR operator, MGA broker, or SI engineer
   recognize their day here?
 - **`carrier-vocabulary-curator`** (Mode B) — operator-language
   fidelity. D-016 names verbatim. No `propose-endorsement`

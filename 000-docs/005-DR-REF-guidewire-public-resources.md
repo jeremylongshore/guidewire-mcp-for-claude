@@ -315,7 +315,7 @@ to production.
 
 The Cloud Integration Basics path under `docs.guidewire.com/education/`
 is freely accessible and is the best zero-cost training for
-contributors and cohort members.
+contributors.
 
 ---
 

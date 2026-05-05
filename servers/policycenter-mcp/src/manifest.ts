@@ -3,11 +3,11 @@
  *
  * **Why this lives here, not in `packages/schemas/`:** the staffed-audit
  * panel filed CHALLENGEs `BA-3 / MS-5 / CV-3 / CV-6 / AR-2` flagging that the
- * canonical `ToolManifestEntry` schema is not yet codified in `02-PRD § 3.0`
- * or as Zod in `05-TECHNICAL-SPEC § 3`. GW-1.9 will codify the canonical
- * shape in the blueprint + Zod. Until then, this server authors a clear
- * shape that anticipates the audit panel's recommendation so GW-1.9 can
- * promote it without rework. See:
+ * canonical `ToolManifestEntry` schema needed codification. GW-1.9 codified
+ * the canonical shape in PRD § 3.0 + TECH-SPEC § 3.0 (see PR #78). This
+ * file's interface matches that canonical shape; when
+ * `packages/schemas/src/manifest/` ships in E1, update the import and
+ * delete the inline interface. See:
  *   - 000-docs/blueprint/audits/05-BA-backend-review.md F-3 (recommended interface)
  *   - 000-docs/blueprint/audits/08-MS-mcp-safety-review.md F-5 (mode load-bearing)
  *   - 000-docs/blueprint/audits/09-CV-vocabulary-review.md F-6 (description-shape)
@@ -71,8 +71,10 @@ export interface ToolManifestEntry {
  * structurally compatible with `ToolManifestEntry` (handler args are
  * narrower, return type is narrower) so widening is safe at catalog time.
  *
- * Anticipates GW-1.9 promotion to `02-PRD § 3.0` + a Zod schema in
- * `05-TECHNICAL-SPEC § 3`.
+ * Matches the canonical shape codified in `02-PRD § 3.0` + the Zod schema
+ * sketched in `05-TECHNICAL-SPEC § 3.0` (per GW-1.9, PR #78). When
+ * `packages/schemas/src/manifest/` lands in E1 it will become the import
+ * source of truth; this inline interface deletes at that point.
  */
 export interface TypedToolManifestEntry<
   TArgs extends z.ZodTypeAny = z.ZodTypeAny,
@@ -185,7 +187,7 @@ export type ProfileFileName =
 export interface ToolContext {
   /** OpenTelemetry trace ID propagated from the MCP-handshake span. */
   readonly traceId: string;
-  /** Stable tenant slug from `auth.yaml` (e.g. `sandbox-jeremy-dev`). */
+  /** Stable tenant slug from `auth.yaml` (e.g. `acme-insurance-pc-dev`). */
   readonly tenantId: string;
   /** Resolved actor identity from the JWT `sub` claim (per `auth.yaml.actor_claim`). */
   readonly actorId: string;

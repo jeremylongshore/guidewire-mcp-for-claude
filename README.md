@@ -93,6 +93,7 @@ hash-chain) · `@gw/client-sdk` (undici + two-key idempotency) ·
 | E8 | BillingCenter + Payments (separate dual-control `payments-mcp`) | planned |
 | E9 | Producer-side MCP (MGA / broker scope) | planned |
 | E10 | Onboarding + certification CLI | planned |
+| E11+ | Publish to `claude-code-plugins-plus-skills` marketplace | partial — plugin manifest landed in [#76](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/76); marketplace listing pending |
 
 Full per-epic exit criteria:
 [`000-docs/blueprint/07-ROADMAP.md`](./000-docs/blueprint/07-ROADMAP.md).

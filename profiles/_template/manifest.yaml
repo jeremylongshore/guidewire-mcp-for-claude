@@ -4,9 +4,9 @@
 # validates; a missing or malformed manifest is a hard boot failure.
 #
 # Schema versioning rule (D-020):
-#   v1.0 — the 9 YAMLs as specified in PRD §§ 6.1–6.9. Default for all
-#           cowork-fork derivatives. Sufficient for E1 through E10 per-
-#           submission tools.
+#   v1.0 — the 9 YAMLs as specified in PRD §§ 6.1–6.9. Default for
+#           per-tenant deployments. Sufficient for E1 through E10
+#           per-submission tools.
 #   v2.0 — v1.0 + `aggregations:` block inside lob.yaml (no 10th file).
 #           Required by E2.5 underwriting-manager aggregate-query tools
 #           (`whats-our-aggregate-on-this-class` et al.). Tools declare

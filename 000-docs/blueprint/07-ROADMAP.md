@@ -28,7 +28,7 @@
 | E2 | PolicyCenter MCP (read-only) | `guidewire-0qf` | [#4](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/4) | MVP |
 | E2.5 | Aggregate-query tools (underwriting manager tranche) | TBD | TBD | MVP |
 | E3 | Harness library + CLI | `guidewire-jpu` | [#5](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/5) | MVP |
-| E4 | Customer profile template + fork starter | `guidewire-86h` | [#6](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/6) | MVP |
+| E4 | Per-tenant profile loader | `guidewire-86h` | [#6](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/6) | MVP |
 | E5 | Drafting tools | `guidewire-413` | [#7](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/7) | Buildout |
 | E6 | Workflow + Events | `guidewire-un8` | [#8](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/8) | Buildout |
 | E7 | ClaimCenter MCP | `guidewire-4ps` | [#9](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/9) | Buildout |
@@ -266,7 +266,7 @@ audit trail and source-recording provenance.
    insufficient (e.g., UWCenter aggregation surface gated to a
    non-public endpoint or to first-engagement tenant scope),
    E2.5 may slip behind E5/E6/E7 with no MVP impact.
-2. **Profile schema v2.0 landed** (per [D-020](../004-DR-DEC-architecture-decisions.md#d-020--profile-schema-is-versioned-v1--9-yamls-mvp-v2--1-e25-aggregation-grouping)) — adds the `aggregations:` map inside `lob.yaml` modelling class / segment / region / declination-pattern / cycle-time dimensions. Without v2.0 the manager tools cannot ship: their queries reference fields the profile contract does not validate at boot, which violates [D-007](../004-DR-DEC-architecture-decisions.md). The schema extension itself is a small E1.5-grade ticket — concretely a Zod schema bump + 02-PRD § 6.3 edit + cowork-fork-template upgrade path.
+2. **Profile schema v2.0 landed** (per [D-020](../004-DR-DEC-architecture-decisions.md#d-020--profile-schema-is-versioned-v1--9-yamls-mvp-v2--1-e25-aggregation-grouping)) — adds the `aggregations:` map inside `lob.yaml` modelling class / segment / region / declination-pattern / cycle-time dimensions. Without v2.0 the manager tools cannot ship: their queries reference fields the profile contract does not validate at boot, which violates [D-007](../004-DR-DEC-architecture-decisions.md). The schema extension itself is a small E1.5-grade ticket — concretely a Zod schema bump + 02-PRD § 6.3 edit + per-tenant profile-template upgrade path.
 
 **Cross-references:**
 [D-017](../004-DR-DEC-architecture-decisions.md#d-017--persona-9-underwriting-manager-tools-land-in-a-fresh-sub-epic-e25-not-e2-or-e5),
@@ -335,7 +335,7 @@ formula, hash-chain strategy, depcruise rules) + 006 § 7 invariants.
 
 ---
 
-## E4 — Customer profile template + fork starter
+## E4 — Per-tenant profile loader
 
 **Done when:**
 
@@ -348,31 +348,35 @@ formula, hash-chain strategy, depcruise rules) + 006 § 7 invariants.
   carry `source: base|customer_extended` flag, `field-aliases` enumerates
   `money_fields` + `date_fields` per-field formats
 - Profile schema validation runs at boot via Zod
-- `templates/cowork-fork-starter/` exists with `pnpm guidewire init
-  <domain>` script: copies + renames the canonical layout for a
-  cohort member's domain
-- One worked fork example committed: Jeremy's own `flatbed-mcp`
-  (trucking) demonstrating the rename + 3-tool starter
+- A populated `profiles/<carrier>/` directory boots the five v0.1.0
+  PolicyCenter tools cleanly against that carrier's dev-tier
+  credentials — boot-time profile validation catches every YAML
+  defect before a single Cloud API call goes out
+- The OSS demo profile (`profiles/oss-demo/`) lives in the repo as
+  the reference profile and demonstrates every YAML in `_template/`
+  populated against the dev-tier endpoint set
 
 **Demo path (30s):**
 
 ```bash
-pnpm guidewire init flatbed-mcp
-cd ../flatbed-mcp
-pnpm install && pnpm dev
-# Renamed copy of the architecture, 3 stub tools, ready for the cohort
-# member to fill in carrier-vocabulary tools for trucking dispatch.
+# Populate a per-carrier profile directory from _template/
+cp -R profiles/_template profiles/acme-insurance
+$EDITOR profiles/acme-insurance/auth.yaml   # tenant-specific
+pnpm --filter @intentsolutions/guidewire-policycenter-mcp run dev \
+  --profile acme-insurance
+# Boot-time validation runs Zod on every YAML; refuses to start on
+# any malformed field with a pino-WARN structured log naming the
+# field path.
 ```
 
 **Out of scope (deliberate):**
 
-- Any real customer profile (those land per-engagement in E10
-  customer onboarding)
-- Cowork curriculum / week-by-week session content (deferred)
+- Any real carrier profile committed to the repo (those land per-
+  engagement in E10 customer onboarding)
 - Profile linting / migration tooling (later)
 
-**Blueprint sections governing:** §02 PRD § Customer profile
-contract + § Cowork fork-starter contract.
+**Blueprint sections governing:** §02 PRD § 6 Customer profile
+contract + § 8.4 E4 acceptance.
 
 **Memo inputs:** 008 § 4 profile template prerequisites (8 → 9 YAMLs).
 

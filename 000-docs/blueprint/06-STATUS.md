@@ -33,8 +33,9 @@ Plus the inputs in `000-docs/`: `001-DR-RES`, `002-DR-CRIT-personas`,
 4 specialist memos (006/007/008/009 — patched for librarian P1-P5
 corrections).
 
-`08-COWORK-CURRICULUM.md` is **deferred** (scope call 2026-05-04).
-`10-AAR/` will fill epic-by-epic as work lands.
+`08-COWORK-CURRICULUM.md` is **deprecated** (cohort scope dropped
+per project-owner directive 2026-05-04 — see audit register
+F-CON-008). `10-AAR/` will fill epic-by-epic as work lands.
 
 ---
 
@@ -113,7 +114,7 @@ For exact numbers: `bd stats` from the repo root.
                             │       └─→ [E5] Drafting tools
                             ├─→ [E3] Harness library + CLI
                             │       └─→ [E5/E7/E8/E9 — multi-dep]
-                            ├─→ [E4] Customer profile + cowork
+                            ├─→ [E4] Per-tenant profile loader
                             │       └─→ [E10] Onboarding CLI
                             ├─→ [E6] Workflow + Events
                             ├─→ [E7] ClaimCenter MCP

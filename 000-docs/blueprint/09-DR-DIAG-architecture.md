@@ -16,8 +16,7 @@ populated repo post-E1 will catch architectural drift.
 
 ## What the diagram shows
 
-A 5-layer architecture with 4 cross-cutting planes + the cowork-fork
-relationship.
+A 5-layer architecture with 4 cross-cutting planes.
 
 **Layers (top → bottom, synchronous data plane):**
 
@@ -52,10 +51,6 @@ relationship.
   `008-DR-MEMO` § 8 — App Events spec mandates per-primary-object
   safe ordering, not cross-claim)
 - **Auth plane** — Guidewire Hub OAuth + JWT propagation
-
-**Cowork-fork relationship** — one master blueprint, N forked-domain
-implementations. `templates/cowork-fork-starter/` + `pnpm guidewire
-init <domain>` script lands in E4.
 
 ---
 
@@ -123,14 +118,6 @@ flowchart TB
         JWT["JWT propagation<br/>(actor_id · scopes)"]
     end
 
-    subgraph FORKS ["Cowork-fork derivatives (one master · N forks)"]
-        direction LR
-        FLATBED["flatbed-mcp<br/>(trucking · Jeremy)"]:::fork
-        MLS["mls-mcp<br/>(real estate)"]:::fork
-        FLOOR["floor-mcp<br/>(restaurant ops)"]:::fork
-        DOTS["..."]:::fork
-    end
-
     AH ==>|MCP / stdio · HTTP| PC & CC & BC & PR & EV
     AH -. "(opt-in, mature deployments)" .-> PM
     PC & CC & BC & PR & EV ==> HARN
@@ -155,11 +142,8 @@ flowchart TB
     OAUTH -. token .-> HARN
     HARN -. JWT .-> GWC & SUITE_CL & VENDOR
 
-    L1 -. "templates/cowork-fork-starter +<br/>pnpm guidewire init &lt;domain&gt;" .-> FORKS
-
     classDef external fill:#1a1a2e,stroke:#9d4edd,color:#e0e0ff
     classDef dashed fill:#1a1a2e,stroke:#ff6b6b,stroke-dasharray:5 5,color:#ffd0d0
-    classDef fork fill:#0f1f0f,stroke:#52b788,color:#d0ffd0,stroke-dasharray:3 3
 
     style L1 fill:#0d1b2a,stroke:#1b9aaa,color:#e0e0ff
     style L2 fill:#0d1b2a,stroke:#1b9aaa,color:#e0e0ff
@@ -170,7 +154,6 @@ flowchart TB
     style PLANE_OBS fill:#0d2a1a,stroke:#52b788,color:#d0ffd0
     style PLANE_EVENTS fill:#0d2a2a,stroke:#76c893,color:#d0fff0
     style PLANE_AUTH fill:#2a1a0d,stroke:#f9844a,color:#ffe0d0
-    style FORKS fill:#0a1a0a,stroke:#52b788,color:#d0ffd0
 ```
 
 ---
@@ -192,7 +175,7 @@ flowchart TB
 | Purple | Governance (L3 harness) |
 | Yellow | Configuration data (L5 profiles) |
 | Red | Audit plane |
-| Green | Observability plane (and forks) |
+| Green | Observability plane |
 | Teal | Events plane |
 | Orange | Auth plane |
 
@@ -237,7 +220,6 @@ GitHub's native Mermaid rendering for in-doc display.
 - When a cross-cutting plane materially changes (audit storage swap,
   observability sink change)
 - When the harness contract changes (D-003 / D-005 / D-006 revisions)
-- When the cowork-fork pattern adds a new starter
 
 Updates land via `/design:diff` (post-E1 once import-graph DCI is
 available) or by direct edit of the `.mmd` source. PR title:
