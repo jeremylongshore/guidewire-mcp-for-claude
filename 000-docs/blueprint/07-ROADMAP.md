@@ -198,10 +198,13 @@ audit trail and source-recording provenance.
 - Cross-suite aggregates (e.g. claim-side loss-ratio rollups — that's
   E7 with its own aggregate tool surface)
 
-**Prereq gate:** `guidewire-adj` must be at least at "sandbox
-breadth confirmed for UWCenter aggregation surface" before this
-epic opens. If `guidewire-adj` closes with insufficient UWCenter
-breadth, E2.5 may slip behind E5/E6/E7 with no MVP impact.
+**Prereq gates:**
+
+1. **`guidewire-adj` at "sandbox breadth confirmed for UWCenter
+   aggregation surface"** — before this epic opens. If
+   `guidewire-adj` closes with insufficient UWCenter breadth, E2.5
+   may slip behind E5/E6/E7 with no MVP impact.
+2. **Profile schema v2.0 landed** (per [D-020](../004-DR-DEC-architecture-decisions.md#d-020--profile-schema-is-versioned-v1--9-yamls-mvp-v2--1-e25-aggregation-grouping)) — adds the `aggregations:` map inside `lob.yaml` modelling class / segment / region / declination-pattern / cycle-time dimensions. Without v2.0 the manager tools cannot ship: their queries reference fields the profile contract does not validate at boot, which violates [D-007](../004-DR-DEC-architecture-decisions.md). The schema extension itself is a small E1.5-grade ticket — concretely a Zod schema bump + 02-PRD § 6.3 edit + cowork-fork-template upgrade path.
 
 **Cross-references:**
 [D-017](../004-DR-DEC-architecture-decisions.md#d-017--persona-9-underwriting-manager-tools-land-in-a-fresh-sub-epic-e25-not-e2-or-e5),

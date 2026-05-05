@@ -401,10 +401,25 @@ export interface AuditStore {
 
 Linear hash chain per-tenant (NOT Merkle —
 [`../009-DR-MEMO-harness-runtime.md`](../009-DR-MEMO-harness-runtime.md)
-§ 2.1). Single-writer property is enforced via
-serializable-transaction `FOR UPDATE` on the `audit_chain_heads`
-row. The Postgres DDL lands as the canonical migration in
-`packages/audit/migrations/0001_init.sql`. **Schema**:
+§ 2.1). **Tamper-resistant against an outsider; tamper-evident
+against an unprivileged operator; defence-in-depth via Postgres role
+separation against a privileged DBA — NOT cryptographic
+tamper-evidence against the schema-owner role.** The DB ships three
+Postgres roles per [D-019](../../004-DR-DEC-architecture-decisions.md#d-019--audit-chain-is-tamper-resistant-not-tamper-evident-against-a-compromised-harness-dba):
+
+- `audit_writer` — INSERT-only on `audit_entries`. The harness runs
+  as this role.
+- `audit_reader` — SELECT-only. `verifyChain` runs as this role.
+- `audit_owner` — DDL / GRANT only. Held outside the harness process
+  by a separate operational identity.
+
+Residual risk against a privileged DBA who holds `audit_owner` is
+documented and is the trigger for the E3+ external-commitment
+surface (KMS-signed checkpoints to a customer-controlled lock store,
+implementation TBD per customer trust model). Single-writer property
+is enforced via serializable-transaction `FOR UPDATE` on the
+`audit_chain_heads` row. The Postgres DDL lands as the canonical
+migration in `packages/audit/migrations/0001_init.sql`. **Schema**:
 `packages/schemas/src/harness/audit.ts`.
 
 A tampered chain in tenant A does not invalidate tenant B; an
@@ -1287,7 +1302,9 @@ the carve-out is honored at boot.
 | Threat | Mitigation |
 |---|---|
 | Compromised agent host issues unauthorized writes | Three-mode declaration + harness gate + `approved_execute` requires policy + approval + audit; even a fully compromised agent cannot write without an approver vote |
-| Compromised harness DB | Linear hash chain + serializable single-writer makes tampering tamper-evident; `verifyChain` detects; cross-tenant isolation contains blast radius |
+| Compromised harness DB (unprivileged operator) | Linear hash chain + serializable single-writer makes tampering tamper-evident; `verifyChain` detects |
+| Compromised harness DB (privileged DBA) | **Defence-in-depth, NOT tamper-evident** per [D-019](../004-DR-DEC-architecture-decisions.md#d-019--audit-chain-is-tamper-resistant-not-tamper-evident-against-a-compromised-harness-dba). Postgres role separation: `audit_writer` is INSERT-only, `audit_reader` is SELECT-only, schema-owner identity is held outside the harness process. Residual risk: a privileged DBA with the schema-owner role can still bypass — closed by E3+ KMS-signed external commitment surface. |
+| Cross-tenant attack | Per-tenant linear hash chain + tenant-isolated rows in `audit_entries` contain blast radius (an attacker who compromises tenant A's chain cannot tamper with tenant B's) |
 | Token leak | Tokens never written to disk; SOPS-encrypted at rest; proactive refresh limits stale-token blast radius |
 | Replay attacks against Guidewire | Two-key idempotency: harness short-circuits replay; `GW-DBTransaction-ID` is the secondary safety net (librarian P1) |
 | Profile-data injection | Zod validation at boot; escape-scan refuses non-YAML files in `profiles/**`; depcruise refuses cross-profile imports |

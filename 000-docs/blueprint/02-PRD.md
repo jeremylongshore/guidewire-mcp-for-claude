@@ -554,13 +554,24 @@ export interface AuditStore {
 }
 ```
 
-Linear hash chain per-tenant (NOT Merkle — 009 § 2.1). Tamper-evidence
-demands content-addressing per 006 § 7.7. A tampered chain in tenant
-A does not invalidate tenant B; an enterprise customer takes their
-chain on offboarding. Single-writer property is enforced via
-serializable-transaction `FOR UPDATE` on the `audit_chain_heads` row
-(009 § 2.3). The Postgres DDL lands as the canonical migration in
-`packages/harness/migrations/0001_init.sql` per 009 § 2.2.
+Linear hash chain per-tenant (NOT Merkle — 009 § 2.1).
+**Tamper-resistant against an outsider; tamper-evident against an
+unprivileged operator; defence-in-depth via Postgres role separation
+against a privileged DBA — NOT cryptographic tamper-evidence against
+a compromised harness DB owner. See [D-019](../004-DR-DEC-architecture-decisions.md#d-019--audit-chain-is-tamper-resistant-not-tamper-evident-against-a-compromised-harness-dba)
+for the honest scope of the tamper-evidence claim.** Content-addressing
+per 006 § 7.7 closes the wire-tampering and unprivileged-operator
+threats; the privileged-DBA threat is closed by `audit_writer` /
+`audit_reader` / `audit_owner` role separation per D-019. A
+KMS-signed external commitment surface (transparency log /
+customer-controlled lock store) is **deferred to E3+** and is the
+defense-of-record for the residual privileged-DBA threat. A tampered
+chain in tenant A does not invalidate tenant B; an enterprise
+customer takes their chain on offboarding. Single-writer property is
+enforced via serializable-transaction `FOR UPDATE` on the
+`audit_chain_heads` row (009 § 2.3). The Postgres DDL lands as the
+canonical migration in `packages/harness/migrations/0001_init.sql`
+per 009 § 2.2.
 
 ### 5.6 Rollback — hint, not magic
 
@@ -689,6 +700,33 @@ The schema fields below are the minimum prescribed shape; the full
 worked examples live in the `profiles/_template/` directory once E4
 ships, with the canonical schema definitions in
 `packages/schemas/src/profile/*.ts`.
+
+### 6.0a — Profile schema versioning (per D-020)
+
+The profile contract is **versioned** per
+[D-020](../004-DR-DEC-architecture-decisions.md#d-020--profile-schema-is-versioned-v1--9-yamls-mvp-v2--1-e25-aggregation-grouping).
+`profiles/<customer>/profile.yaml` carries a `schemaVersion` field:
+
+```yaml
+schemaVersion: "v1.0"   # or "v2.0" for E2.5-tool-enabled deployments
+tenantId: acme-insurance
+```
+
+| Version | Content | Tool MVP scope |
+|---|---|---|
+| **v1.0** | The 9 YAMLs as specified in §§ 6.1–6.9. | Sufficient for E1, E2, E3, E4, E5–E10 per-submission tools. |
+| **v2.0** | v1.0 + an `aggregations:` map inside [`lob.yaml`](#63-lobyaml--lob-code-mappings-the-only-place-lob-code-mapping-lives) (does NOT add a 10th file — the 9-file count is preserved). The map declares aggregation dimensions (class, segment, region, declination-pattern, cycle-time) consumed by Persona 9's E2.5 tools. | Required by the 5 E2.5 aggregate-query tools (`whats-our-aggregate-on-this-class` et al.). |
+
+Tool authors declare `requiredProfileSchema: ">=v2.0"` in tool
+metadata. Boot-time validation **refuses** to load tools whose
+required schema is not satisfied by the profile. **E2.5 is gated on
+v2.0 of the profile schema landing**, alongside the existing
+UWCenter-sandbox-breadth prereq from
+[D-017](../004-DR-DEC-architecture-decisions.md#d-017--persona-9-underwriting-manager-tools-land-in-a-fresh-sub-epic-e25-not-e2-or-e5).
+
+Cowork-fork derivatives inherit v1.0 by default (their profiles
+ship with `schemaVersion: "v1.0"`); upgrading to v2.0 requires
+adding the `aggregations:` block to their `lob.yaml`.
 
 ### 6.1 `auth.yaml` — Guidewire Hub OAuth + JWT propagation
 
