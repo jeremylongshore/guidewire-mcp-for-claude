@@ -19,6 +19,9 @@ build/
 coverage/
 .nyc_output/
 
+# /engineer-design-diagram skill intermediate output
+.arch/
+
 # Test / mutation outputs
 .vitest-cache/
 stryker-tmp/
