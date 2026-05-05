@@ -47,9 +47,7 @@ already validated on prior IS projects.
 
 1. Inbound carrier / MGA / SI engineers — primary economic driver.
 2. MCP-ecosystem + SI-partner credibility.
-3. Cowork cohort (Claude Code & Cowork Accelerator) using as
-   template + curriculum.
-4. Broad OSS reach (stars, forks, npm).
+3. Broad OSS reach (stars, forks, npm).
 
 ---
 
@@ -73,15 +71,15 @@ already validated on prior IS projects.
 | File | Section | Status | Bead | PR |
 |---|---|---|---|---|
 | [`00-MASTER-BLUEPRINT.md`](./00-MASTER-BLUEPRINT.md) | Index + executive summary | this file | GW-1.1 (`guidewire-53w`) | — |
-| [`01-BUSINESS-CASE.md`](./01-BUSINESS-CASE.md) | Why this exists, who it serves (4 audiences), commercial framing | **landed** (3.0k words) | GW-1.2.b (`guidewire-9mm`) | [#39](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/39) |
+| [`01-BUSINESS-CASE.md`](./01-BUSINESS-CASE.md) | Why this exists, who it serves (3 audiences), commercial framing | **landed** (3.0k words) | GW-1.2.b (`guidewire-9mm`) | [#39](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/39) |
 | [`02-PRD.md`](./02-PRD.md) | Full product spec — carrier-vocabulary tools, harness, profiles, three modes | **landed** (8.2k words; librarian-audit fixes patched) | GW-1.2 (`guidewire-hss`) | [#35](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/35), [#44](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/44) |
 | [`03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) | System architecture narrative — 5-layer model + data planes + 3-mode flow | **landed** (5.3k words) | GW-1.3 (`guidewire-u0o`) | [#38](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/38) |
-| [`04-USER-JOURNEY.md`](./04-USER-JOURNEY.md) | 6 journeys: underwriter triage / claims summary / billing reconcile / producer book / cowork-fork / carrier onboard | **landed** (5.4k words) | GW-1.5 (`guidewire-318`) | [#42](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/42) |
+| [`04-USER-JOURNEY.md`](./04-USER-JOURNEY.md) | 5 journeys: underwriter triage / claims summary / billing reconcile / producer book / carrier onboard (J-5 cowork-fork journey deprecated 2026-05-04 per F-CON-008) | **landed** (5.4k words) | GW-1.5 (`guidewire-318`) | [#42](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/42) |
 | [`05-TECHNICAL-SPEC.md`](./05-TECHNICAL-SPEC.md) | Stack, package layout, TS contracts, observability, NO MOCKS, quality gates, build/deploy, security posture | **landed** (7.4k words) | GW-1.3.b/1.10/1.11 (`guidewire-z4j`) | [#41](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/41) |
 | [`06-STATUS.md`](./06-STATUS.md) | Live status (auto-updates from beads) | scaffold + lightweight fill | GW-1.7 | (this PR companion) |
 | [`07-ROADMAP.md`](./07-ROADMAP.md) | 11 epics (E1, E2, **E2.5**, E3-E10, E11+) with exit criteria | **landed** (2.8k+ words; E2.5 inserted per D-017) | GW-1.6 | [#43](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/43) |
-| [`08-COWORK-CURRICULUM.md`](./08-COWORK-CURRICULUM.md) | How epics map to cowork sessions / fork-starter docs | **deferred** per scope call 2026-05-04 | GW-1.6 | — |
-| [`09-DR-DIAG-architecture.{md,mmd}`](./09-DR-DIAG-architecture.md) | Architectural diagram — 5 layers + 4 cross-cutting planes + cowork-fork relationship; renders inline as Mermaid on GitHub | **landed** | GW-1.4 | merged earlier |
+| [`08-COWORK-CURRICULUM.md`](./08-COWORK-CURRICULUM.md) | (deprecated 2026-05-04 — cohort scope dropped per F-CON-008; stub preserved for git history) | **deprecated** | GW-1.6 | — |
+| [`09-DR-DIAG-architecture.{md,mmd}`](./09-DR-DIAG-architecture.md) | Architectural diagram — 5 layers + 4 cross-cutting planes; renders inline as Mermaid on GitHub | **landed** | GW-1.4 | merged earlier |
 | [`10-AAR/`](./10-AAR/) | Per-epic after-action reports | scaffolded | each Ex closure | — |
 | [`audits/`](./audits/) | Librarian citation audit (landed) + staffed 11-auditor review memos (pending GW-1.8) | librarian audit landed; staffed panel pending | GW-1.8, GW-1.9 | [#40](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/40) |
 
@@ -128,7 +126,7 @@ Initial mirror (2026-05-04):
 | `guidewire-4rd` | [#3](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/3) | [E1] Foundation |
 | `guidewire-0qf` | [#4](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/4) | [E2] PolicyCenter MCP (read-only) |
 | `guidewire-jpu` | [#5](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/5) | [E3] Harness library + CLI |
-| `guidewire-86h` | [#6](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/6) | [E4] Customer profile + cowork starter |
+| `guidewire-86h` | [#6](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/6) | [E4] Per-tenant profile loader |
 | `guidewire-413` | [#7](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/7) | [E5] Drafting tools |
 | `guidewire-un8` | [#8](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/8) | [E6] Workflow + Events |
 | `guidewire-4ps` | [#9](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/9) | [E7] ClaimCenter MCP |

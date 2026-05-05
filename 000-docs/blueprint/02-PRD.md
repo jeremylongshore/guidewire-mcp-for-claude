@@ -1,8 +1,7 @@
 # 02 — Product Requirements (PRD)
 
-> *Carrier-vocabulary tools, three-mode harness, customer profiles,
-> cowork fork-starter — the full product surface for Guidewire MCP for
-> Claude.*
+> *Carrier-vocabulary tools, three-mode harness, customer profiles —
+> the full product surface for Guidewire MCP for Claude.*
 
 **Filed:** 2026-05-04
 **Bead:** `guidewire-hss` (under epic `guidewire-7jt` — GH [#2](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/2))
@@ -1016,17 +1015,13 @@ v2.0 of the profile schema landing**, alongside the existing
 UWCenter-sandbox-breadth prereq from
 [D-017](../004-DR-DEC-architecture-decisions.md#d-017--persona-9-underwriting-manager-tools-land-in-a-fresh-sub-epic-e25-not-e2-or-e5).
 
-Cowork-fork derivatives inherit v1.0 by default (their profiles
-ship with `schemaVersion: "v1.0"`); upgrading to v2.0 requires
-adding the `aggregations:` block to their `lob.yaml`.
-
 ### 6.1 `auth.yaml` — Guidewire Hub OAuth + JWT propagation
 
 | Field | Required | Notes |
 |---|---|---|
 | `oauth.client_id_env` | yes | Name of env var carrying client ID — never the value (008 § 4.1) |
 | `oauth.client_secret_env` | yes | Same — env var name only |
-| `oauth.token_endpoint` | yes | Per-tenant URL; resolvable via OIDC discovery once sandbox lands (008 § 14 open question 3) |
+| `oauth.token_endpoint` | yes | Per-tenant URL; resolvable via OIDC discovery from the customer's Hub at integration time (per [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints); the open question 008 § 14 about discovery URL stability is no longer gated on a Jeremy-controlled sandbox). For OSS demo use, supply the dev-tier Hub token endpoint directly. |
 | `oauth.scopes` | yes | List; write scopes appended only when `approved_execute` mode is enabled (008 § 4.1) |
 | `oauth.token_lifetime_seconds` | no | Default 3600; tenant-overridable. Bounds revocation latency — see [05-TECHNICAL-SPEC § 8.1 "Revocation latency"](./05-TECHNICAL-SPEC.md#81-auth-model--oauth--jwt-propagation) for the trade-off and per [SA-2](./audits/04-SA-security-review.md#f-2) |
 | `oauth.introspect` | no | Default `false`. When `true`, the harness performs RFC 7662 token introspection on every Cloud API call — drops revocation latency to near-zero at ~30ms per-call overhead. Operator-driven; OSS does not default it on. Cross-link [SA-2](./audits/04-SA-security-review.md#f-2). |
@@ -1273,70 +1268,16 @@ read-only reference material, not the production path.
 
 ---
 
-## 7. Cowork fork-starter contract
+## 7. (deprecated — section retired 2026-05-04)
 
-`templates/cowork-fork-starter/` ships in E4 per [D-011](../004-DR-DEC-architecture-decisions.md)
-+ [`07-ROADMAP § E4`](./07-ROADMAP.md). The contract: forking the
-template is the cohort assignment. The template renames carrier
-vocabulary into the cohort member's domain vocabulary, but the
-*architecture* — three modes, harness, audit chain, profile schema,
-observability, NO MOCKS — stays identical. The architecture is the
-lesson; the carrier domain is the example.
-
-### 7.1 The init script
-
-```bash
-pnpm guidewire init <domain>
-# e.g. pnpm guidewire init flatbed-mcp     (Jeremy's trucking domain)
-#      pnpm guidewire init mls-mcp         (real estate)
-#      pnpm guidewire init floor-mcp       (restaurant ops)
-#      pnpm guidewire init shopify-mcp     (e-com)
-```
-
-Behavior:
-
-1. Copies the canonical layout (`servers/`, `packages/`, `profiles/_template/`, `tests/`, `infra/`).
-2. Renames `servers/policycenter-mcp` → `servers/<domain>-mcp` (one per the cohort member's primary suite).
-3. Substitutes carrier-domain placeholders in tool stubs — three
-   stubbed `read_only` tools per the cohort member to fill in.
-4. Drops `profiles/_template/` unchanged (the schema is universal).
-5. Drops `packages/harness/` unchanged (the governance contract is
-   universal).
-6. Updates `package.json` workspace + READMEs with the new name.
-7. Runs `pnpm install && pnpm -r test` as the smoke test.
-
-### 7.2 What gets renamed
-
-| Stays unchanged | Renamed per domain |
-|---|---|
-| `packages/harness/` (the durable moat) | `servers/<domain>-mcp/src/tools/*` (carrier verbs → domain verbs) |
-| `packages/audit/` (hash chain semantics) | Tool descriptions + tool-name examples in READMEs |
-| `packages/observability/` (OTel + pino + Sentry) | `profiles/_template/lob.yaml` (LOB → domain class) — schema unchanged, contents replaced |
-| `packages/schemas/` (Zod base schemas) | Recordings provenance metadata (`from-<sandbox-tag>` → `from-<domain-source-tag>`) |
-| `tests/TESTING.md` policy floor | Repo name, package names, npm scope (per cohort member's choice) |
-| Three-mode design (`read_only` / `draft_only` / `approved_execute`) | Approval-matrix conditions (Money typing → domain currency / amount unit) |
-
-### 7.3 What stays carrier-vocabulary-shaped (the lesson)
-
-The cohort member's domain tools should be in *domain* vocabulary —
-*"find-loads-waiting-on-me"* (Jeremy's flatbed-mcp) replaces
-*"find-submissions-waiting-on-me"*; *"summarize-this-listing"*
-replaces *"summarize-this-submission"*. The grammatical shape — the
-question form, possessive scope, hyphen-coupled sentence-readable
-name — stays identical. The 8-rule PR-time vocabulary checklist (007
-§ 7) applies to every cohort fork, mechanically enforced via the
-same `audit-harness vocab-lint` (per 05-TECHNICAL-SPEC § 6.5). When
-a cohort member ships a tool named `search_loads_by_id`, the lint
-fails the same way it would fail in this repo — enforcement travels
-with the code per CLAUDE.md hard rule 7.
-
-### 7.4 One worked fork example (E4 milestone)
-
-Per [`07-ROADMAP § E4`](./07-ROADMAP.md), Jeremy's own `flatbed-mcp`
-(trucking dispatch) ships as the milestone fork — three stubbed
-trucking tools demonstrating the rename + the harness inheritance.
-This is the proof that the template works; subsequent cohort forks
-follow the same playbook.
+Section 7 originally defined a "Cowork fork-starter contract" — an
+init-script + rename table + worked example aimed at a Claude Code &
+Cowork Accelerator cohort. Per project-owner directive 2026-05-04
+the cowork / cohort scope was dropped: this is an internal Guidewire
+MCP product, not a cohort template. The retired prose is preserved
+in git history; the supersession trail lives in
+[`audits/00-AUDIT-RESPONSES.md`](./audits/00-AUDIT-RESPONSES.md)
+under AR-4, BZ-3, and F-CON-008.
 
 ---
 
@@ -1345,7 +1286,7 @@ follow the same playbook.
 Per CLAUDE.md "What This Is" + [D-009](../004-DR-DEC-architecture-decisions.md):
 the OSS repo is a credibility artifact for inbound carrier / MGA / SI
 work. Acceptance for the MVP epics is shaped at the user (operator,
-inbound prospect, cohort member) verification level — not the
+inbound prospect) verification level — not the
 engineer-facing exit criteria (those live in
 [`07-ROADMAP.md`](./07-ROADMAP.md) per-epic). The two views are
 complementary: ROADMAP says "the build is done"; PRD acceptance says
@@ -1447,9 +1388,9 @@ Acceptance — what a CISO (Persona 5) or compliance reviewer verifies:
   the side effect is NEVER invoked and `AUDIT_UNREACHABLE` surfaces
   to the caller before any Cloud API call goes out (009 § 6 table).
 
-### 8.4 E4 — Customer profile template + cowork fork starter
+### 8.4 E4 — Per-tenant profile loader
 
-Acceptance — what a cohort member or carrier-onboarding engineer verifies:
+Acceptance — what a carrier-onboarding engineer verifies:
 
 - `profiles/_template/` contains all 9 YAMLs from § 6 (including
   `events.yaml` as the 9th).
@@ -1458,20 +1399,14 @@ Acceptance — what a cohort member or carrier-onboarding engineer verifies:
   which field failed.
 - The OSS demo profile (`profiles/oss-demo/`) loads cleanly and the
   smoke test in E2 runs against it.
-- `pnpm guidewire init <domain>` produces a working monorepo in a
-  sibling directory: `pnpm install && pnpm -r test` passes from a
-  fresh clone of the cohort member's fork.
-- The flatbed-mcp worked example (Jeremy's trucking domain) sits in
-  the repo as the milestone proof and demonstrates the rename +
-  harness inheritance — three stubbed trucking tools, all
-  carrier-vocabulary-shaped (now in trucking vocabulary).
-- The `audit-harness vocab-lint` from the original repo applies to
-  the fork without modification (enforcement travels with the code).
-- A cohort member with no Guidewire experience, given the template
-  + a 30-minute walkthrough, can get to a green `pnpm -r test` on
-  their own fork — acceptance is "the architecture is the lesson,
-  the carrier domain is just the example" (per 003-DR-ARCH § Cowork
-  integration).
+- A populated `profiles/<carrier>/` directory boots all five v0.1.0
+  PolicyCenter tools cleanly against the tenant's dev-tier
+  credentials — boot-time profile validation catches every YAML-
+  level defect before a single Cloud API call goes out.
+- The boot-time loader surfaces a clear error path for partially-
+  populated profiles (e.g., `roles.yaml` references a tool the
+  manifest doesn't ship) — `incompleteWithoutProfile` tools refuse
+  with `profile_incomplete_for_this_carrier` per § 4.2.
 
 ---
 

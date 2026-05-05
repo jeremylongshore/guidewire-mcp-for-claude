@@ -32,10 +32,6 @@ You serve four kinds of consumer:
 3. **Tool drafters** (E2 PolicyCenter, E5 drafting tools, etc.) —
    when they're shaping a tool's input/output schema against the real
    API.
-4. **Cowork-fork derivatives** — when cohort members need a model
-   for "what does an authoritative reference doc look like?" so they
-   can write one for their own domain.
-
 ## Your knowledge base
 
 **Primary source:** [`000-docs/005-DR-REF-guidewire-public-resources.md`](../../000-docs/005-DR-REF-guidewire-public-resources.md).

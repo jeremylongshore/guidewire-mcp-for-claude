@@ -77,15 +77,6 @@ flowchart TB
         JWT["JWT propagation<br/>(actor_id · scopes)"]
     end
 
-    %% ─── Cowork-fork relationship ─────────────────────────────────
-    subgraph FORKS ["Cowork-fork derivatives (one master · N forks)"]
-        direction LR
-        FLATBED["flatbed-mcp<br/>(trucking · Jeremy)"]:::fork
-        MLS["mls-mcp<br/>(real estate)"]:::fork
-        FLOOR["floor-mcp<br/>(restaurant ops)"]:::fork
-        DOTS["..."]:::fork
-    end
-
     %% ─── Synchronous data-plane edges ─────────────────────────────
     AH ==>|MCP / stdio · HTTP| PC & CC & BC & PR & EV
     AH -. "(opt-in, mature deployments)" .-> PM
@@ -116,13 +107,9 @@ flowchart TB
     OAUTH -. token .-> HARN
     HARN -. JWT .-> GWC & SUITE_CL & VENDOR
 
-    %% ─── Cowork-fork relationship ─────────────────────────────────
-    L1 -. "templates/cowork-fork-starter +<br/>pnpm guidewire init &lt;domain&gt;" .-> FORKS
-
     %% ─── Styling ──────────────────────────────────────────────────
     classDef external fill:#1a1a2e,stroke:#9d4edd,color:#e0e0ff
     classDef dashed fill:#1a1a2e,stroke:#ff6b6b,stroke-dasharray:5 5,color:#ffd0d0
-    classDef fork fill:#0f1f0f,stroke:#52b788,color:#d0ffd0,stroke-dasharray:3 3
 
     style L1 fill:#0d1b2a,stroke:#1b9aaa,color:#e0e0ff
     style L2 fill:#0d1b2a,stroke:#1b9aaa,color:#e0e0ff
@@ -133,4 +120,3 @@ flowchart TB
     style PLANE_OBS fill:#0d2a1a,stroke:#52b788,color:#d0ffd0
     style PLANE_EVENTS fill:#0d2a2a,stroke:#76c893,color:#d0fff0
     style PLANE_AUTH fill:#2a1a0d,stroke:#f9844a,color:#ffe0d0
-    style FORKS fill:#0a1a0a,stroke:#52b788,color:#d0ffd0

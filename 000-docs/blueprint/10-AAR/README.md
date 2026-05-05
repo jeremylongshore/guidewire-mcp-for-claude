@@ -80,6 +80,6 @@ together (intent + receipts) are what makes the OSS repo credible
 to inbound carriers — they can audit not just "what's planned" but
 "what's actually delivered, and what was hard about it."
 
-For the cowork audience, AARs are also teaching artifacts — cohort
-members learn from "here's what went sideways and how it got
-recovered" more than from "here's the perfect plan."
+AARs also serve as teaching artifacts — readers learn from "here's
+what went sideways and how it got recovered" more than from "here's
+the perfect plan."

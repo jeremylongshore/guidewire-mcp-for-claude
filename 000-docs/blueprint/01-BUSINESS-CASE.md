@@ -19,9 +19,9 @@ differentiators that are hard to copy and that operators recognize on
 first read: **carrier-vocabulary tools** (the tool name *is* the
 question an underwriter would ask) and a **governance harness**
 (plan → policy → approval → execute → hash-chain audit → rollback)
-strong enough to earn trust on writes. Four audiences (in priority
+strong enough to earn trust on writes. Three audiences (in priority
 order: inbound carriers / MGAs / SIs, MCP-ecosystem partner
-credibility, cowork cohort, broad OSS reach) are served by the same
+credibility, broad OSS reach) are served by the same
 artifact. Margin lives in per-customer profile work (LOB mappings,
 typelists, custom entities, approval matrices) — exactly the surface
 an SI with deep Guidewire practice ships, and exactly what the OSS
@@ -101,9 +101,9 @@ artifact.
 
 ---
 
-## 3. The four audiences
+## 3. The three audiences
 
-The repo serves four audiences in priority order. They share an
+The repo serves three audiences in priority order. They share an
 artifact; they do not share success criteria. Treating them as one
 audience is how OSS lead magnets fail.
 
@@ -127,17 +127,7 @@ audience is how OSS lead magnets fail.
 | What we ship for them | Same artifact, foregrounding the harness package + observability + safety reviewer memos. |
 | What we deliberately do NOT ship | Marketing copy that sells partnership before depth. The voice stays operator-first. |
 
-### 3.3 Cowork cohort (Claude Code & Cowork Accelerator)
-
-| Dimension | Detail |
-|---|---|
-| Who | Cohort members who are not Guidewire engineers, learning the agent + governance pattern by forking the template into their own domain. |
-| Why this audience | Repeated, public, week-by-week build cadence (each of the 10 epics ≈ one week of cowork content per [D-011](../004-DR-DEC-architecture-decisions.md#d-011--cowork-integration--fork-starter-template--curriculum)) is its own distribution channel. Their derivative MCPs become the second-order proof the pattern generalizes. |
-| What they want from the repo | A fork-starter that scaffolds (`pnpm guidewire init <domain>`), a per-epic curriculum, and non-engineer contribution surfaces (tool descriptions, fixture provenance docs, README examples). |
-| What we ship for them | E4 ships `templates/cowork-fork-starter/` and the init script. Per-epic curriculum lands as a chapter in `08-COWORK-CURRICULUM.md`. |
-| What we deliberately do NOT ship | A version of the repo that only makes sense if you're a cowork member. The artifact has to read as carrier-credible first; cowork is layered on, not the floor. |
-
-### 3.4 Broad OSS reach
+### 3.3 Broad OSS reach
 
 | Dimension | Detail |
 |---|---|
@@ -147,11 +137,11 @@ audience is how OSS lead magnets fail.
 | What we ship for them | Public roadmap, public decisions, public audit panel, public release of `@intentsolutions/guidewire-harness` once E3 lands. |
 | What we deliberately do NOT ship | Star-bait. No clickbait READMEs, no "we wrap your Guidewire" framing, no claims the harness is doing things it isn't doing yet. |
 
-The four audiences share the same artifact precisely because the
-artifact is dense enough to serve all four. A thinner artifact
+The three audiences share the same artifact precisely because the
+artifact is dense enough to serve all three. A thinner artifact
 (Anthropic-style demo + token marketing) loses 3.1 and 3.2; a
 denser artifact (full reference implementation with carrier
-mappings) loses 3.3 and 3.4 and crowds out the SI engagement
+mappings) loses 3.3 and crowds out the SI engagement
 margin discussed in § 4.
 
 ---
@@ -298,17 +288,6 @@ ecosystem references. None of these are revenue; all of them are
 leading indicators that flag whether the artifact is being read by
 the right population.
 
-**Cowork-fork derivatives.**
-Cohort members shipping their own domain MCPs from the fork-starter
-([D-011](../004-DR-DEC-architecture-decisions.md#d-011--cowork-integration--fork-starter-template--curriculum)).
-The first canonical derivative is the author's own `flatbed-mcp`
-(trucking domain). Each derivative is a forcing function on the
-template's quality (mappings shape, harness usability, observability
-defaults), and each derivative becomes second-order proof that the
-pattern generalizes beyond Guidewire — which strengthens § 3.2
-(MCP-ecosystem partner credibility) without diluting § 3.1 (carrier
-inbound).
-
 A failed program looks the opposite: stars accumulate but no
 inbound conversation rises above "interesting"; forks happen but
 nobody ships a derivative; npm installs are dominated by drive-bys
@@ -334,12 +313,12 @@ to displace than a vendor-bundled feature.
 
 **7.2 Inbound never converts to scoped engagement.** Credibility
 artifact is read but never bought. This is the failure mode every
-OSS lead magnet faces. Mitigation: three of four audiences (3.2
-MCP-ecosystem partner credibility, 3.3 cowork cohort, 3.4 broad OSS
-reach) are independent of the carrier-conversion path. If the
+OSS lead magnet faces. Mitigation: two of three audiences (3.2
+MCP-ecosystem partner credibility, 3.3 broad OSS reach) are
+independent of the carrier-conversion path. If the
 carrier funnel is slow, the project still produces partner
-credibility, derivative MCPs, and distribution. The thesis ages
-into "carrier wedge with three secondary surfaces" instead of
+credibility and distribution. The thesis ages
+into "carrier wedge with two secondary surfaces" instead of
 collapsing.
 
 **7.3 Sandbox prerequisite blocks E1 indefinitely.** No mocks
@@ -355,7 +334,7 @@ holds; the choice of *which* real estate is flexible.
 The risk we are not mitigating is bad-faith execution. If the
 artifact is shipped sloppy — vapor in the harness, mocks sneaking
 in by another name, observability that doesn't actually run, a
-README that overpromises — none of the four audiences reward it.
+README that overpromises — none of the three audiences reward it.
 That risk is closed by the staffed audit panel
 ([D-014](../004-DR-DEC-architecture-decisions.md#d-014--staffed-audit-panel-as-the-gate-before-e1))
 gating E1: eleven auditors review the blueprint before any code

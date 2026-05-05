@@ -101,7 +101,7 @@ key with read-all scopes (002-DR-CRIT Persona 5; [008 § 10](../008-DR-MEMO-guid
 ### 1.4 Why this shape works as a credibility artifact
 
 A SaaS control plane in the OSS would invert the trust story — it
-would mean every cohort fork and every inbound prospect was sending
+would mean every inbound prospect was sending
 state through us. The local-first shape is what makes the repo a
 credibility artifact that an enterprise CIO can read end-to-end
 without flinching, which is the entire point of
@@ -184,14 +184,6 @@ flowchart TB
         JWT["JWT propagation<br/>(actor_id · scopes)"]
     end
 
-    subgraph FORKS ["Cowork-fork derivatives (one master · N forks)"]
-        direction LR
-        FLATBED["flatbed-mcp<br/>(trucking · Jeremy)"]:::fork
-        MLS["mls-mcp<br/>(real estate)"]:::fork
-        FLOOR["floor-mcp<br/>(restaurant ops)"]:::fork
-        DOTS["..."]:::fork
-    end
-
     AH ==>|MCP / stdio · HTTP| PC & CC & BC & PR & EV
     AH -. "(opt-in, mature deployments)" .-> PM
     PC & CC & BC & PR & EV ==> HARN
@@ -216,11 +208,8 @@ flowchart TB
     OAUTH -. token .-> HARN
     HARN -. JWT .-> GWC & SUITE_CL & VENDOR
 
-    L1 -. "templates/cowork-fork-starter +<br/>pnpm guidewire init &lt;domain&gt;" .-> FORKS
-
     classDef external fill:#1a1a2e,stroke:#9d4edd,color:#e0e0ff
     classDef dashed fill:#1a1a2e,stroke:#ff6b6b,stroke-dasharray:5 5,color:#ffd0d0
-    classDef fork fill:#0f1f0f,stroke:#52b788,color:#d0ffd0,stroke-dasharray:3 3
 
     style L1 fill:#0d1b2a,stroke:#1b9aaa,color:#e0e0ff
     style L2 fill:#0d1b2a,stroke:#1b9aaa,color:#e0e0ff
@@ -231,7 +220,6 @@ flowchart TB
     style PLANE_OBS fill:#0d2a1a,stroke:#52b788,color:#d0ffd0
     style PLANE_EVENTS fill:#0d2a2a,stroke:#76c893,color:#d0fff0
     style PLANE_AUTH fill:#2a1a0d,stroke:#f9844a,color:#ffe0d0
-    style FORKS fill:#0a1a0a,stroke:#52b788,color:#d0ffd0
 ```
 
 ### 2.2 L1 — Agent host

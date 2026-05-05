@@ -167,7 +167,7 @@ flags `unverified` gaps.
 | Stack + observability + quality gates | [`000-docs/blueprint/05-TECHNICAL-SPEC.md`](./000-docs/blueprint/05-TECHNICAL-SPEC.md) |
 | 11-epic public roadmap | [`000-docs/blueprint/07-ROADMAP.md`](./000-docs/blueprint/07-ROADMAP.md) |
 | 11-auditor staffed panel + response register | [`000-docs/blueprint/audits/`](./000-docs/blueprint/audits/) |
-| Audit response triage state | [`000-docs/blueprint/audits/00-AUDIT-RESPONSES.md`](./000-docs/blueprint/audits/00-AUDIT-RESPONSES.md) (Themes 2 + 3 closed; Themes 1 + 4 remain) |
+| Audit response triage state | [`000-docs/blueprint/audits/00-AUDIT-RESPONSES.md`](./000-docs/blueprint/audits/00-AUDIT-RESPONSES.md) (all 4 themes closed; re-pass filed — see [`14-AR-RE-PASS`](./000-docs/blueprint/audits/14-AR-RE-PASS-architecture-review.md) + [`15-CC-RE-PASS`](./000-docs/blueprint/audits/15-CC-RE-PASS-consistency-review.md)) |
 
 ## Plugin / installation surface
 
