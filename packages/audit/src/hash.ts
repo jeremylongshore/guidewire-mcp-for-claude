@@ -29,6 +29,11 @@ export function canonicalSerialization(entry: Omit<AuditEntry, 'entryHash'>): st
     ['recordedAt', entry.recordedAt],
     ['prevHash', entry.prevHash],
     ['blobRef', entry.blobRef],
+    // GA-3: oauthScope is part of the canonical hash so a compromised
+    // harness cannot quietly broaden access without a chain-visible trail.
+    // Filter-undefined preserves backward compat: chains written before
+    // HR-3 landed (no oauthScope field) hash to the same value as before.
+    ['oauthScope', entry.oauthScope],
   ];
   return fields
     .filter(([, value]) => value !== undefined)

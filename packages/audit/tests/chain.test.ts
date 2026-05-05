@@ -74,6 +74,52 @@ describe('AuditStore (memory) — hash chain', () => {
     expect(result.brokenAtSeq).toBeGreaterThanOrEqual(1);
   });
 
+  it('round-trips oauthScope through hash + entry shape (GA-3)', async () => {
+    const store = createMemoryAuditStore();
+    const adminEntry = await store.append(baseInput({ entryId: 'e-admin', oauthScope: 'admin' }));
+    expect(adminEntry.oauthScope).toBe('admin');
+    const result = await store.verifyChain('sandbox-jeremy-dev');
+    expect(result.valid).toBe(true);
+  });
+
+  it('omitting oauthScope hashes identically to a chain written before HR-3', async () => {
+    // Backward-compat invariant: filter-undefined in canonicalSerialization
+    // means absence of oauthScope must produce the same hash as a chain
+    // written before the field existed.
+    const a = createMemoryAuditStore();
+    const b = createMemoryAuditStore();
+    const fromA = await a.append(baseInput({ entryId: 'shared' }));
+    const fromB = await b.append(baseInput({ entryId: 'shared', oauthScope: undefined }));
+    expect(fromA.entryHash).toBe(fromB.entryHash);
+  });
+
+  it('idempotency.pruned is an accepted event type (HR-3)', async () => {
+    const store = createMemoryAuditStore();
+    const entry = await store.append(
+      baseInput({ entryId: 'e-prune', eventType: 'idempotency.pruned' }),
+    );
+    expect(entry.eventType).toBe('idempotency.pruned');
+    const result = await store.verifyChain('sandbox-jeremy-dev');
+    expect(result.valid).toBe(true);
+  });
+
+  it('verifyChain detects oauthScope tampering — chain breaks if scope is silently swapped', async () => {
+    // GA-3 tamper-evidence: if a compromised harness rewrites an admin-scope
+    // call to look like a read-scope call, the chain hash must mismatch.
+    const store = createMemoryAuditStore();
+    await store.append(baseInput({ entryId: 'e1', oauthScope: 'admin' }));
+    await store.append(baseInput({ entryId: 'e2', eventType: 'execute.completed' }));
+
+    store._tamper('sandbox-jeremy-dev', 1, (entry) => ({
+      ...entry,
+      oauthScope: 'read',
+    }));
+
+    const result = await store.verifyChain('sandbox-jeremy-dev');
+    expect(result.valid).toBe(false);
+    expect(result.brokenAtSeq).toBeGreaterThanOrEqual(1);
+  });
+
   it('query streams matching entries', async () => {
     const store = createMemoryAuditStore();
     await store.append(baseInput({ entryId: 'e1' }));

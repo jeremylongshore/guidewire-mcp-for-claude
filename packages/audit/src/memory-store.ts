@@ -46,6 +46,7 @@ export function createMemoryAuditStore(): AuditStore & {
       recordedAt: input.recordedAt,
       prevHash,
       ...(input.blobRef !== undefined && { blobRef: input.blobRef }),
+      ...(input.oauthScope !== undefined && { oauthScope: input.oauthScope }),
     };
     const entryHash = computeEntryHash(partial);
     const entry: AuditEntry = { ...partial, entryHash };
@@ -101,6 +102,7 @@ export function createMemoryAuditStore(): AuditStore & {
         recordedAt: entry.recordedAt,
         prevHash: entry.prevHash,
         ...(entry.blobRef !== undefined && { blobRef: entry.blobRef }),
+        ...(entry.oauthScope !== undefined && { oauthScope: entry.oauthScope }),
       });
       if (recomputed !== entry.entryHash) {
         return {

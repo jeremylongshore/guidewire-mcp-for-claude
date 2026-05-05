@@ -20,8 +20,20 @@ export const AuditEventTypeSchema = z.enum([
   'execute.failed',
   'execute.replayed',
   'rollback.hint.issued',
+  // HR-3: maintenance event recorded when the harness-side idempotency
+  // cache prunes expired keys (02-PRD § 5.5, 05-TECHNICAL-SPEC § 3.5).
+  'idempotency.pruned',
 ]);
 export type AuditEventType = z.infer<typeof AuditEventTypeSchema>;
+
+/**
+ * GA-3: admin-scope OAuth carve. The actual scope used on the wire,
+ * recorded per-call so a compromised harness cannot quietly broaden
+ * access without a chain-visible trail (05-TECHNICAL-SPEC § 3.5,
+ * audit panel finding GA-3 in 10-GA-guidewire-api-review).
+ */
+export const OAuthScopeSchema = z.enum(['read', 'write', 'admin', 'producer']);
+export type OAuthScope = z.infer<typeof OAuthScopeSchema>;
 
 /**
  * Sha-256 hex (64 chars) — covers both `prevHash` and `entryHash`.
@@ -46,6 +58,14 @@ export const AuditEntrySchema = z
     prevHash: Sha256HexSchema,
     entryHash: Sha256HexSchema,
     blobRef: z.string().optional(),
+    /**
+     * GA-3: which OAuth scope authorized this call. `admin` flags
+     * commission reads + similar privileged reads for forensic review.
+     * Optional for backward compat with chains written before HR-3 landed;
+     * canonical serialization in `@intentsolutions/guidewire-audit` filters
+     * undefined values so absence does not change the entry hash.
+     */
+    oauthScope: OAuthScopeSchema.optional(),
   })
   .readonly();
 export type AuditEntry = z.infer<typeof AuditEntrySchema>;
