@@ -1,0 +1,47 @@
+# events.yaml — App Events subscription configuration (the 9th YAML)
+#
+# Per 02-PRD § 6.9 and packages/schemas/src/profile/events.ts.
+# Added per 008 § 7 recommendation — App Events subscriptions are per-
+# tenant and must be profile-driven; hard-coding them in server source
+# code is forbidden (per the same principle as LOB/typelist values).
+#
+# An empty subscriptions list is valid for read-only deployments and for
+# tenants that don't use the events-mcp (E6). Leave as-is until E6 ships
+# or until an inbound engagement requires event-driven tool updates.
+#
+# `delivery.shard_by` MUST equal "primaryObject.id". This is non-negotiable.
+# Guidewire App Events guarantees safe ordering by the primary object they're
+# associated with (005-DR-REF § 3 — verified quote from App Events overview).
+# Any other shard_by value is a CI failure (per D-004 safe-ordering
+# refinement in packages/schemas/src/profile/events.ts → shard_by literal).
+#
+# `replay.retention_days`: how long the event replay surface keeps payloads.
+# Guidewire App Events are "delivered at least once" (005-DR-REF § 3);
+# retention covers re-delivery windows. Consult your tenant's SLA for limits.
+
+subscriptions:
+  []
+  # TODO: populate when E6 events-mcp ships or when an inbound engagement
+  # requires event-driven tool updates.
+  #
+  # Subscription shape:
+  #   - event_type: "ClaimReserveChanged"       # Guidewire App Event name
+  #     subscription_id: "your-sub-id-001"      # per-tenant subscription ID
+  #     consumer_target: "claimcenter-mcp"      # which MCP server consumes
+  #     filter: "entity.productCode == 'Auto'"  # optional carrier filter
+
+delivery:
+  # At-least-once retry policy. The value format is carrier/infrastructure-
+  # dependent (e.g. "exponential-backoff-max-5" or "3-retries-60s").
+  # TODO: set to your carrier's retry policy identifier.
+  retry_policy: "exponential-backoff-max-5"
+
+  # MUST equal "primaryObject.id" — non-negotiable (D-004 + 008 § 7).
+  # Preserves Guidewire's safe ordering guarantee per-primary-object.
+  shard_by: "primaryObject.id"
+
+replay:
+  # Number of days the event replay surface retains payloads.
+  # Consult your Guidewire tenant SLA for the allowed range.
+  # TODO: set to the retention window negotiated with your carrier.
+  retention_days: 7

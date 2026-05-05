@@ -1,0 +1,40 @@
+# events.yaml — OSS demo App Events subscription configuration
+#
+# Per 02-PRD § 6.9.
+#
+# OSS demo default (02-PRD § 6.10): empty subscriptions list.
+# E6 events-mcp has not shipped. No event subscriptions needed for the
+# read-only E2 PolicyCenter tools.
+#
+# delivery.shard_by MUST equal "primaryObject.id" — non-negotiable per D-004.
+# Guidewire App Events guarantee safe ordering per primary object (005-DR-REF § 3).
+# Any other value is a CI failure (packages/schemas/src/profile/events.ts literal check).
+#
+# delivery.retry_policy and replay.retention_days are populated with sensible
+# defaults even in the empty-subscriptions case — they document the expected
+# deployment posture when subscriptions are added.
+
+subscriptions:
+  []
+  # Uncomment when E6 events-mcp ships or when an inbound engagement
+  # requires event-driven tool updates. Subscription shape:
+  #
+  # - event_type: "ClaimReserveChanged"
+  #   subscription_id: "oss-demo-reserve-changed-001"
+  #   consumer_target: "claimcenter-mcp"
+  #   filter: ""   # no carrier filter for the OSS demo
+
+delivery:
+  # At-least-once retry with exponential backoff. Standard for the OSS demo.
+  # Adjust to your carrier infrastructure's retry policy identifier at first
+  # engagement (consult your Guidewire tenant SLA).
+  retry_policy: "exponential-backoff-max-5"
+
+  # Non-negotiable: primaryObject.id per D-004 safe-ordering guarantee.
+  # Preserves Guidewire's event ordering contract per primary Claim/Policy object.
+  shard_by: "primaryObject.id"
+
+replay:
+  # 7-day default — covers at-least-once redelivery and replay windows.
+  # Adjust to match your tenant SLA at first engagement.
+  retention_days: 7

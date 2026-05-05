@@ -1,0 +1,8 @@
+# Deliberately broken fixture — tenantId is missing.
+# Used by profile-load-integration.test.ts Test 3 to verify that
+# loadProfile() throws a ProfileLoadError naming manifest.yaml and tenantId.
+
+schemaVersion: "v1.0"
+# tenantId: intentionally omitted — this must trigger a Zod validation failure
+displayName: "Broken Fixture — Missing tenantId"
+cloudRelease: "Palisades"

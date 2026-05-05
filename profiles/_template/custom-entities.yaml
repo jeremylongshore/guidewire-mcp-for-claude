@@ -1,0 +1,36 @@
+# custom-entities.yaml — Custom entity → tool input mappings
+#
+# Per 02-PRD § 6.5 and packages/schemas/src/profile/custom-entities.ts.
+#
+# Custom entities are per-tenant extensions emitted in the tenant's Swagger
+# (accessible at <applicationURL>/resources/swagger-ui/ per 005-DR-REF § 1).
+# The `api_path` is what makes the tool work against THIS carrier's tenant —
+# it doesn't exist in the public apiref.
+#
+# This file is empty for read-only deployments that don't reference custom
+# entities. Leave it as `custom_entities: {}` until you have tenant-specific
+# extension entities.
+#
+# `api_path` validation rule: must be a syntactically valid Cloud API path
+# template (starts with '/', lowercase, can contain {paramName} segments).
+# Example: /claim/v1/claims/{claimId}/customLeakageRiskScore
+#
+# `parent_entity` must match a known base entity name. Known Guidewire base
+# entities (non-exhaustive): Policy, Job, Account, Claim, Contact, Activity.
+#
+# For the canonical worked example, see profiles/oss-demo/custom-entities.yaml.
+
+custom_entities:
+  {}
+  # TODO: uncomment and populate for each carrier-specific entity this
+  # profile exposes to the MCP tools.
+  #
+  # YourCustomEntityName:
+  #   parent_entity: "Policy"            # must be a known base entity
+  #   relation: "policy_to_your_entity"  # semantic relationship label
+  #   required_fields:
+  #     - fieldName: "string"            # field name → JSON Schema type string
+  #     - otherField: "number"
+  #   optional_fields:
+  #     - optionalField: "datetime"
+  #   api_path: "/pc/v1/policies/{policyId}/yourCustomEntity"

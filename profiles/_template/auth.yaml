@@ -1,0 +1,84 @@
+# auth.yaml — Guidewire Hub OAuth + JWT propagation
+#
+# Per 02-PRD § 6.1 and packages/schemas/src/profile/auth.ts.
+#
+# SECURITY INVARIANT: this file stores env-var NAMES only — never values.
+# The actual client_id and client_secret must live in environment variables
+# or SOPS-encrypted secrets (per the IS SOPS+age standard in ~/.claude/CLAUDE.md).
+# Committing credential values here is a hard CI failure.
+#
+# Dev-tier credential flow (D-021):
+#   1. Obtain OAuth client_id + client_secret from the Guidewire developer
+#      program or PartnerConnect sandbox (005-DR-REF § 5).
+#   2. Set the env vars named below before starting the server.
+#   3. The server reads them via getEnv() in cli.ts — never via this file directly.
+
+oauth:
+  # Name of the environment variable that holds the OAuth client_id.
+  # Never put the actual client_id value here.
+  # TODO: set to the env var name your CI/CD or secrets manager populates
+  client_id_env: "GUIDEWIRE_OAUTH_CLIENT_ID"
+
+  # Name of the environment variable that holds the OAuth client_secret.
+  # Never put the actual client_secret value here.
+  # TODO: set to the env var name your CI/CD or secrets manager populates
+  client_secret_env: "GUIDEWIRE_OAUTH_CLIENT_SECRET"
+
+  # Full token endpoint URL for this tenant. Per-tenant, not shared.
+  # Guidewire Hub OAuth follows OIDC discovery; the token endpoint is
+  # typically: https://<tenant>.guidewire.net/oauth2/v1/token
+  # (unverified — sandbox-confirm when sandbox creds arrive per D-021)
+  # TODO: replace with your tenant's actual token endpoint
+  token_endpoint: "https://your-tenant.guidewire.net/oauth2/v1/token"
+
+  # OAuth scopes required. Write scopes are appended only when the server
+  # is launched in approved_execute mode (per 02-PRD § 6.1 + 008 § 4.1).
+  # Read-only deployments typically need only "pc.read" (or equivalent).
+  # TODO: confirm exact scope strings with your Guidewire Hub configuration
+  scopes:
+    - "pc.read"
+    # - "pc.write"  # uncomment when approved_execute tools are enabled
+
+  # How long (in seconds) an access token is valid. Default 3600 (1 hour).
+  # Guidewire Hub typically issues 1-hour tokens; adjust if your Hub config differs.
+  token_lifetime_seconds: 3600
+
+  # Refresh strategy — MUST be "proactive" (008 § 10).
+  # The client refreshes at 80% of lifetime (2880 s for a 1-hour token).
+  # In-flight approved_execute writes cannot tolerate a mid-write 401;
+  # reactive refresh is forbidden by the hard-rule.
+  refresh_strategy: "proactive"
+
+  jwt_propagation:
+    # When true: the actor's JWT is forwarded to Guidewire as a bearer
+    # sub-claim, eliminating standing service-account credentials (Persona 5).
+    # When false: service-account OAuth token only.
+    # TODO: set true if your Hub is configured for actor JWT propagation
+    enabled: false
+
+    # Which JWT claim carries the actor identity.
+    # Default "sub" is correct for most Guidewire Hub configurations.
+    actor_claim: "sub"
+
+api:
+  # PolicyCenter Cloud API base URL for this tenant.
+  # URL pattern (005-DR-REF § 1): https://docs.guidewire.com/cloud/pc/202503/apiref/
+  # Actual tenant URL is per-provisioning — not in the public apiref.
+  # (unverified — sandbox-confirm per D-021)
+  # TODO: replace with your tenant's PolicyCenter API base URL
+  base_url_pc: "https://your-tenant.pc.guidewire.net/pc/api"
+
+  # ClaimCenter Cloud API base URL — omit if this profile doesn't cover CC.
+  # TODO: uncomment and populate when ClaimCenter MCP (E7) is enabled
+  # base_url_cc: "https://your-tenant.cc.guidewire.net/cc/api"
+
+  # BillingCenter Cloud API base URL — omit if this profile doesn't cover BC.
+  # TODO: uncomment and populate when BillingCenter MCP (E8) is enabled
+  # base_url_bc: "https://your-tenant.bc.guidewire.net/bc/api"
+
+  # Guidewire Cloud release this tenant is pinned to.
+  # Must match manifest.yaml cloudRelease.
+  # Allowed: "Innsbruck" | "Las Leñas" | "Palisades"
+  # Per 008 § 2 — "latest/" URLs in code, docs, or recordings are forbidden.
+  # TODO: set to your tenant's actual release (copy from manifest.yaml)
+  cloud_release: "Palisades"

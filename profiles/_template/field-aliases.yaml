@@ -1,0 +1,61 @@
+# field-aliases.yaml — Guidewire field name → carrier-vocabulary term
+#
+# Per 02-PRD § 6.6 and packages/schemas/src/profile/field-aliases.ts.
+#
+# Tools read Guidewire Cloud API responses (raw Guidewire field names) and
+# surface carrier-vocabulary terms to underwriters, adjusters, and billing
+# ops. This file is the mapping layer.
+#
+# Structure:
+#   aliases.<EntityName>.<carrier_term>: <guidewire_raw_field>
+#
+# Money fields (MANDATORY declaration, 008 § 11):
+#   money_fields is non-negotiable. Stripping currency from a financial value
+#   is a catastrophic error for multi-currency carriers. Every field that
+#   carries `{ amount: string, currency: string }` MUST appear here.
+#   `amount` is string (never JS number) for arbitrary precision.
+#   Currency precision varies: USD = 2dp, JPY = 0dp.
+#
+# Date fields:
+#   Declare per-field whether the value is date-only (ISO_8601_date) or
+#   datetime-with-timezone (ISO_8601_datetime). Wrong format = mid-summary
+#   parse error. Per 02-PRD § 6.6 + 008 § 12 "avoid" item 6.
+#
+# For the canonical worked example, see profiles/oss-demo/field-aliases.yaml.
+
+aliases:
+  {}
+  # TODO: populate per-entity alias maps.
+  # Key = carrier-vocabulary term (what your operators say).
+  # Value = Guidewire raw API field name (from the Cloud API response).
+  #
+  # Account:
+  #   insured: namedInsured          # carrier says "insured", GW says "namedInsured"
+  #   policyholder: namedInsured     # synonym mapping to same field
+  # Producer:
+  #   agency_code: code              # NOT producerNumber (per 02-PRD § 6.6 example)
+  # Claim:
+  #   loss_summary_text: lossDescription
+  #   paid_to_date_amount: paidAmount
+
+money_fields:
+  []
+  # TODO: list every field that carries { amount: string, currency: string }.
+  # Non-negotiable declaration per 008 § 11.
+  # Examples:
+  #   - Claim.paidAmount
+  #   - Claim.reserveAmount
+  #   - Policy.totalPremiumAmount
+  #   - Payment.amount
+
+date_fields:
+  []
+  # TODO: list every date-valued field with its format.
+  # format must be "ISO_8601_date" (date only) or "ISO_8601_datetime" (with TZ).
+  # Examples:
+  #   - field: Policy.effectiveDate
+  #     format: ISO_8601_date
+  #   - field: Policy.boundDate
+  #     format: ISO_8601_datetime
+  #   - field: Claim.lossDate
+  #     format: ISO_8601_date

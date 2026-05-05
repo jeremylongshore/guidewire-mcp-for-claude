@@ -1,0 +1,52 @@
+# lob.yaml — OSS demo line-of-business code mappings
+#
+# Per 02-PRD § 6.3 and 005-DR-REF § 1. This is the only place LOB code
+# mapping lives in this profile. Hard-coding LOB codes in tool source = CI
+# failure (008 § 4.3 + § 12 "avoid" item 1).
+#
+# Two worked examples covering commercial P&C lines:
+#   BOP-CommercialProperty — Business Owners Policy, property LOB
+#   CommercialAuto         — Commercial auto liability + physical damage
+#
+# uwcenter_rule_set references the per-carrier UWCenter rule entity name.
+# coverage_typelist must match a key in this profile's typelists.yaml.
+#
+# Canonical labels flow into tool inputs; carrier codes flow into Cloud API
+# calls (02-PRD § 6.3).
+
+lob_mappings:
+
+  BOP-CommercialProperty:
+    canonical: "CommercialProperty"
+    # UWCenter rule entity for commercial property — carrier-extended name.
+    # (unverified — sandbox-confirm at first integration engagement per D-021)
+    uwcenter_rule_set: "CL_BusinessOwners"
+    coverage_typelist: "BOPCoverageType"
+
+  CommercialAuto:
+    canonical: "CommercialAuto"
+    # (unverified — sandbox-confirm per D-021)
+    uwcenter_rule_set: "CL_CommercialAuto"
+    coverage_typelist: "AutoCoverageType"
+
+# v2.0 aggregations block (not present at v1.0 — schemaVersion is "v1.0").
+# Uncomment + change schemaVersion in manifest.yaml to "v2.0" when E2.5
+# aggregate-query tools are needed.
+#
+# aggregations:
+#   class:
+#     source_field: "job.productCode"
+#     grouping_rule: "exact_match"
+#     rollup_unit: "count"
+#   segment:
+#     source_field: "account.segment"
+#     grouping_rule: "exact_match"
+#     rollup_unit: "count"
+#   region:
+#     source_field: "account.primaryAddress.state"
+#     grouping_rule: "exact_match"
+#     rollup_unit: "count"
+#   cycle_time:
+#     source_field: "job.closeDate"
+#     grouping_rule: "business_days_from_open"
+#     rollup_unit: "avg"

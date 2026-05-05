@@ -1,0 +1,28 @@
+# custom-entities.yaml — OSS demo custom entity mappings
+#
+# Per 02-PRD § 6.5 and packages/schemas/src/profile/custom-entities.ts.
+#
+# One worked example: LeakageRiskScore per 02-PRD § 6.5 canonical example.
+# Custom entities are per-tenant Swagger extensions — the `api_path` here
+# does not exist in the public PC apiref. It's what makes the tool work
+# against a specific carrier's ClaimCenter tenant.
+#
+# This example is illustrative only. In a real deployment, the api_path
+# would be confirmed against the tenant's Swagger UI at:
+#   <applicationURL>/resources/swagger-ui/
+# (per 005-DR-REF § 1 — tenant-bundled Swagger is the capture point for
+# custom-entity paths once an engagement is live).
+#
+# (unverified — api_path shape is practitioner knowledge from public docs;
+# sandbox-confirm at first integration engagement per D-021)
+
+custom_entities:
+  LeakageRiskScore:
+    parent_entity: "Claim"
+    relation: "claim_to_leakage_score"
+    required_fields:
+      - score: "number"
+      - reasonCodes: "string[]"
+    optional_fields:
+      - lastEvaluatedAt: "datetime"
+    api_path: "/claim/v1/claims/{claimId}/customLeakageRiskScore"
