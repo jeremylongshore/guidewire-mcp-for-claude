@@ -6,7 +6,7 @@
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-7c3aed)](https://modelcontextprotocol.io)
 [![Built with Claude](https://img.shields.io/badge/Built%20with-Claude-d4a857)](https://claude.ai)
 [![Marketplace target](https://img.shields.io/badge/Marketplace-claude--code--plugins--plus--skills-success)](https://github.com/jeremylongshore/claude-code-plugins-plus-skills)
-[![Live architecture diagram](https://img.shields.io/badge/Live%20diagram-demo.intentsolutions.io%2Fguidewire--mcp-58a6ff)](https://demo.intentsolutions.io/guidewire-mcp/)
+[![Live architecture diagram](https://img.shields.io/badge/Live%20diagram-guidewire--mcp.intentsolutions.io-58a6ff)](https://guidewire-mcp.intentsolutions.io/)
 
 > Works with the Guidewire **InsuranceSuite** (PolicyCenter,
 > ClaimCenter, BillingCenter, etc.). Carrier-native MCP servers +

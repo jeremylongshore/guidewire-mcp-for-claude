@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Intent Solutions · Demo Diagrams</title>
-  <meta name="description" content="Architecture diagrams + demos from Intent Solutions IO. Each entry is a static page produced by /engineer-design-diagram, served from GitHub Pages.">
+  <title>Guidewire MCP for Claude · Architecture</title>
+  <meta name="description" content="System architecture for Guidewire MCP for Claude — carrier-native MCP servers + governance harness for the Guidewire InsuranceSuite.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -13,9 +13,7 @@
       --bg-page: #0f1117;
       --bg-surface: #161b22;
       --bg-raised: #1c2128;
-      --bg-raised-hover: #22272e;
       --border-subtle: #30363d;
-      --border-accent: #58a6ff;
       --text-primary: #e6edf3;
       --text-secondary: #8b949e;
       --text-muted: #6e7681;
@@ -34,129 +32,218 @@
       line-height: 1.6;
       min-height: 100vh;
     }
-    .container { max-width: 1200px; margin: 0 auto; padding: 3rem 2rem; }
-    header { margin-bottom: 3rem; }
+    .container { max-width: 1600px; margin: 0 auto; padding: 2rem; }
+    header {
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .badges {
+      display: flex; gap: 0.5rem; flex-wrap: wrap;
+      margin-top: 0.75rem; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+    }
+    .badge {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      background: var(--bg-raised);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+    .badge.live { color: var(--accent-green); border-color: var(--accent-green); }
     h1 {
-      font-size: 2rem; font-weight: 700; letter-spacing: -0.02em;
-      margin-bottom: 0.5rem;
+      font-size: 1.75rem; font-weight: 700;
+      letter-spacing: -0.02em;
     }
     h1 .accent { color: var(--accent-blue); }
-    .subtitle { color: var(--text-secondary); font-size: 1.05rem; max-width: 65ch; }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 1.5rem;
-      margin-top: 2rem;
+    .subtitle {
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
     }
-    .card {
+    .meta-row {
+      display: flex; gap: 1.5rem; flex-wrap: wrap;
+      margin-top: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .meta-row a { color: var(--accent-blue); text-decoration: none; }
+    .meta-row a:hover { text-decoration: underline; }
+
+    .diagram-card {
       background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
-      padding: 1.5rem;
-      text-decoration: none;
-      color: inherit;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      transition: border-color 0.15s, transform 0.15s;
+      padding: 2rem;
+      overflow-x: auto;
+      margin-bottom: 2rem;
     }
-    .card:hover {
-      border-color: var(--border-accent);
-      transform: translateY(-1px);
+    .diagram-card svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
     }
-    .card .badge {
-      align-self: flex-start;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
+    .legend-card {
       background: var(--bg-raised);
-      color: var(--text-secondary);
       border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
     }
-    .card .badge.live { color: var(--accent-green); border-color: var(--accent-green); }
-    .card .badge.preview { color: var(--accent-purple); border-color: var(--accent-purple); }
-    .card h2 {
-      font-size: 1.2rem;
-      font-weight: 600;
-      letter-spacing: -0.01em;
+    .legend-card h3 {
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--text-secondary); text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 0.5rem;
     }
-    .card p {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-    }
-    .card .meta {
-      margin-top: auto;
+    .legend-card ul { list-style: none; font-size: 0.85rem; }
+    .legend-card li { margin-bottom: 0.25rem; color: var(--text-primary); }
+    .legend-card code {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      font-size: 0.8rem;
+      background: var(--bg-page);
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      color: var(--accent-purple);
     }
-    .card .arrow { color: var(--accent-blue); }
 
     footer {
       border-top: 1px solid var(--border-subtle);
       padding-top: 1.5rem;
-      margin-top: 3rem;
+      margin-top: 2rem;
       font-size: 0.85rem;
       color: var(--text-muted);
     }
     footer a { color: var(--accent-blue); text-decoration: none; }
     footer a:hover { text-decoration: underline; }
+
+    .note {
+      padding: 1rem 1.25rem;
+      background: var(--bg-raised);
+      border-left: 3px solid var(--accent-blue);
+      border-radius: 4px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    /* Mermaid override — we use the dark theme, but make sure the
+       background of the rendered SVG inherits our card background. */
+    .mermaid svg { background: transparent !important; }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1><span class="accent">Intent Solutions</span> · Demo Diagrams</h1>
+      <h1><span class="accent">Guidewire MCP for Claude</span> · System Architecture</h1>
       <p class="subtitle">
-        Architecture diagrams and live demos from Intent Solutions IO. Each entry
-        is a static page produced by the <code>/engineer-design-diagram</code>
-        skill, served from GitHub Pages, and updated alongside the source repo.
+        Carrier-native MCP servers + governance harness for the Guidewire InsuranceSuite
+        (PolicyCenter · ClaimCenter · BillingCenter). Built Claude/Anthropic-first.
       </p>
+      <div class="badges">
+        <span class="badge live">● paperwork phase</span>
+        <span class="badge">Apache-2.0</span>
+        <span class="badge">MCP compatible</span>
+        <span class="badge">marketplace target: claude-code-plugins-plus-skills</span>
+      </div>
+      <div class="meta-row">
+        <span>Repo: <a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude" target="_blank" rel="noopener">github.com/jeremylongshore/guidewire-mcp-for-claude</a></span>
+        <span>Source: <a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude/blob/main/000-docs/blueprint/09-DR-DIAG-architecture.mmd" target="_blank" rel="noopener">09-DR-DIAG-architecture.mmd</a></span>
+        <span>Author: <a href="https://intentsolutions.io" target="_blank" rel="noopener">Intent Solutions IO</a></span>
+      </div>
     </header>
 
-    <div class="grid">
-      <a class="card" href="./guidewire-mcp/">
-        <span class="badge live">● paperwork phase</span>
-        <h2>Guidewire MCP for Claude</h2>
-        <p>
-          Carrier-native MCP servers + governance harness for the Guidewire
-          InsuranceSuite. 5-layer architecture, 4 cross-cutting planes, cowork-fork
-          relationship. Built Claude/Anthropic-first.
-        </p>
-        <div class="meta">
-          <span>guidewire-mcp-for-claude</span>
-          <span class="arrow">→</span>
-        </div>
-      </a>
+    <div class="note">
+      <strong>How this renders.</strong>
+      The Mermaid source below is fetched at page load from the repo's
+      <code>09-DR-DIAG-architecture.mmd</code> file (deployed alongside this page).
+      No build step, no Puppeteer, no Chrome — just the <a href="https://mermaid.js.org" target="_blank" rel="noopener">Mermaid.js</a> library running client-side in your browser.
+    </div>
 
-      <!-- Future demos: drop a new card here. Pattern:
-           <a class="card" href="./<project-slug>/">
-             <span class="badge live">● status</span>
-             <h2>Project Title</h2>
-             <p>One-paragraph description.</p>
-             <div class="meta"><span>repo-name</span><span class="arrow">→</span></div>
-           </a>
-      -->
+    <div class="diagram-card">
+      <pre id="diagram" class="mermaid">Loading diagram&hellip;</pre>
+    </div>
+
+    <div class="legend">
+      <div class="legend-card">
+        <h3>Edge styles</h3>
+        <ul>
+          <li><code>==&gt;</code> &mdash; synchronous data plane</li>
+          <li><code>-. &hellip; .-&gt;</code> &mdash; async / governance / cross-cutting</li>
+          <li>dashed red border &mdash; out-of-OSS-demo (e.g. <code>payments-mcp</code>)</li>
+          <li>cylinder &mdash; external system or persistent store</li>
+        </ul>
+      </div>
+      <div class="legend-card">
+        <h3>Plane colors</h3>
+        <ul>
+          <li>Blue &mdash; sync data planes (L1, L2, L4)</li>
+          <li>Purple &mdash; governance (L3 harness)</li>
+          <li>Yellow &mdash; configuration data (L5 profiles)</li>
+          <li>Red &mdash; audit plane</li>
+          <li>Green &mdash; observability + cowork forks</li>
+          <li>Teal &mdash; events plane</li>
+          <li>Orange &mdash; auth plane</li>
+        </ul>
+      </div>
+      <div class="legend-card">
+        <h3>Status</h3>
+        <ul>
+          <li><strong>Phase:</strong> paperwork-first (no code yet)</li>
+          <li><strong>Sandbox:</strong> in-flight via PartnerConnect</li>
+          <li><strong>Next milestone:</strong> E1 Foundation</li>
+          <li><strong>Roadmap:</strong> <a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude/blob/main/000-docs/blueprint/07-ROADMAP.md" target="_blank" rel="noopener">11 epics</a></li>
+        </ul>
+      </div>
     </div>
 
     <footer>
       <p>
-        Each diagram source is a Mermaid <code>.mmd</code> file in the
-        corresponding repo, rendered client-side via <a href="https://mermaid.js.org" target="_blank" rel="noopener">Mermaid.js</a>.
-        Diagrams are produced via the
-        <a href="https://github.com/jeremylongshore/claude-code-plugins-plus-skills" target="_blank" rel="noopener"><code>/engineer-design-diagram</code></a>
-        skill.
-      </p>
-      <p style="margin-top: 0.5rem;">
-        Author: <a href="https://intentsolutions.io" target="_blank" rel="noopener">Intent Solutions IO</a>
-        · Source repos linked from each diagram page.
+        Re-runs of <code>/engineer-design-diagram</code> against the populated repo (post-E1) will pick up real import-graph topology and update this diagram.
+        See <a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude/blob/main/000-docs/blueprint/00-MASTER-BLUEPRINT.md" target="_blank" rel="noopener">master blueprint</a>
+        · <a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude/blob/main/000-docs/004-DR-DEC-architecture-decisions.md" target="_blank" rel="noopener">decision log</a>
+        · <a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude/blob/main/000-docs/005-DR-REF-guidewire-public-resources.md" target="_blank" rel="noopener">public Guidewire docs map</a>.
       </p>
     </footer>
   </div>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      themeVariables: {
+        background: '#0f1117',
+        primaryColor: '#1c2128',
+        primaryTextColor: '#e6edf3',
+        primaryBorderColor: '#30363d',
+        lineColor: '#8b949e',
+        secondaryColor: '#161b22',
+        tertiaryColor: '#0f1117'
+      },
+      flowchart: { htmlLabels: true, curve: 'basis' },
+      securityLevel: 'loose'
+    });
+
+    async function loadAndRender() {
+      const target = document.getElementById('diagram');
+      try {
+        const res = await fetch('./09-DR-DIAG-architecture.mmd', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const src = await res.text();
+        target.textContent = src;
+        target.removeAttribute('data-processed');
+        await mermaid.run({ nodes: [target] });
+      } catch (err) {
+        target.textContent = `Failed to load diagram: ${err.message}\n\nView the Mermaid source directly:\nhttps://github.com/jeremylongshore/guidewire-mcp-for-claude/blob/main/000-docs/blueprint/09-DR-DIAG-architecture.mmd`;
+        target.style.color = 'var(--text-muted)';
+      }
+    }
+
+    loadAndRender();
+  </script>
 </body>
 </html>

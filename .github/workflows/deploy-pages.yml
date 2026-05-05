@@ -1,12 +1,12 @@
 name: Deploy Pages
 
-# Publishes the demo hub + per-project diagram pages to GitHub Pages.
+# Publishes the Guidewire MCP architecture diagram to GitHub Pages.
 #
-# Custom domain: https://demo.intentsolutions.io/
-#   /                       → hub index (lists available diagrams)
-#   /guidewire-mcp/         → guidewire architecture diagram (this repo)
-#   /<future-project>/      → future demo (added by appending a card to the
-#                             hub's pages/index.html and a subdir under pages/)
+# Custom domain: https://guidewire-mcp.intentsolutions.io/
+#   /                              → architecture diagram (this repo's
+#                                    project page; was demo.intentsolutions.io
+#                                    /guidewire-mcp/ pre-2026-05-04)
+#   /engineer-design-diagram/      → vanity-redirect to /
 #
 # Triggers on push-to-main when the static pages or the diagram source change;
 # also workflow_dispatch for manual rebuilds.
@@ -39,14 +39,11 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
-          # 1. Hub index, CNAME, and any future top-level assets
+          # Pages content + CNAME + vanity redirect
           cp -r pages/* _site/
-          # 2. Per-project diagram source(s) — each project's .mmd lives in
-          #    its repo's blueprint dir and is copied to the matching subdir.
+          # Diagram source — fetched at runtime by the index.html page
           cp 000-docs/blueprint/09-DR-DIAG-architecture.mmd \
-             _site/guidewire-mcp/09-DR-DIAG-architecture.mmd
-          # Future projects: add additional `cp <project>/.../diagram.mmd
-          # _site/<project-slug>/diagram.mmd` lines here.
+             _site/09-DR-DIAG-architecture.mmd
           echo "Built site:"
           find _site -type f | sort
           echo "CNAME:"
