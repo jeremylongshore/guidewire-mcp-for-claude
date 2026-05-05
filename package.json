@@ -25,7 +25,7 @@
     "prepare": "pnpm -r build || true"
   },
   "dependencies": {
-    "undici": "^6.0.0",
+    "undici": "^8.2.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
