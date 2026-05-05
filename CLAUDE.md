@@ -20,7 +20,11 @@ carrier vocabulary are the durable moats.
 ## Build / test / run
 
 pnpm workspace, Node 22 LTS, TypeScript 5.5+, Vitest, Biome (single
-linter+formatter, no ESLint+Prettier).
+linter+formatter, no ESLint+Prettier). Cloud API contract tests live
+in `tests/contract/` on **Karate** (JDK 11 + Gradle) per
+[D-022](./000-docs/004-DR-DEC-architecture-decisions.md#d-022) — TS
+covers orchestration / unit / integration; Karate covers the Cloud
+API wire contract.
 
 ```bash
 pnpm install                                    # prepare hook builds all workspaces
@@ -34,6 +38,9 @@ pnpm format                                     # biome format --write .
 pnpm smoke-reach                                # ping librarian-cataloged Cloud endpoints with dev-tier creds
 node servers/policycenter-mcp/dist/cli.js                              # boot with in-memory default profile
 node servers/policycenter-mcp/dist/cli.js --profile profiles/oss-demo  # boot with on-disk profile
+
+# Cloud API contract tests (Karate — JVM-side; runs when GUIDEWIRE_OAUTH_CLIENT_ID is set, skips cleanly when not):
+cd tests/contract && ./gradlew test
 ```
 
 The `prepare` script (`pnpm -r build || true` in root `package.json`)

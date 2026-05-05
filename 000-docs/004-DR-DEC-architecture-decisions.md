@@ -501,3 +501,120 @@ or augment prior ones, with a `replaces:` link.
 
 - **attacked-by:** project owner 2026-05-04, who pointed out the
   terminology conflation directly.
+
+---
+
+## D-022 — Adopt Karate (Guidewire's official OSS test framework) for the Cloud API contract layer; keep Vitest for everything above the wire
+
+**Decision:** the Cloud API contract test surface adopts **Karate**
+(the JVM-based Cucumber-extension API DSL Guidewire's own engineers
+use, per librarian KB
+[`005-DR-REF` § "Guidewire's open-source test framework stack"](../000-docs/005-DR-REF-guidewire-public-resources.md#guidewires-open-source-test-framework-stack)).
+A new directory `tests/contract/` carries the Gradle build, Karate
+config, and `.feature` files exercising every Cloud API endpoint our
+tools depend on. Test layers above the wire — TS unit tests, profile-
+loading integration tests, manifest validation, harness orchestration,
+field-aliasing, audit-chain integrity — stay on **Vitest**.
+
+The custom `tests/recordings/MANIFEST.md` provenance scheme
+introduced under D-008 is **superseded** by Karate's built-in
+record/replay. The MANIFEST file remains as historical context;
+new recordings land as Karate `.feature` artifacts.
+
+### Why two test runners and not one
+
+Test suites operate at two different layers with different requirements:
+
+| Layer | What it covers | Why Karate vs. Vitest |
+|---|---|---|
+| **Contract** (`tests/contract/`) | "Does Guidewire's Cloud API still behave the way our tools assume?" — request shape, response shape, error envelopes, status codes, auth-flow assertions | Karate is purpose-built for this, battle-tested against Cloud API by Guidewire's own engineers, and produces `.feature` files carrier QA + SI partners recognize on sight. Sample feature files from the OSS community cover endpoints we'd otherwise write from scratch. |
+| **Orchestration** (`packages/*/tests/`, `servers/*/tests/`) | "Does our `find-submissions-waiting-on-me` tool correctly load the profile, scope by role, hit the right endpoint, translate fields, gate writes through the harness, append to the audit chain?" | Karate cannot reach into our TypeScript code. Profile loaders, manifest validators, three-mode enforcement, and audit-chain integrity are TS-native concerns; Vitest is the right tool. |
+
+Adopting Karate ONLY for the contract layer collapses the question
+"is Guidewire's API matching our assumption?" onto an industry-standard
+artifact (the `.feature` file) without forcing JVM into the rest of
+the codebase. The orchestration layer stays TypeScript-pure and the
+plug-and-play install path (Claude Code plugin) is unaffected.
+
+### What this codifies
+
+1. **`tests/contract/`** is the only path for asserting Cloud API
+   request/response shape. New tools land alongside a Karate
+   `.feature` covering every Cloud API endpoint they depend on.
+2. **Karate's built-in record mode** replaces the hand-curated
+   provenance scheme in `tests/recordings/MANIFEST.md`. Recordings
+   are captured via Karate's `karate.write()` against a
+   credentialed dev-tier tenant, committed as `.feature` artifacts
+   with the recorded payload baked into the scenario.
+3. **CI gating:** Karate runs when `GUIDEWIRE_OAUTH_CLIENT_ID` is
+   present in the workflow's env (post-merge to `main`, or PRs from
+   credentialed branches via the `cloud-api-contract` label). Skips
+   cleanly when not — never silently degrades to a green check
+   without exercising the API.
+4. **Polyglot dev story:** JDK 11 + Gradle alongside Node 22 + pnpm.
+   The plugin install path (the user-facing surface) does not depend
+   on the JVM tooling — only `tests/contract/` does.
+5. **README signal:** README + CLAUDE.md note "Cloud API contract
+   tests use Karate" so carrier QA leads + SI partners reading the
+   repo recognize the test shape immediately.
+
+### Why this is the right tool, not just the recognized one
+
+- Guidewire's own engineers ship product against Karate-tested Cloud
+  API. If they regress a field name, their internal CI fails on a
+  Karate scenario before our tool would notice. We get a free
+  upstream-regression alarm by using the same framework.
+- Karate handles OAuth client-credentials flows, JWT propagation,
+  request retries, idempotency-key headers, and JSON path assertions
+  in a single declarative DSL. Building equivalent in TS would
+  duplicate ~6 months of mature framework work.
+- Cucumber `Given/When/Then` shape **already matches** our tool
+  manifest's `vocabulary.question` + `vocabulary.whenToUse` field
+  pair — a `.feature` scenario reads as the operator's question
+  followed by an HTTP assertion. Carrier-vocabulary discipline lands
+  in the contract test layer naturally.
+
+### Operational consequences
+
+- New decision-record (this entry) added to `004-DR-DEC` log.
+- New directory `tests/contract/` scaffolded with `build.gradle.kts`,
+  `karate-config.js`, and one `.feature` per v0.1.0 PolicyCenter
+  tool (5 baseline scenarios).
+- `.github/workflows/ci.yml` (or a new `cloud-api-contract.yml`)
+  runs Karate when creds are present.
+- README + CLAUDE.md updated with the Karate signal.
+- `tests/recordings/MANIFEST.md` keeps its history as the pre-D-022
+  scheme; new recordings land in `tests/contract/`.
+- `05-TECHNICAL-SPEC.md § 5` (Quality Gates) gains a sub-section
+  documenting the Karate / Vitest split.
+
+### Why not Karate for everything
+
+Already addressed in the table above — Karate cannot test TypeScript
+orchestration code. Adopting it everywhere would require porting
+profile loading, manifest validation, harness gating, and
+field-aliasing logic to a Karate-callable shape (likely via a
+Java sidecar invoking Node binaries), which trades a clean two-layer
+suite for a labyrinthine polyglot one.
+
+### Why not deprecate `tests/recordings/MANIFEST.md` entirely
+
+The MANIFEST.md file documents the pre-Karate provenance contract for
+recordings that may have been captured before D-022 lands. Keeping
+it preserves auditability of any pre-D-022 recordings. If
+`tests/recordings/` is empty when D-022 ships (verified at scaffold
+time), the directory + MANIFEST may be removed in a follow-up cleanup;
+otherwise the MANIFEST stays as historical context.
+
+- **filed:** 2026-05-05 by Jeremy Longshore
+- **attacked-by:** project owner asking the right question:
+  "Isn't Karate Guidewire's open-source testing framework for their
+  platform? Should we not be utilizing that?"
+- **agrees-with:** D-008 (NO MOCKS — real endpoints from day one),
+  D-021 (dev-tier credentials are what we actually need), D-013
+  (carrier-vocabulary tools as the abstraction).
+- **supersedes:** the recording-provenance scheme prose in
+  `tests/recordings/MANIFEST.md`. New recordings land as Karate
+  `.feature` artifacts; the MANIFEST file remains as historical
+  context.
+

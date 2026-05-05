@@ -137,9 +137,19 @@ node servers/policycenter-mcp/dist/cli.js --profile profiles/<your-tenant>
 git clone https://github.com/jeremylongshore/guidewire-mcp-for-claude.git
 cd guidewire-mcp-for-claude
 pnpm install              # prepare hook builds all workspaces
-pnpm -r test              # 54 tests
+pnpm -r test              # 54 tests (TS orchestration / unit / integration)
 pnpm smoke-reach          # ping Guidewire endpoints with your dev-tier creds
+
+# Cloud API contract tests use Karate (Guidewire's official OSS test framework, JDK 11 + Gradle):
+cd tests/contract
+./gradlew test            # 6 .feature files exercising the v0.1.0 endpoints
 ```
+
+The contract layer uses Karate per [D-022](./000-docs/004-DR-DEC-architecture-decisions.md#d-022)
+— same framework Guidewire's own engineers regression-test their
+Cloud API releases with. The orchestration layer (profile loading,
+field aliasing, harness gating, audit-chain integrity) stays on
+TypeScript / Vitest.
 
 Contribution guide: [CONTRIBUTING.md](./CONTRIBUTING.md). The
 [5 specialist agents](./.claude/agents/) auto-review carrier-vocabulary
