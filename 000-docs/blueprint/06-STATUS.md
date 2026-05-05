@@ -59,10 +59,17 @@ KB-side fixes shipped in
    to `audits/`. E1 blocked until all FAILs resolved.
 3. **GW-1.9 audit response + blueprint v1.0 sign-off** — file
    responses to CHALLENGEs in `audits/00-AUDIT-RESPONSES.md`.
-4. **`guidewire-adj` sandbox provisioning**
-   ([GH #1](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/1))
-   — hard prereq for E1. Sandbox-blocked items in the blueprint are
-   tagged `(unverified — sandbox-confirm at guidewire-adj)`.
+
+(Per [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints),
+the prior "sandbox provisioning" bead `guidewire-adj` is **superseded** —
+that entry conflated "Guidewire-provisioned isolated tenant" with
+"place to develop the MCP." What's actually needed is dev-tier OAuth
+credentials + the documented Cloud API endpoints already in the
+librarian KB. E1 picks up a smoke-test job for endpoint reachability.
+Items previously tagged `(unverified — sandbox-confirm at
+guidewire-adj)` are now `(unverified — practitioner knowledge from
+public docs; smoke-test reachability with dev-tier creds; first
+integration engagement validates production)`.)
 
 ---
 

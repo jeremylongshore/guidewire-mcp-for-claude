@@ -351,7 +351,8 @@ export interface Plan extends Readonly<PlanInput> {
      * P1 — Guidewire's mechanism FAILS duplicates with
      * AlreadyExecutedException, it does not replay.
      * Currently derived as sha256(idempotencyKey) (64 hex, no prefix);
-     * sandbox-confirm at guidewire-adj for accepted shape/length/TTL.
+     * confirm against dev-tier creds smoke-test + first integration
+     * engagement for accepted shape/length/TTL (per D-021).
      */
     readonly dbTransactionId: string;
   };

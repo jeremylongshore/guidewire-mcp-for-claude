@@ -434,3 +434,70 @@ or augment prior ones, with a `replaces:` link.
     flip their profile to v2.0 with the aggregation block.
 
 - **attacked-by:** Persona 9 (underwriting manager) — F-RT-9.1.
+
+## D-021 — Terminology fix: "sandbox" meant Guidewire isolated tenant; what we actually need is dev-tier credentials + real endpoints
+
+- **decided:** 2026-05-04
+- **decision:** Earlier blueprint sections used "sandbox" ambiguously
+  to mean a Guidewire-provisioned isolated tenant (heavy,
+  partner-program-gated, weeks to obtain). That is **not** what an
+  MCP integration needs. What we actually need is the same thing
+  any HTTP API client needs: **(1) developer-tier OAuth credentials
+  (client ID + secret, obtainable via Guidewire developer program
+  signup) + (2) the documented Cloud API endpoint URLs (already
+  enumerated in the librarian KB at [`005-DR-REF`](./005-DR-REF-guidewire-public-resources.md))**.
+  The MCP server runs on the dev box — that's the execution
+  environment; nothing isolated-tenant-shaped is required.
+
+  Concretely:
+  - `packages/guidewire-client/` is wired to the real Cloud API
+    URLs and accepts a dev-tier OAuth credential pair from
+    SOPS-encrypted env.
+  - An E1 smoke-test job hits each endpoint enumerated in the
+    librarian KB to confirm reachability + auth (expect 200/401/etc.;
+    the test passes when the host responds and the endpoint exists).
+  - End-to-end production validation defers to the first integration
+    engagement (a carrier / SI / MGA brings their own production
+    tenant credentials) — that's a deployment concern, not a
+    development blocker.
+  - `guidewire-adj` bead closes as superseded — there is no
+    isolated-tenant-provisioning step needed to start.
+
+- **what stays unchanged from the prior plan:**
+  - Carrier-vocabulary tool naming (D-001) — load-bearing for how
+    Claude / MCP discovers and activates tools via natural language.
+  - Three execution modes (D-005), harness governance (D-002, D-006),
+    profile contract (D-007, D-020), audit chain (D-019), three-layer
+    bead↔GH↔Plane mirror (D-012), staffed audit panel (D-014).
+  - **NO MOCKS hard rule** — no fixtures, no invented endpoint
+    shapes. We hit real Guidewire URLs with dev-tier creds; what
+    comes back is what comes back.
+  - The lead-magnet thesis (D-009, D-010) — the repo is a credibility
+    artifact for inbound custom-build engagements.
+
+- **because:** Resolving the terminology confusion (raised by the
+  project owner 2026-05-04) unblocks E1 immediately. The plan was
+  always sound; the word "sandbox" was carrying two different
+  meanings, and the heavier meaning had drifted into being treated
+  as a hard prereq.
+
+- **operational consequences:**
+  - `CLAUDE.md` hard rule 3 + "NO MOCKS — sandbox prerequisite"
+    section: rewording to drop "isolated tenant required" framing,
+    keep NO MOCKS, keep "real endpoints + real responses."
+  - 3 inline `(unverified — sandbox-confirm at guidewire-adj)` tags
+    in 02-PRD / 06-STATUS / 00-MASTER reworded to `(unverified —
+    practitioner knowledge from public docs; smoke-test reachability
+    against dev-tier creds; first integration engagement validates
+    production)`.
+  - `guidewire-adj` bead + GH issue #1 close with supersession
+    pointing at this decision.
+  - 07-ROADMAP § E1 picks up a `smoke-reach.ts` deliverable (hit
+    each librarian-KB endpoint with dev-tier creds, assert
+    structurally-valid response).
+  - 06-STATUS + 00-MASTER status snapshots: drop the "sandbox
+    prereq" line; pending gates become {staffed audit panel +
+    audit response}.
+
+- **attacked-by:** project owner 2026-05-04, who pointed out the
+  terminology conflation directly.

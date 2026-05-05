@@ -57,6 +57,18 @@
   pipeline (pnpm + Biome + Vitest + audit-harness gates)
 - `LICENSE` (Apache-2.0) and `CONTRIBUTING.md` are real (currently
   templated); CI status badge in README points at a green run
+- **Endpoint reachability smoke test** (per [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints)):
+  a `scripts/smoke-reach.ts` script reads dev-tier OAuth credentials
+  from SOPS-encrypted env (`runbook/secrets.prod.sops.yaml`), iterates
+  over the endpoints enumerated in the librarian KB
+  ([`005-DR-REF`](../005-DR-REF-guidewire-public-resources.md)), and
+  asserts each returns a structurally-valid response (200 / 401 /
+  documented 4xx — the test passes when the host responds and the
+  endpoint exists; it's reachability + auth-flow validation, not
+  business-logic validation). Runs in CI when
+  `GUIDEWIRE_OAUTH_CLIENT_ID` is configured; skipped with a visible
+  "no dev creds configured" status otherwise. Replaces the
+  superseded `guidewire-adj` sandbox-provisioning bead.
 
 **Demo path (30s):**
 

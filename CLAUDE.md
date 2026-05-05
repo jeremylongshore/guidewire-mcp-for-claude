@@ -55,10 +55,15 @@ Audiences (priority order):
    / claims / billing operators actually say. `find-submissions-waiting-on-me`
    not `search_policies`. Reject API-shaped names at PR review.
 
-3. **NO MOCKS.** Real Guidewire Cloud sandbox from day 1. `tests/recordings/`
-   holds HTTP recordings captured from a real tenant with provenance
-   in filenames + `MANIFEST.md`. No hand-written `fixtures/` JSON. CI
-   fails loudly if sandbox unreachable — never silently degrades.
+3. **NO MOCKS.** No hand-written `fixtures/` JSON. The OSS does NOT
+   ship a Jeremy-controlled sandbox tenant (per [D-021](./000-docs/004-DR-DEC-architecture-decisions.md#d-021--no-jeremy-provisioned-sandbox-oss-pivots-to-inbound-brings-their-own-tenant-model)).
+   First integration engagement (carrier / SI / MGA inbound) brings
+   their own Guidewire Cloud tenant credentials — that's the
+   validation environment. Where end-to-end testing happens against
+   that tenant, `tests/recordings/` holds HTTP recordings captured
+   with provenance. Until that engagement opens, design is grounded
+   in **public Guidewire docs only** via the
+   `guidewire-reference-librarian` KB.
 
 4. **Three execution modes per tool**: `read_only`, `draft_only`,
    `approved_execute`. Selected per-tool via customer profile. No
@@ -186,7 +191,7 @@ the finished blueprint).
 | [`carrier-vocabulary-curator`](./.claude/agents/carrier-vocabulary-curator.md) | Tool-name authenticity ("would an operator say this?") + missing carrier-vocabulary surface |
 | [`guidewire-api-archaeologist`](./.claude/agents/guidewire-api-archaeologist.md) | Cloud API mapping correctness, LOB/typelist/custom-entity assumptions, App Events vs polling |
 | [`harness-runtime-architect`](./.claude/agents/harness-runtime-architect.md) | Harness lib/CLI surface, plan/policy/approval/execute/audit/rollback semantics, hash-chain integrity |
-| [`guidewire-reference-librarian`](./.claude/agents/guidewire-reference-librarian.md) | Authoritative public Guidewire docs map; cites release-versioned URLs; primary substitute for sandbox-driven contract drafting until `guidewire-adj` closes |
+| [`guidewire-reference-librarian`](./.claude/agents/guidewire-reference-librarian.md) | Authoritative public Guidewire docs map; cites release-versioned URLs; **the OSS substitute for sandbox-driven contract drafting** (per [D-021](./000-docs/004-DR-DEC-architecture-decisions.md#d-021--no-jeremy-provisioned-sandbox-oss-pivots-to-inbound-brings-their-own-tenant-model) the OSS has no Jeremy-controlled sandbox; first integration engagement brings their own tenant) |
 
 The librarian's knowledge base is
 [`000-docs/005-DR-REF-guidewire-public-resources.md`](./000-docs/005-DR-REF-guidewire-public-resources.md)
@@ -214,10 +219,12 @@ schemas / profile YAMLs / contract recordings, the workflow is:
    URL preferred — e.g., "Palisades Cloud API reference §
    /policy/v1/policies").
 3. **If no public source exists:** explicitly mark the claim as
-   `(unverified — practitioner knowledge, sandbox-confirm at
-   guidewire-adj)` so the GW-1.8 staffed audit + post-blueprint
-   `/validate-consistency` red-team panel know what's load-bearing
-   on assumption vs. citation.
+   `(unverified — practitioner knowledge from public docs; first
+   integration engagement validates)` so the GW-1.8 staffed audit
+   + post-blueprint `/validate-consistency` red-team panel know
+   what's load-bearing on assumption vs. citation. Per [D-021](./000-docs/004-DR-DEC-architecture-decisions.md#d-021--no-jeremy-provisioned-sandbox-oss-pivots-to-inbound-brings-their-own-tenant-model)
+   there is no Jeremy-controlled sandbox to confirm against; first
+   inbound engagement provides the validation tenant.
 4. **Never invent endpoint shapes, typelist names, or syntax.** If
    the librarian KB has a gap, the librarian agent's job is to
    fill it (research + add to the KB) — not the authoring agent's
@@ -263,15 +270,26 @@ every PR. Branch protection on `main` requires Gemini review pass +
 1 human approval. Never merge before Gemini completes (per global
 feedback memory).
 
-## NO MOCKS — sandbox prerequisite
+## NO MOCKS — dev-tier credentials + real endpoints
 
-`GW-1.0` (sandbox provisioning) is a hard prereq. Without Guidewire
-Cloud sandbox access (developer or partner program), neither the
-staffed audit panel nor E1 begins. Sandbox creds live in
-`runbook/secrets.prod.sops.yaml` (SOPS+age) for local + GitHub
-Actions secret `GUIDEWIRE_SANDBOX_TOKEN` for CI. If sandbox is
-unobtainable, scope pivots to a vendor-partner integration where API
-access exists — never to mocks.
+Per [D-021](./000-docs/004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints).
+"Sandbox" earlier meant a Guidewire-provisioned isolated tenant —
+that's not what an MCP integration needs. **What we actually need:**
+
+1. **Dev-tier OAuth credentials** (client ID + secret) from the
+   Guidewire developer program. Stored in
+   `runbook/secrets.prod.sops.yaml` (SOPS + age) for local + GitHub
+   Actions secret for CI.
+2. **Real Cloud API endpoint URLs** — already enumerated in the
+   librarian KB at
+   [`000-docs/005-DR-REF-guidewire-public-resources.md`](./000-docs/005-DR-REF-guidewire-public-resources.md).
+
+The MCP server runs on whatever host (the dev box, a user's machine,
+a Cloud Run service) and hits the real endpoints. Production
+validation against a specific carrier tenant defers to the first
+integration engagement. **NO MOCKS still holds** — no fixtures, no
+invented endpoint shapes, no fake responses. We call real URLs;
+what comes back is what comes back.
 
 ## Author
 
