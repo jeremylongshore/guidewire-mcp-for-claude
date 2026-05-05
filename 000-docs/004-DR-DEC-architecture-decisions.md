@@ -315,3 +315,122 @@ or augment prior ones, with a `replaces:` link.
     — confirmed.
 - **attacked-by:** Persona 5 (CISO) + `mcp-safety-reviewer` Mode B
   at GW-1.8.
+
+## D-019 — Audit chain is tamper-resistant, NOT tamper-evident against a compromised harness DBA
+
+- **decided:** 2026-05-04
+- **decision:** The per-tenant linear hash chain in
+  `audit_entries` is **tamper-resistant** (an outsider without DB
+  write access cannot alter entries undetected) but is **NOT
+  tamper-evident against a privileged operator with Postgres write
+  access** (a compromised harness DBA who recomputes every
+  `entry_hash` and `prev_hash` consistently re-verifies cleanly via
+  `verifyChain()`). The OSS scope of this project does NOT ship an
+  external commitment surface (KMS-signed checkpoints, transparency
+  log, customer-controlled lock store) at append time — that is
+  E3+ work per [009 § 5.5](../000-docs/009-DR-MEMO-harness-runtime.md).
+  The threat-model and tamper-evidence claims in
+  [`02-PRD § 5.5`](./blueprint/02-PRD.md), [`05-TECHNICAL-SPEC § 8.2`](./blueprint/05-TECHNICAL-SPEC.md),
+  [`05-TECHNICAL-SPEC § 8.5`](./blueprint/05-TECHNICAL-SPEC.md), and
+  [`009-DR-MEMO § 2.1`](./009-DR-MEMO-harness-runtime.md) must be
+  scoped honestly: the chain detects **outsider tampering and
+  unprivileged-operator tampering**, NOT a compromised privileged
+  DBA. Defence-in-depth for the privileged-operator threat is
+  **Postgres role separation** — the harness's `audit_writer` role
+  is granted INSERT only (no UPDATE / DELETE on `audit_entries`),
+  the role for `verifyChain` is read-only, and the schema-owner
+  role is held by a separate operational identity. Residual risk:
+  a privileged DBA with the schema-owner role can still bypass the
+  RLS / role separation. That residual risk is documented and is
+  the trigger for adding the E3+ external-commitment surface.
+
+- **because:** Per
+  [`./blueprint/audits/02-RED-TEAM-PANEL.md F-RT-5.1`](./blueprint/audits/02-RED-TEAM-PANEL.md)
+  (Persona 5 CISO red-team finding, FAIL severity). The tamper-
+  *evidence* claim is load-bearing in the SOC 2 / regulator-grade
+  positioning of this OSS lead-magnet; if the claim is wider than
+  the architecture defends, an inbound CISO reads the doc, finds
+  the gap, and walks. Sharpening the claim now (rather than
+  conceding under audit pressure at GW-1.8) keeps the lead-magnet
+  thesis intact and lets E3+ pick up the external-commitment work
+  as a known follow-on rather than a discovered gap.
+
+- **operational consequences:**
+  - PRD § 5.5 + TECH-SPEC § 8.2 / § 8.5 / 009 § 2.1 prose updates
+    to use **tamper-resistant against an outsider; tamper-evident
+    against an unprivileged operator; defence-in-depth via role
+    separation against a privileged DBA**. Update threat-model
+    table row "Compromised harness DB" accordingly.
+  - `packages/audit/` schema (E1) ships with three Postgres roles:
+    `audit_writer` (INSERT-only on `audit_entries`), `audit_reader`
+    (SELECT-only), `audit_owner` (DDL / GRANT). The harness runs
+    as `audit_writer`; `verifyChain` as `audit_reader`; the
+    schema-owner identity is held outside the harness process.
+  - E3+ external-commitment surface enters the roadmap as a
+    follow-on epic candidate (KMS-signed checkpoints emitted at
+    append time, published to a customer-controlled commitment
+    store — implementation TBD per customer trust model).
+  - GW-1.8 staffed-audit `security-auditor` lane reviews the role-
+    separation implementation when E1 lands.
+
+- **attacked-by:** Persona 5 (CISO) — F-RT-5.1.
+
+## D-020 — Profile schema is versioned; v1 = 9 YAMLs (MVP), v2 = +1 (E2.5 aggregation-grouping)
+
+- **decided:** 2026-05-04
+- **decision:** The customer-profile contract per
+  [`02-PRD § 6`](./blueprint/02-PRD.md) is now treated as a
+  **versioned contract**, with `profiles/<customer>/profile.yaml`
+  carrying a `schemaVersion` field (semver-style major.minor).
+  - **v1.0** = the 9 YAMLs as currently specified in 02-PRD § 6
+    (auth, roles, lob, typelists, custom-entities, field-aliases,
+    approval-matrix, pii-policy, events). Sufficient for E1-E4
+    and the per-submission tools in E2.
+  - **v2.0** = v1.0 + a 10th-block aggregation-grouping schema
+    extension (carried inside `lob.yaml` as a new top-level
+    `aggregations:` map, NOT a separate YAML file — keeps the
+    9-file count and minimizes profile-template churn). The
+    aggregation schema models the dimensions Persona 9's E2.5
+    tools query: class, segment, region, declination-pattern,
+    cycle-time. Each dimension declares its source field, its
+    grouping rule, and its rollup unit.
+  - Tool authors declare a minimum profile version in their tool
+    metadata (`requiredProfileSchema: ">=v2.0"` for the 5 E2.5
+    aggregate tools). Boot-time validation refuses tools whose
+    required schema is not satisfied by the profile.
+  - **E2.5 is gated on v2.0 of the profile schema landing**, in
+    addition to the existing UWCenter sandbox-breadth prereq from
+    [D-017](#d-017--persona-9-underwriting-manager-tools-land-in-a-fresh-sub-epic-e25-not-e2-or-e5).
+    07-ROADMAP § E2.5 is updated to make this explicit.
+
+- **because:** Per
+  [`./blueprint/audits/02-RED-TEAM-PANEL.md F-RT-9.1`](./blueprint/audits/02-RED-TEAM-PANEL.md)
+  (Persona 9 underwriting-manager FAIL). The 9-YAML profile is a
+  load-bearing safety boundary (D-007: profile validates at boot;
+  unmodelled fields fail fast). Manager tools query aggregation
+  fields the v1 schema doesn't model. Without versioning the
+  contract, either (a) the manager tools cannot ship until the
+  profile schema extends — but the extension itself is undeclared,
+  so the prereq is unwritten and the tools are gated on a non-
+  decision; or (b) the tools ship with implicit fields that bypass
+  boot validation — which violates D-007. Versioning the contract
+  + declaring v2.0 explicitly resolves both: the schema extension
+  is now first-class, validatable, and the E2.5 prereq is concrete.
+
+- **operational consequences:**
+  - 02-PRD § 6 gets a `## 6.0a Profile schema versioning` subsection
+    documenting `schemaVersion`, the v1.0 content (= existing § 6
+    content), and the v2.0 extension (LOB-aggregations schema).
+  - `lob.yaml` schema (02-PRD § 6.3) gets a v2.0 `aggregations:`
+    block specification.
+  - 07-ROADMAP § E2.5 is updated: prereq list now reads
+    "(1) UWCenter sandbox breadth confirmed via `guidewire-adj`;
+    (2) profile schema v2.0 landed (+ `lob.yaml.aggregations:`
+    block added)."
+  - `packages/schemas/` (E1) ships v1.0 + v2.0 Zod schemas; tool
+    authors import the version they require.
+  - E4 customer-profile-template ships v1.0 by default; cowork-
+    fork-starter inherits v1.0; carriers opting into E2.5 tools
+    flip their profile to v2.0 with the aggregation block.
+
+- **attacked-by:** Persona 9 (underwriting manager) — F-RT-9.1.
