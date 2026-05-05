@@ -1,0 +1,25 @@
+{
+  "name": "guidewire-mcp",
+  "version": "0.1.0",
+  "description": "Carrier-native MCP server for Guidewire InsuranceSuite. Ask Claude underwriter / claims / billing questions in operator vocabulary; the harness gates writes. v0.1.0 ships read-only PolicyCenter (5 tools).",
+  "author": {
+    "name": "Jeremy Longshore",
+    "email": "jeremy@intentsolutions.io",
+    "url": "https://intentsolutions.io"
+  },
+  "repository": "https://github.com/jeremylongshore/guidewire-mcp-for-claude",
+  "homepage": "https://guidewire-mcp.intentsolutions.io",
+  "license": "Apache-2.0",
+  "keywords": [
+    "mcp",
+    "guidewire",
+    "insurance",
+    "policycenter",
+    "claimcenter",
+    "billingcenter",
+    "underwriting",
+    "claims",
+    "carrier",
+    "insuretech"
+  ]
+}
