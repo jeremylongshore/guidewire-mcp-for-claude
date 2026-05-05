@@ -69,8 +69,10 @@ PolicyCenter scopes + JWT-propagation enabled per Persona 5;
 `roles.yaml` mapping `CL_Underwriter` to the read-only PC tools per
 [02-PRD § 6.2](./02-PRD.md#62-rolesyaml--role--tool--mode-permission-matrix);
 `lob.yaml` declaring at least the carrier's commercial property + GL
-rule sets; sandbox tenant reachable per
+rule sets; dev-tier Cloud API endpoints reachable with dev-tier OAuth
+credentials per
 [D-008](../004-DR-DEC-architecture-decisions.md#d-008--no-mocks--real-guidewire-cloud-sandbox-from-day-1)
++ [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints)
 (NO MOCKS — no fixture fall-through).
 
 ### Narrative
@@ -726,10 +728,14 @@ Step by step:
    (loaded from SOPS, never raw), token endpoint, scopes, JWKS URI.
    Per [02-PRD § 6.1](./02-PRD.md#61-authyaml--guidewire-hub-oauth--jwt-propagation)
    + [librarian P6](./audits/00-LIBRARIAN-CITATION-AUDIT.md#p6--hub-oauth--auth-model-f-prd-016--f-api-012--c):
-   token endpoint, scopes catalog, and JWKS URI are **sandbox-
-   blocked** until `guidewire-adj` closes. The CLI surfaces this
+   token endpoint, scopes catalog, and JWKS URI are
+   **tenant-specific** — they resolve from the customer's Hub OIDC
+   discovery document at onboarding time. The CLI surfaces this
    — `auth.yaml` cannot be finalized until the SI engineer has the
-   OIDC discovery document from Acme's Hub tenant.
+   OIDC discovery document from Acme's Hub tenant. (Generic
+   reachability against the public Cloud API is covered separately
+   by the `smoke-reach.ts` job in [07-ROADMAP § E1](../blueprint/07-ROADMAP.md#e1--foundation)
+   per [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints).)
 2. **`roles.yaml`** — Acme's role hierarchy mapped to the
    role × tool × mode matrix. CLI validates every referenced tool
    exists in the corresponding server's manifest (boot-time fail-
