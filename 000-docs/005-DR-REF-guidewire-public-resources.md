@@ -34,15 +34,42 @@ products at versioned paths under `docs.guidewire.com`. Every endpoint,
 every request/response shape, every typelist is here. **This is our
 primary substitute for sandbox-driven contract drafting.**
 
+### Cloud API top-level landing
+
+| What | URL |
+|---|---|
+| **Cloud APIs landing (open)** | <https://www.guidewire.com/developers/apis/cloud-apis> |
+
 ### Per-suite API references
 
 | Suite | Latest reference | Module set |
 |---|---|---|
 | **PolicyCenter** | <https://docs.guidewire.com/cloud/pc/202503/apiref/> | Product Definition, Admin, Job, Policy, Account, Async, Common, Composite, Graph, System Tools |
 | **ClaimCenter** | <https://docs.guidewire.com/cloud/cc/202411/apiref/> | Admin, Async, Claim, Common, **Composite**, System Tools |
+| **ClaimCenter (older — 202111)** | <https://docs.guidewire.com/cloud/cc/202111/apiref/> | Older release; useful for tracking module-evolution drift |
 | **BillingCenter** | <https://docs.guidewire.com/cloud/bc/202411/apiref/> | Admin, Async, **Billing**, Common, Composite, System Tools |
 | **BillingCenter (202503)** | <https://docs.guidewire.com/cloud/bc/202503/apiref/> | Same module set as 202411 |
 | **InsuranceSuite (cross, Palisades)** | <https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/introduction-to-Cloud-API/c_endpoints.html> | Cross-suite endpoint primer + BillingCenter Consumer Guide |
+
+### Tenant-bundled Swagger UI (once an engagement is live)
+
+Per the Guidewire developer portal, **Swagger UI is automatically
+bundled with every InsuranceSuite Cloud application**. From inside
+a tenant (or partner sandbox), the path is:
+
+```
+<applicationURL>/resources/swagger-ui/
+```
+
+This serves interactive API docs for the tenant's actual deployed
+modules (Common, Policy, Claim, Billing, Admin, etc.). For our
+project: when the first integration engagement opens, this is the
+**capture-the-recordings entry point** — the tenant-specific
+Swagger gives us the exact request/response shapes for THIS
+carrier's product configuration, including custom-entity paths
+that don't exist in the public apiref. See
+[`05-TECHNICAL-SPEC.md` § 5](./blueprint/05-TECHNICAL-SPEC.md) for
+the recording-capture pattern.
 
 **Critical notes on the module tables (verified 2026-05-04):**
 
@@ -237,7 +264,7 @@ provisioning team — not via a public form. Our tools target the
 
 ---
 
-## 5. Marketplace + Partner program
+## 5. Marketplace + Partner program (sandbox path lives here)
 
 | What | URL |
 |---|---|
@@ -245,9 +272,34 @@ provisioning team — not via a public form. Our tools target the
 | Partner Connect (overview) | <https://www.guidewire.com/partners/for-guidewire-partners-partnerconnect> |
 | Partner Connect — Technology Partners | <https://www.guidewire.com/partnerconnect/solution/> |
 | Partner Connect — Consulting Partners | <https://www.guidewire.com/partners/for-guidewire-partners-partnerconnect/consulting-partners> |
+| **Cloud Platform releases** (where new sandbox features land) | <https://www.guidewire.com/products/technology/guidewire-cloud-platform-releases> |
 
-Relevant for E11+ marketplace publish epic (`guidewire-qqx`) and the
-sandbox-application playbook in bead `guidewire-adj`.
+### InsuranceSuite API Sandbox (Palisades release, 2026)
+
+Guidewire launched an **InsuranceSuite API Sandbox** in their
+**Palisades** Cloud Platform release. Per the release notes
+(2026-05-04): **same-day partner onboarding**, exposes API limits
+exploration, and PolicyCenter + ClaimCenter API/app tutorials.
+Access is **gated behind PartnerConnect** — not open-public — but
+onboarding is now fast.
+
+This is the path-to-tenant for the "first integration engagement"
+model in [D-021](../../000-projects/guidewire/000-docs/004-DR-DEC-architecture-decisions.md#d-021).
+Where D-021 says "first integration engagement brings their own
+production tenant," the practical alternate path is **PartnerConnect
+sandbox onboarding** — useful for Intent Solutions IO directly (as
+a partner) when an inbound engagement opens, OR for the inbound
+itself if they're not already a partner.
+
+Operational note: the sandbox is a **shared partner sandbox** by
+default (multi-tenant within the partner program), not an
+isolated-per-engagement tenant. For per-engagement isolation, the
+engagement either uses their own production tenant or requests a
+dedicated sandbox.
+
+Relevant for E11+ marketplace publish (`guidewire-qqx`) AND for
+any engagement that needs sandbox-grade reachability before going
+to production.
 
 ---
 
@@ -309,28 +361,93 @@ Useful for orientation but **not authoritative**. The
 `guidewire-reference-librarian` agent flags these as "community"
 when citing.
 
-| What | URL |
+| What | URL | Why useful |
+|---|---|---|
+| **`dev-power-up/initialize`** (community guide for spinning up Centers locally on macOS) | <https://github.com/dev-power-up/initialize> | Older but useful for pattern-matching Guidewire's stack — written by an ex-Guidewire engineer. |
+| Guidewire Masters tutorials | <https://guidewiremasters.in/guidewire-policycenter-step-by-step-tutorial/> · <https://guidewiremasters.in/guidewire-documentation/> | Step-by-step PolicyCenter walkthroughs |
+| CloudFoundation training | <https://learning.cloudfoundation.com/p/guidewire-training-free-course> | Free course |
+| Guidewire certification overview (community) | <https://cloudfoundation.com/blog/guidewire-certification/> | Cert path overview |
+| MyTectra training | <https://www.mytectra.com/guidewire-training> | Paid courses |
+| ExcelR training | <https://www.excelr.com/guidewire-training> | Paid courses |
+| Real Trainings — free PDFs | <https://www.realtrainings.com/institutes/view/guidewire-training-material> | PDF training material |
+| Scribd: PolicyCenter Academy V1.0 (course PDF mirror) | <https://www.scribd.com/presentation/560464017/GuideWire-PolicyCenter-Academy-Course-V1-0-Version-9-1031> | Course PDF mirror |
+
+### Guidewire's open-source test framework stack
+
+Guidewire's official test framework runs on entirely open-source
+tooling — useful for pattern-matching test design without ever
+touching a Guidewire license:
+
+| Tool | Role |
 |---|---|
-| Guidewire Masters tutorials | <https://guidewiremasters.in/guidewire-policycenter-step-by-step-tutorial/> · <https://guidewiremasters.in/guidewire-documentation/> |
-| CloudFoundation training | <https://learning.cloudfoundation.com/p/guidewire-training-free-course> |
-| Guidewire certification overview (community) | <https://cloudfoundation.com/blog/guidewire-certification/> |
-| MyTectra training | <https://www.mytectra.com/guidewire-training> |
-| ExcelR training | <https://www.excelr.com/guidewire-training> |
-| Real Trainings — free PDFs | <https://www.realtrainings.com/institutes/view/guidewire-training-material> |
-| Scribd: PolicyCenter Academy V1.0 (course PDF mirror) | <https://www.scribd.com/presentation/560464017/GuideWire-PolicyCenter-Academy-Course-V1-0-Version-9-1031> |
+| **Karate** | API test DSL (Cucumber-extension) |
+| **Cucumber** | BDD scenarios |
+| **Gradle** | Build |
+| **IntelliJ IDEA** | IDE |
+| **JDK 11** | Runtime |
+
+Pattern: the test recordings + replay framework in our
+[`packages/audit/`](../packages/audit/) + the contract test layer
+in `tests/recordings/` (see
+[`05-TECHNICAL-SPEC.md` § 5](./blueprint/05-TECHNICAL-SPEC.md))
+mirrors this approach in TypeScript / Vitest / undici. Carrier
+test engineers reading our repo will recognize the shape.
 
 ---
 
-## 10. Public open-source samples — gap
+## 10. Guidewire's public open-source — `guidewire-oss` GitHub org
 
-**As of 2026-05-04 there is no Guidewire-published public GitHub
-repo of sample code.** The official sample code lives inside
-InsuranceSuite Studio's "PetStore" walkthrough referenced above.
+**Updated 2026-05-04** (was previously logged as "gap"):
+Guidewire maintains an official OSS hub at
+[`github.com/guidewire-oss`](https://github.com/guidewire-oss) —
+**~30 repos**, Apache-2.0-licensed, public. None of these expose
+the InsuranceSuite Cloud API itself (that surface stays in
+PartnerConnect / customer-tenant), but they reveal Guidewire's
+infrastructure/tooling posture and provide useful
+pattern-matching for our own architecture.
 
-This gap is a **feature, not a bug**, for our project: the OSS repo
-at `github.com/jeremylongshore/guidewire-mcp-for-claude` is the first
-substantial public open-source sample anchored on Guidewire's published
-API surface. (Lead-magnet thesis reinforced.)
+| Repo | URL | Why relevant |
+|---|---|---|
+| **`fern-platform`** | <https://github.com/guidewire-oss/fern-platform> | Unified test intelligence platform with multi-format ingestion, real-time analytics, LLM-powered insights. Go, ~444 stars. **Closest analog to our observability + testing-harness ambitions.** |
+| **`guac`** | <https://github.com/guidewire-oss/guac> | Software security metadata graph DB. Pattern-relevant for our hash-chain audit + supply-chain provenance work. |
+| `kubevela` (fork) | <https://github.com/guidewire-oss/kubevela> | Modern app platform — relevant if E10+ ever explores Guidewire-internal-app patterns. |
+| `sawchain`, `ocm`, `uaa`, `teams360` | (see org listing) | Various infrastructure/platform tooling. |
+
+**Browse the full list:** <https://github.com/guidewire-oss>
+
+### Gosu — the Guidewire config/customization language (open source)
+
+Guidewire Software created **Gosu** — an open-source, general-purpose
+JVM language. **All Guidewire config and customization runs on Gosu.**
+Useful to understand if our profile schema (`profiles/<customer>/`)
+ever needs to mirror Guidewire-side rule shapes for higher-fidelity
+mappings.
+
+| What | URL |
+|---|---|
+| Gosu Language home | <https://gosu-lang.github.io/> |
+| Gosu source on GitHub | <https://github.com/gosu-lang/gosu-lang> |
+
+We do NOT plan to write Gosu in this project (TypeScript stack per
+[D-001](../004-DR-DEC-architecture-decisions.md) + 05-TECH-SPEC § 1).
+Gosu is in the librarian KB strictly as **read-only orientation**
+for understanding what carrier teams' customizations look like.
+
+### Implication for our positioning
+
+The earlier "no Guidewire-published OSS sample" claim was wrong as
+of Palisades. The corrected framing for the lead-magnet thesis:
+
+- Guidewire's OSS org is real but lives at the **infrastructure /
+  tooling** layer (test platforms, security graph, K8s).
+- **Our repo is still the first substantial public OSS anchored on
+  Guidewire's *Cloud API surface* + carrier-vocabulary tool design.**
+  The differentiation holds — we're filling a different gap than
+  what `guidewire-oss` covers.
+- Reviewers from carrier IT who recognize `guidewire-oss` (e.g.
+  `fern-platform` for test telemetry) will find our governance
+  harness immediately legible because it sits on the same OSS-
+  ergonomics + Apache-2.0 + observability-first foundation.
 
 ---
 
