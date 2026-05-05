@@ -1,0 +1,39 @@
+{
+  "name": "@intentsolutions/guidewire-harness",
+  "version": "0.1.0",
+  "description": "Guidewire MCP harness: plan → policy → approval → execute → audit pipeline (library + CLI). NOT an MCP server (D-003).",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "guidewire-harness": "./dist/cli.js"
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@intentsolutions/guidewire-audit": "workspace:*",
+    "@intentsolutions/guidewire-observability": "workspace:*",
+    "@intentsolutions/guidewire-schemas": "workspace:*",
+    "@opentelemetry/api": "^1.9.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  },
+  "peerDependencies": {
+    "zod": "^3.23.0"
+  }
+}
