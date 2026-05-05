@@ -695,11 +695,20 @@ a carrier-side integration engineer.
 **Modes used:** n/a — this is the carrier-onboarding journey. The
 output is a populated `profiles/<customer>/` directory that the
 suite MCPs will run against.
-**Preconditions:** Carrier sandbox provisioned (per
+**Preconditions:** Carrier has tenant access (per
 [D-008](../004-DR-DEC-architecture-decisions.md#d-008--no-mocks--real-guidewire-cloud-sandbox-from-day-1)
-NO MOCKS — fixture-only flows are forbidden); SOPS+age secrets
-posture set up per IS standard; the SI engineer has
-`guidewire-mcp-for-claude` cloned locally.
++ [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints)
+NO MOCKS — fixture-only flows are forbidden). Tenant access can be
+the carrier's own production tenant credentials, OR — for partners
+without their own tenant — the **Guidewire PartnerConnect sandbox**
+(Palisades release, same-day partner onboarding per
+[`005-DR-REF § 5`](../005-DR-REF-guidewire-public-resources.md#5-marketplace--partner-program-sandbox-path-lives-here)).
+SOPS+age secrets posture set up per IS standard; the SI engineer
+has `guidewire-mcp-for-claude` cloned locally. The tenant's
+**Swagger UI at `<applicationURL>/resources/swagger-ui/`** is the
+authoritative source for tenant-specific endpoint shapes (custom
+entity paths, extended typelists) — onboarding step 0 is to bookmark
+it and capture the relevant endpoint specs.
 
 ### Narrative
 

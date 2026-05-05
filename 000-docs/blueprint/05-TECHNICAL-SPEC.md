@@ -744,6 +744,7 @@ sandbox cred SOPS file is the entire local-dev setup.
 ### 5. NO MOCKS — sandbox + recording-replay contract
 
 > *Inputs: [D-008](../004-DR-DEC-architecture-decisions.md#d-008--no-mocks--real-guidewire-cloud-sandbox-from-day-1),
+> [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints),
 > [`../008-DR-MEMO-guidewire-api.md`](../008-DR-MEMO-guidewire-api.md)
 > § 12 "avoid" item 11, librarian audit P2 / P5.*
 
@@ -753,6 +754,19 @@ no fixtures, real Cloud API recordings only. Hand-written
 REFUSE such files at boot. CI fails loudly when sandbox is
 unreachable on the live-sandbox post-merge job; never silently
 degrades to mocks.
+
+**Recording-capture entry point per engagement.** Per the Guidewire
+developer portal, every InsuranceSuite Cloud application bundles
+**Swagger UI at `<applicationURL>/resources/swagger-ui/`** — that's
+the per-tenant interactive API docs reflecting the carrier's actual
+deployed modules + product configuration (including custom-entity
+paths that don't exist in the public apiref). When the first
+integration engagement opens, that's where we point the
+recording-capture script (`infra/recording/capture.ts`) — the
+tenant Swagger reveals the exact endpoint shapes for THIS
+carrier, the recordings get captured + sanitized + provenance-tagged
+into `tests/recordings/`. See
+[`005-DR-REF § 1` Tenant-bundled Swagger UI](../005-DR-REF-guidewire-public-resources.md).
 
 #### 5.1 Recording filename provenance
 
