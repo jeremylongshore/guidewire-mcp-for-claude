@@ -1,13 +1,12 @@
-%% Guidewire MCP for Claude — System Architecture
-%% Source-of-truth diagram. Renders natively on GitHub (mermaid block in
-%% the embedding markdown) + as SVG via `mmdc -i 09-DR-DIAG-architecture.mmd
-%% -o 09-DR-DIAG-architecture.svg -t dark -b transparent`.
-%%
-%% Layers (top→bottom) + cross-cutting planes (right side).
-%% Planes attach via dotted arrows to make the data-flow vs governance
-%% distinction visible.
-
+---
+title: Guidewire MCP for Claude — System Architecture
+---
 flowchart TB
+    %% Source-of-truth diagram. Renders natively on GitHub (mermaid block
+    %% in the embedding markdown) + as SVG via mmdc.
+    %% Layers (top→bottom) + cross-cutting planes (right side). Planes
+    %% attach via dotted arrows to make the data-flow vs governance
+    %% distinction visible.
     %% ─── Layer 1 — Agent host ──────────────────────────────────────
     subgraph L1 ["L1 · Agent host"]
         direction LR
@@ -101,8 +100,10 @@ flowchart TB
     %% ─── Async events plane (right-side, dotted) ──────────────────
     GW_CLOUD -. App Events .-> WEBHOOK
     WEBHOOK ==> QUEUE
-    QUEUE -. shard by primaryObject.id .-> CC & BC & PC
-    QUEUE -. query / replay .-> EV
+    QUEUE -. "shard by primaryObject.id" .-> CC
+    QUEUE -. "shard by primaryObject.id" .-> BC
+    QUEUE -. "shard by primaryObject.id" .-> PC
+    QUEUE -. "query / replay" .-> EV
 
     %% ─── Audit + observability fan-in (governance, dotted) ────────
     HARN -. audit · hash-chain .-> AUD_DB
