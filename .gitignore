@@ -23,6 +23,7 @@ coverage/
 .vitest-cache/
 stryker-tmp/
 reports/
+.turbo/
 
 # Env / secrets — plaintext only; *.sops.* IS committed
 .env

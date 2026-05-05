@@ -1,0 +1,39 @@
+{
+  "name": "guidewire-mcp-for-claude",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Carrier-native MCP servers + governance harness for Guidewire estates, designed Claude/Anthropic-first.",
+  "license": "Apache-2.0",
+  "author": "Jeremy Longshore <jeremy@intentsolutions.io>",
+  "homepage": "https://github.com/jeremylongshore/guidewire-mcp-for-claude",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeremylongshore/guidewire-mcp-for-claude.git"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@10.8.1",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r --no-bail test",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "pnpm -r exec tsc --noEmit",
+    "smoke-reach": "tsx scripts/smoke-reach.ts"
+  },
+  "dependencies": {
+    "undici": "^6.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "@intentsolutions/audit-harness": "^0.1.0",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}
