@@ -93,4 +93,25 @@ describe('loadProfile — E4 integration', () => {
       return true;
     });
   });
+
+  it('Test 4: refuses health LOB without BAA at boot with code BAA_GATE_MISSING (SA-6 + MS-6)', async () => {
+    // Cross-file invariant: any LOB carrying lob_class:health requires
+    // pii-policy.yaml.baa_required.enabled === true. Per 02-PRD § 6.3 + § 6.8.
+    const brokenPath = join(FIXTURES_DIR, 'baa-gate-missing');
+
+    await expect(loadProfile(brokenPath)).rejects.toSatisfy((err: unknown) => {
+      if (!(err instanceof ProfileLoadError)) return false;
+      // The canonical HarnessErrorCode is the discriminator upstream wrappers
+      // pattern-match on — string-matching the human-readable message is brittle.
+      expect(err.code).toBe('BAA_GATE_MISSING');
+      // Error names both YAMLs (cross-file invariant)
+      expect(err.file).toContain('lob.yaml');
+      expect(err.file).toContain('pii-policy.yaml');
+      // Error names the offending carrier code(s) so the operator knows which
+      // LOB entry is wrong; the non-health sibling MUST NOT appear.
+      expect(err.message).toContain('ACME_GROUPHEALTH');
+      expect(err.message).not.toContain('ACME_COMMERCIALPROP');
+      return true;
+    });
+  });
 });

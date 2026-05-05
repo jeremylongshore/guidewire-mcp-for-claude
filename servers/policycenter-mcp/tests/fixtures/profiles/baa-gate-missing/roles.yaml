@@ -1,0 +1,46 @@
+# roles.yaml — role × tool × mode permission matrix
+#
+# Per 02-PRD § 6.2 and packages/schemas/src/profile/roles.ts.
+#
+# Structure: roles.<RoleName>.<server-name>.<tool-name>: <mode>
+#
+# Valid modes (packages/schemas/src/harness/plan.ts → ToolModeSchema):
+#   read_only      — tool may read; never writes; no harness gate needed
+#   draft_only     — tool may stage a draft; no real write; audit logged
+#   approved_execute — real write; requires plan → policy gate → human approval
+#                     → execute → hash-chain audit → rollback hint (E3 harness)
+#
+# Role naming: carrier-controlled. Acme's "CL_Underwriter" is Beta's
+# "Comm_UW_L1". The MCP runtime sees the role from the JWT / actor profile;
+# tool access is scoped at call time against this matrix.
+#
+# Validation rule (boot-time): every tool listed here must exist in the
+# corresponding server's manifest. Unknown tool names are a boot failure.
+#
+# For a read-only E2 deployment, only read_only mode entries are needed.
+# approved_execute entries are valid only once E3 harness ships.
+
+roles:
+
+  # TODO: replace "CL_Underwriter" with your first carrier role name.
+  # This example follows 02-PRD § 6.2 shape exactly.
+  CL_Underwriter:
+    policycenter-mcp:
+      find-submissions-waiting-on-me: read_only
+      show-policies-for-this-insured: read_only
+      summarize-this-submission: read_only
+      did-we-lose-this-account: read_only
+      pull-this-submission: read_only
+    claimcenter-mcp: {}       # no ClaimCenter access for this role
+
+  # TODO: replace "Claims_Adjuster_II" with your second carrier role name.
+  Claims_Adjuster_II:
+    policycenter-mcp: {}      # no PolicyCenter access for this role
+    claimcenter-mcp:
+      # E7 ClaimCenter tools land here — placeholders for now
+      {}
+
+  # TODO: add additional carrier roles as needed.
+  # Pattern: one entry per role, all servers listed (even if empty {}).
+  # The runtime does not fail on a missing server key — an absent key
+  # means "no access" — but being explicit avoids ambiguity in audits.

@@ -1,0 +1,47 @@
+# approval-matrix.yaml — Write action approval thresholds
+#
+# Per 02-PRD § 6.7 and packages/schemas/src/profile/approval-matrix.ts.
+#
+# An empty matrix (`matrix: {}`) is valid for read-only deployments.
+# Approval entries are only consulted by `approved_execute` tools.
+# For a read-only E2 deployment, leave this file as-is.
+#
+# When E3 harness ships and approved_execute tools are enabled (E5+),
+# populate this file with per-action approval tiers.
+#
+# Structure:
+#   matrix.<server-name>.<tool-name>:
+#     - condition:
+#         premium_change_lt: <number>    # trigger when premium change < N
+#         premium_change_gte: <number>   # trigger when premium change >= N
+#         amount_lt: <number>            # trigger when amount < N
+#         amount_gte: <number>           # trigger when amount >= N
+#         currency: <ISO-4217>           # scope condition to a currency
+#       approver_tier: <role-name>       # must exist in roles.yaml
+#
+# Not every write gates on human approval — claims adjusters make 80
+# decisions a day (02-PRD § 6.7). The matrix expresses "auto-approve
+# below $X, escalate above." Money typing is preserved: conditions
+# reference both amount and currency (008 § 11).
+#
+# Validation rule: every approved_execute tool referenced must exist in
+# the manifest; every approver_tier must exist in roles.yaml.
+
+matrix:
+  {}
+  # TODO: populate when approved_execute tools are enabled (E5+).
+  # Example (from 02-PRD § 6.7):
+  #
+  # policycenter-mcp.draft-endorsement:
+  #   - condition: { premium_change_lt: 1000, currency: USD }
+  #     approver_tier: T1_Underwriter
+  #   - condition: { premium_change_lt: 10000, currency: USD }
+  #     approver_tier: T2_Senior_Underwriter
+  #   - condition: { premium_change_gte: 10000, currency: USD }
+  #     approver_tier: T3_Manager_Underwriter
+  #
+  # billingcenter-mcp.reconcile-this-payment:
+  #   - condition: { amount_lt: 5000, currency: USD }
+  #     approver_tier: T1_Billing_Op
+  #   - condition: { amount_gte: 5000, currency: USD }
+  #     approver_tier: T2_Billing_Manager
