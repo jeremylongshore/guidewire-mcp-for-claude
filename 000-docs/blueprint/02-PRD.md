@@ -962,8 +962,13 @@ defaults of § 4.3:
 - All `draft_only` tools enabled except `draft-denial-letter` (disabled)
 - All `approved_execute` tools disabled
 - `pii-policy.yaml` baa_required: false
-- Sandbox tenant URL pointing at Jeremy's sandbox (per
-  `guidewire-adj` once GH #1 closes)
+- Dev-tier Cloud API endpoints from the librarian KB
+  ([`005-DR-REF`](../005-DR-REF-guidewire-public-resources.md))
+  reached with dev-tier OAuth credentials per
+  [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints)
+  (the superseded `guidewire-adj` isolated-tenant prereq is replaced
+  by the `scripts/smoke-reach.ts` reachability test from
+  [07-ROADMAP § E1](./07-ROADMAP.md#e1--foundation))
 
 Customers fork to a new directory and edit; the OSS demo profile is
 read-only reference material, not the production path.

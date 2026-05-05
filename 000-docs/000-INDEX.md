@@ -13,7 +13,7 @@
 | [`001-DR-RES-research-report.md`](./001-DR-RES-research-report.md) | Original research report — the `001-DR-RES-...` source |
 | [`002-DR-CRIT-personas.md`](./002-DR-CRIT-personas.md) | 9-persona red-team critique that shaped v4 |
 | [`003-DR-ARCH-oss-cowork.md`](./003-DR-ARCH-oss-cowork.md) | v4 architecture memo: OSS + cowork-fork model, 4 audiences, suite-cut MCP servers |
-| [`004-DR-DEC-architecture-decisions.md`](./004-DR-DEC-architecture-decisions.md) | Decision log — D-001 through D-018 |
+| [`004-DR-DEC-architecture-decisions.md`](./004-DR-DEC-architecture-decisions.md) | Decision log — D-001 through D-021 |
 
 ## Reference
 
@@ -45,7 +45,7 @@
 | [`blueprint/08-COWORK-CURRICULUM.md`](./blueprint/08-COWORK-CURRICULUM.md) | Cowork curriculum *(deferred — scope call 2026-05-04)* |
 | [`blueprint/09-DR-DIAG-architecture.md`](./blueprint/09-DR-DIAG-architecture.md) | Architecture diagram (mermaid + narrative) |
 | [`blueprint/10-AAR/`](./blueprint/10-AAR/) | Per-epic after-action reports (filled as work lands) |
-| [`blueprint/audits/`](./blueprint/audits/) | Audit memos: librarian citation audit + consistency audit + (pending) staffed 11-auditor panel |
+| [`blueprint/audits/`](./blueprint/audits/) | Audit memos: 3 pre-audit gauntlet passes (librarian citation, consistency, red-team) + 11-auditor staffed panel (`03-AR..13-FC`) + the GW-1.9 response register (`00-AUDIT-RESPONSES.md`) |
 
 ## Read order for a new contributor
 

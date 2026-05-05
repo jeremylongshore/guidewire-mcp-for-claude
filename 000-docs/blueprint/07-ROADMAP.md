@@ -17,7 +17,7 @@
 
 | # | Title | Bead | GH | Type |
 |---|---|---|---|---|
-| Phase 0 | Sandbox provisioning | `guidewire-adj` | [#1](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/1) | Hard prereq |
+| Phase 0 | ~~Sandbox provisioning~~ — **superseded** by E1's `scripts/smoke-reach.ts` per [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints) | ~~`guidewire-adj`~~ (closed) | [#1](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/1) (closed) | ~~Hard prereq~~ |
 | Blueprint | Master blueprint paperwork (this directory) | `guidewire-7jt` | [#2](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/2) | Pre-code gate |
 
 ### Public 11-epic roadmap
@@ -57,6 +57,35 @@
   pipeline (pnpm + Biome + Vitest + audit-harness gates)
 - `LICENSE` (Apache-2.0) and `CONTRIBUTING.md` are real (currently
   templated); CI status badge in README points at a green run
+  - **`CONTRIBUTING.md` required sections** (per [06-DA F-5](./audits/06-DA-docs-review.md#f-5)):
+    1. **Development setup** — Node 22 LTS + pnpm, the SOPS+age secrets
+       install, `pnpm install && pnpm -r build && pnpm -r test` smoke path.
+    2. **Branch convention** — feature branches per repo `CLAUDE.md`
+       § "Pre-Plan Discipline"; never touch `main` directly.
+    3. **PR convention** — pre-stated commit list + PR title per the
+       blueprint section the bead covers; Gemini Code Assist review
+       pass + 1 human approval before merge (branch protection on `main`).
+    4. **Beads workflow link** — pointer to repo `CLAUDE.md` § Workflow
+       (`bd ready` → `bd show <id>` → `bd update --claim` → `bd close -r`)
+       and the three-layer bead↔GH↔Plane mirror via `bd-sync`.
+    5. **Agent specialist workflow** — pointer to
+       [`README.md`](./audits/README.md#the-11-auditors) and the five
+       project-scoped agents in `.claude/agents/` (when to invoke each
+       lane; how to read their memos in `audits/`).
+    6. **Gemini review requirement** — the external review gate is
+       non-negotiable per repo `CLAUDE.md` § "Gemini PR Review";
+       contributors should expect Gemini comments and resolve them
+       before requesting human review.
+    7. **DCO + license posture** — Apache-2.0 + DCO sign-off
+       (`git commit -s`); contributor's `User-Agent` for any
+       AI-assisted contribution must be disclosed in the PR body.
+    8. **Carrier-vocabulary 8-rule checklist** — the [D-016](../004-DR-DEC-architecture-decisions.md#d-016--tool-vocabulary-canonical-names-the-d-016-discipline)
+       tool-naming rules; PRs that introduce API-shaped names
+       (`search_*`, `get_*`, `list_*`) are rejected at review.
+    9. **Audit-harness gates that fail PRs** — `pnpm exec audit-harness`
+       hash-pinning, escape-scan, CRAP, architecture, bias, Gherkin
+       lint; any AI-proposed policy edit without `audit-harness init`
+       re-init refuses at pre-commit by design.
 - **Endpoint reachability smoke test** (per [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints)):
   a `scripts/smoke-reach.ts` script reads dev-tier OAuth credentials
   from SOPS-encrypted env (`runbook/secrets.prod.sops.yaml`), iterates
@@ -212,10 +241,15 @@ audit trail and source-recording provenance.
 
 **Prereq gates:**
 
-1. **`guidewire-adj` at "sandbox breadth confirmed for UWCenter
-   aggregation surface"** — before this epic opens. If
-   `guidewire-adj` closes with insufficient UWCenter breadth, E2.5
-   may slip behind E5/E6/E7 with no MVP impact.
+1. **UWCenter aggregation-surface reachability confirmed via
+   `scripts/smoke-reach.ts`** — before this epic opens, the E1
+   reachability smoke test (per [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints)
+   — superseding the now-closed `guidewire-adj` isolated-tenant
+   bead) must demonstrate the UWCenter aggregation endpoints
+   respond with dev-tier OAuth credentials. If reachability is
+   insufficient (e.g., UWCenter aggregation surface gated to a
+   non-public endpoint or to first-engagement tenant scope),
+   E2.5 may slip behind E5/E6/E7 with no MVP impact.
 2. **Profile schema v2.0 landed** (per [D-020](../004-DR-DEC-architecture-decisions.md#d-020--profile-schema-is-versioned-v1--9-yamls-mvp-v2--1-e25-aggregation-grouping)) — adds the `aggregations:` map inside `lob.yaml` modelling class / segment / region / declination-pattern / cycle-time dimensions. Without v2.0 the manager tools cannot ship: their queries reference fields the profile contract does not validate at boot, which violates [D-007](../004-DR-DEC-architecture-decisions.md). The schema extension itself is a small E1.5-grade ticket — concretely a Zod schema bump + 02-PRD § 6.3 edit + cowork-fork-template upgrade path.
 
 **Cross-references:**
