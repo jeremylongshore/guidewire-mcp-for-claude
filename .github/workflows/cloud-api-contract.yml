@@ -1,0 +1,104 @@
+name: Cloud API Contract Tests (Karate)
+
+# Decision record: D-022 in 000-docs/004-DR-DEC-architecture-decisions.md
+#
+# This workflow runs the Karate contract suite against Guidewire's Cloud API.
+# It is intentionally separate from ci.yml — it has different trigger conditions,
+# requires carrier-tenant credentials, and can run independently without
+# polluting the main build.
+#
+# Skip behaviour: when GUIDEWIRE_OAUTH_CLIENT_ID is not set (forks, open PRs
+# without the cloud-api-contract label, or branches without secrets access),
+# the job exits 0 with a clear "skipped" message. No false greens, no noisy
+# failures for contributors who don't have credentials.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tests/contract/**'
+      - 'servers/policycenter-mcp/**'
+
+  pull_request:
+    types: [labeled]
+    # Only run when the 'cloud-api-contract' label is added to the PR.
+    # This gates credential injection to intentional runs — avoids accidentally
+    # exposing secrets to fork PRs.
+
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger (optional)'
+        required: false
+        default: 'manual run'
+
+jobs:
+  karate-contract-tests:
+    name: Karate / PolicyCenter Cloud API
+    runs-on: ubuntu-latest
+
+    # Skip the entire job when the GUIDEWIRE_OAUTH_CLIENT_ID secret is absent.
+    # GitHub evaluates secret references as empty strings in forks and when
+    # the secret is not configured — this guard catches both cases cleanly.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.label.name == 'cloud-api-contract') }}
+
+    steps:
+      - name: Check for credentials (skip-guard)
+        id: cred-check
+        run: |
+          if [ -z "${{ secrets.GUIDEWIRE_OAUTH_CLIENT_ID }}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "SKIP — GUIDEWIRE_OAUTH_CLIENT_ID secret is not configured."
+            echo "Set the 4 GUIDEWIRE_* secrets in repository settings to enable this suite."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.cred-check.outputs.skip == 'false'
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 11 (Temurin)
+        if: steps.cred-check.outputs.skip == 'false'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+          cache: gradle
+
+      - name: Validate Gradle wrapper
+        if: steps.cred-check.outputs.skip == 'false'
+        uses: gradle/wrapper-validation-action@v3
+
+      - name: Make gradlew executable
+        if: steps.cred-check.outputs.skip == 'false'
+        run: chmod +x tests/contract/gradlew
+
+      - name: Run Karate contract suite
+        if: steps.cred-check.outputs.skip == 'false'
+        working-directory: tests/contract
+        env:
+          GUIDEWIRE_OAUTH_CLIENT_ID:     ${{ secrets.GUIDEWIRE_OAUTH_CLIENT_ID }}
+          GUIDEWIRE_OAUTH_CLIENT_SECRET: ${{ secrets.GUIDEWIRE_OAUTH_CLIENT_SECRET }}
+          GUIDEWIRE_TOKEN_ENDPOINT:      ${{ secrets.GUIDEWIRE_TOKEN_ENDPOINT }}
+          GUIDEWIRE_PC_BASE_URL:         ${{ secrets.GUIDEWIRE_PC_BASE_URL }}
+        run: ./gradlew test --no-daemon
+
+      - name: Upload Karate test results
+        if: steps.cred-check.outputs.skip == 'false' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: karate-results
+          path: tests/contract/build/reports/tests/
+          retention-days: 14
+
+      - name: Summarize skip (when creds absent)
+        if: steps.cred-check.outputs.skip == 'true'
+        run: |
+          echo "### Cloud API Contract Tests — SKIPPED" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "The \`GUIDEWIRE_OAUTH_CLIENT_ID\` secret is not configured." >> "$GITHUB_STEP_SUMMARY"
+          echo "Set the 4 \`GUIDEWIRE_*\` secrets in repository settings to enable this suite." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "See [D-022](../../000-docs/004-DR-DEC-architecture-decisions.md) and [tests/contract/README.md](../../tests/contract/README.md) for setup instructions." >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,4 @@
+/build/
+/.gradle/
+karate-results/
+karate-recordings/
