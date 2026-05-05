@@ -236,7 +236,7 @@
           <li><strong>Carrier-vocabulary tools, not API verbs.</strong> Tool names are the question an underwriter / claims / billing operator would actually ask — never <code>search_policies</code>.</li>
           <li><strong>NO MOCKS.</strong> Real Guidewire Cloud API endpoints from day one. Dev-tier OAuth creds; <code>tests/recordings/</code> hold provenance-stamped HTTP captures, never invented fixtures.</li>
           <li><strong>Three execution modes per tool.</strong> <code>read_only</code> · <code>draft_only</code> · <code>approved_execute</code>. E2 ships read-only; writes wait for harness E3.</li>
-          <li><strong>No audit = no write.</strong> Hash-chain audit per tenant, tamper-resistant via three Postgres roles (writer / reader / verifier) per D-019.</li>
+          <li><strong>No audit = no write.</strong> Hash-chain audit per tenant, tamper-resistant via three Postgres roles (writer / reader / verifier) per <a href="#d-019-ref" style="color:#58a6ff;">D-019</a>.</li>
           <li><strong>Two-key idempotency.</strong> Harness <code>gwh1:</code> cache key (replay short-circuit) + Guidewire <code>GW-DBTransaction-ID</code> wire header (server-side fail-on-duplicate). Never the same value.</li>
         </ul>
       </section>
@@ -610,9 +610,9 @@
           <div class="detail-card c-green">
             <h3>E1 foundation packages (built)</h3>
             <ul>
-              <li><code>schemas</code> — Zod for Plan/Approval/Execute/Audit + 9 profile-YAML schemas; <strong>v1.0 and v2.0 versioning</strong> per D-020 so customer profiles can pin a major.</li>
-              <li><code>client-sdk</code> — undici HTTP. <strong>Two-key idempotency:</strong> <code>gwh1:</code> harness cache key + Guidewire <code>GW-DBTransaction-ID</code> wire header (P1 fix per librarian audit).</li>
-              <li><code>audit</code> — Postgres + memory store. <strong>Hash-chain</strong> via <code>computeEntryHash()</code> with canonical serialization; <code>migrations/0001_init.sql</code> ships <strong>three Postgres roles</strong> (writer/reader/verifier) per D-019.</li>
+              <li><code>schemas</code> — Zod for Plan/Approval/Execute/Audit + 9 profile-YAML schemas; <strong>v1.0 and v2.0 versioning</strong> per <a href="#d-020-ref" style="color:#58a6ff;">D-020</a> so customer profiles can pin a major.</li>
+              <li><code>client-sdk</code> — undici HTTP. <strong>Two-key idempotency:</strong> <code>gwh1:</code> harness cache key + Guidewire <code>GW-DBTransaction-ID</code> wire header (<a href="#p1-ref" style="color:#58a6ff;">P1</a> fix per librarian audit).</li>
+              <li><code>audit</code> — Postgres + memory store. <strong>Hash-chain</strong> via <code>computeEntryHash()</code> with canonical serialization; <code>migrations/0001_init.sql</code> declares the three-role split (writer/reader/verifier) per <a href="#d-019-ref" style="color:#58a6ff;">D-019</a>.</li>
               <li><code>auth</code> — openid-client v5; OAuth + structural JWT validation. Tokens are scoped per-tenant — never global.</li>
               <li><code>observability</code> — OTel + pino + Sentry. <code>getObservability()</code> factory; every public function in <code>servers/*</code> opens a span (CI-enforced from E1).</li>
               <li><code>mcp-runtime</code> — wraps <code>@modelcontextprotocol/sdk</code>; enforces <strong>carrier-vocabulary names + three-mode binding</strong> at registration time. SDK transport stays open.</li>
@@ -623,7 +623,7 @@
             <h3>Agent host + entry surface</h3>
             <ul>
               <li><strong>MCP-only invocation</strong> — Claude Desktop / Claude Code / Cursor speak the protocol; the policycenter-mcp binary handles either stdio (local) or streamable HTTP (remote-ready) at <code>:3030</code>.</li>
-              <li><code>scripts/smoke-reach.ts</code> is the dev verification path: hits the librarian's cataloged Cloud API endpoints with dev-tier OAuth creds (D-021) and confirms reachability before tools are bound.</li>
+              <li><code>scripts/smoke-reach.ts</code> is the dev verification path: hits the librarian's cataloged Cloud API endpoints with dev-tier OAuth creds (<a href="#d-021-ref" style="color:#58a6ff;">D-021</a>) and confirms reachability before tools are bound.</li>
               <li>Tool selection is itself a guard: <strong>carrier-vocab names</strong> mean an LLM picking by intent ("find submissions waiting on me") routes deterministically, instead of guessing API verbs.</li>
             </ul>
           </div>
@@ -633,8 +633,8 @@
             <ul>
               <li><strong>Guidewire Cloud API</strong> — PolicyCenter Job, Account, Policy, and Composite endpoints per the librarian knowledge base. Real tenant; real responses; <code>tests/recordings/</code> captures hold provenance + <code>MANIFEST.md</code>.</li>
               <li><strong>Guidewire Hub OAuth</strong> — issuer for tenant-scoped access tokens consumed by <code>auth</code>. Refresh handled inside the SDK; no token leaves the process.</li>
-              <li><strong>D-008 / D-021 enforcement:</strong> CI fails loudly if sandbox is unreachable. We never silently degrade to fixtures — that's how invented API shapes ship.</li>
-              <li><strong>P1 librarian fix:</strong> <code>GW-DBTransaction-ID</code> is the wire header for Guidewire's server-side idempotency; never reuse the harness <code>gwh1:</code> cache key as the wire value.</li>
+              <li><strong><a href="#d-008-ref" style="color:#58a6ff;">D-008</a> / <a href="#d-021-ref" style="color:#58a6ff;">D-021</a> enforcement:</strong> CI fails loudly if sandbox is unreachable. We never silently degrade to fixtures — that's how invented API shapes ship.</li>
+              <li><strong><a href="#p1-ref" style="color:#58a6ff;">P1</a> librarian fix:</strong> <code>GW-DBTransaction-ID</code> is the wire header for Guidewire's server-side idempotency; never reuse the harness <code>gwh1:</code> cache key as the wire value.</li>
             </ul>
           </div>
 
@@ -642,7 +642,7 @@
             <h3>Persistence + audit chain</h3>
             <ul>
               <li><strong>Hash-chained, append-only.</strong> <code>computeEntryHash()</code> serializes canonically and links each entry to the previous; tampering breaks the chain on the next <code>verifyChain()</code> pass.</li>
-              <li><strong>Three Postgres roles (D-019):</strong> writer can append, reader can read, verifier can re-hash. The MCP server's connection string maps to <em>writer</em>; verifier is a separate compliance job.</li>
+              <li><strong>Role split per <a href="#d-019-ref" style="color:#58a6ff;">D-019</a>:</strong> writer appends, reader reads, verifier re-hashes. The MCP server's connection string maps to <em>writer</em>; verifier runs as a separate compliance job.</li>
               <li>Memory store is for tests + ephemeral demos. Production deployments mount a Postgres connection string at boot — no fallback.</li>
               <li><strong>tests/recordings/</strong> is the persistence-of-truth for HTTP — provenance-stamped, never invented, scrubbed of PII before commit.</li>
             </ul>
@@ -660,8 +660,19 @@
         </div>
       </section>
 
+      <section>
+        <h2 class="label">Decision references</h2>
+        <ul class="invariants" style="font-size:13px;">
+          <li id="d-008-ref"><strong><a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude/blob/main/000-docs/004-DR-DEC-architecture-decisions.md" style="color:#58a6ff;">D-008</a></strong> — NO MOCKS rule. Real Guidewire Cloud endpoints from day one; CI fails loudly on sandbox unreachability instead of silently degrading to fixtures.</li>
+          <li id="d-019-ref"><strong><a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude/blob/main/000-docs/004-DR-DEC-architecture-decisions.md" style="color:#58a6ff;">D-019</a></strong> — Audit chain is tamper-resistant via three Postgres roles (writer / reader / verifier), not tamper-evident against a compromised harness DBA. Verifier is a separate compliance job.</li>
+          <li id="d-020-ref"><strong><a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude/blob/main/000-docs/004-DR-DEC-architecture-decisions.md" style="color:#58a6ff;">D-020</a></strong> — Profile schema is versioned. v1.0 = 9 YAMLs (MVP); v2.0 adds aggregation grouping (E2.5). Customer profiles pin a major version.</li>
+          <li id="d-021-ref"><strong><a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude/blob/main/000-docs/004-DR-DEC-architecture-decisions.md" style="color:#58a6ff;">D-021</a></strong> — Terminology fix: "sandbox" meant Guidewire-isolated tenant; what we actually need is dev-tier OAuth credentials + real Cloud API endpoints. First integration engagement brings their own tenant.</li>
+          <li id="p1-ref"><strong>P1</strong> — Librarian-audit fix on idempotency: the harness <code>gwh1:</code> cache key (replay short-circuit) is distinct from the Guidewire <code>GW-DBTransaction-ID</code> wire header (server-side fail-on-duplicate). Never reuse the same value across both.</li>
+        </ul>
+      </section>
+
       <p class="footer">
-        guidewire-mcp-for-claude · <a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude">github.com/jeremylongshore/guidewire-mcp-for-claude</a> · generated 2026-05-05
+        guidewire-mcp-for-claude · <a href="https://github.com/jeremylongshore/guidewire-mcp-for-claude">github.com/jeremylongshore/guidewire-mcp-for-claude</a> · generated 2026-05-04 (America/Chicago)
       </p>
     </section>
   </main>
