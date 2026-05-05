@@ -21,7 +21,7 @@
   "dependencies": {
     "@intentsolutions/guidewire-observability": "workspace:*",
     "@intentsolutions/guidewire-schemas": "workspace:*",
-    "openid-client": "^5.6.0"
+    "openid-client": "^6.8.4"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
