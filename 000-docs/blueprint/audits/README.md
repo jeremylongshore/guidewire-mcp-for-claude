@@ -5,10 +5,32 @@
 > E1 (`guidewire-4rd` / GH #3) is **blocked** until all FAILs are
 > resolved or accepted in [`./00-AUDIT-RESPONSES.md`](./00-AUDIT-RESPONSES.md).*
 
-**Status:** SCAFFOLDED — auditor list + memo file conventions
-established. Memos themselves land in **GW-1.8** (after GW-1.2 through
-GW-1.7 finish authoring the blueprint). Responses + re-pass land in
-**GW-1.9**.
+**Status:** FILED — staffed audit panel ran 2026-05-04 and the
+11 memos landed at slots `03-AR..13-FC` (slots `00`/`01`/`02`
+were pre-allocated to the librarian / consistency / red-team
+gauntlet that ran before this panel). Panel-summary +
+response-stub register lives at
+[`./00-AUDIT-RESPONSES.md`](./00-AUDIT-RESPONSES.md). GW-1.9
+fills the response stubs + drives the
+`architect-reviewer` + `article-consistency-checker` re-pass.
+
+---
+
+## Numbering convention
+
+Three audit passes ran sequentially:
+
+| Slot | Pass | Type |
+|---|---|---|
+| 00 | `00-LIBRARIAN-CITATION-AUDIT.md` | pre-audit gauntlet (citation coverage) |
+| 01 | `01-CONSISTENCY-AUDIT.md` | pre-audit gauntlet (`/validate-consistency`) |
+| 02 | `02-RED-TEAM-PANEL.md` | pre-audit gauntlet (multi-persona red team) |
+| 03–13 | staffed-panel memos (the 11 below) | **GW-1.8 staffed panel** |
+
+The staffed-panel slots start at `03-AR` because the pre-audit
+gauntlet had already taken slots 00–02 by the time GW-1.8 ran.
+The `XX` suffix in each filename is the auditor's two-letter
+identifier (AR, SA, BA, DA, BZ, MS, CV, GA, HR, CC, FC).
 
 ---
 
@@ -16,17 +38,17 @@ GW-1.7 finish authoring the blueprint). Responses + re-pass land in
 
 | # | Auditor | Type | Coverage | Memo file |
 |---|---|---|---|---|
-| 1 | `architect-reviewer` | existing IS agent | Architectural soundness, SOLID, layering, system boundaries | [`01-AR-architecture-review.md`](./01-AR-architecture-review.md) |
-| 2 | `security-auditor` | existing IS agent | Auth model, audit chain integrity, hash-chain, secrets posture, BAA / PII surface | [`02-SA-security-review.md`](./02-SA-security-review.md) |
-| 3 | `backend-architect` | existing IS agent | API contracts, MCP tool schemas, package boundaries, scaling | [`03-BA-backend-review.md`](./03-BA-backend-review.md) |
-| 4 | `docs-architect` | existing IS agent | Blueprint document set completeness, navigability, consistency, OSS-contributor fitness | [`04-DA-docs-review.md`](./04-DA-docs-review.md) |
-| 5 | `business-analyst` | existing IS agent | 4-audience model, commercial framing, OSS distribution thesis, KPIs | [`05-BZ-business-review.md`](./05-BZ-business-review.md) |
-| 6 | `mcp-safety-reviewer` | **NEW** via `/agent-creator` | Per-tool blast radius, three-mode design, refusal scenarios, harness gating | [`06-MS-mcp-safety-review.md`](./06-MS-mcp-safety-review.md) |
-| 7 | `carrier-vocabulary-curator` | **NEW** via `/agent-creator` | Tool-name authenticity (do operators actually say this?), missing carrier-vocabulary surface | [`07-CV-vocabulary-review.md`](./07-CV-vocabulary-review.md) |
-| 8 | `guidewire-api-archaeologist` | **NEW** via `/agent-creator` | Cloud API mapping correctness, LOB / typelist / custom-entity assumptions, App Events / Integration Gateway integration | [`08-GA-guidewire-api-review.md`](./08-GA-guidewire-api-review.md) |
-| 9 | `harness-runtime-architect` | **NEW** via `/agent-creator` | Harness library/CLI surface, plan/approval/audit/rollback semantics, evidence bundle format | [`09-HR-harness-review.md`](./09-HR-harness-review.md) |
-| 10 | `article-consistency-checker` | existing IS agent | Cross-document consistency: PRD vs architecture vs roadmap vs diagram tell the same story | [`10-CC-consistency-review.md`](./10-CC-consistency-review.md) |
-| 11 | `fact-checker` | existing IS agent | All cited Guidewire facts (ProNavigator dates, Cloud API claims, Palisades release contents) verified against authoritative sources | [`11-FC-fact-check.md`](./11-FC-fact-check.md) |
+| 1 | `architect-reviewer` | existing IS agent | Architectural soundness, SOLID, layering, system boundaries | [`03-AR-architecture-review.md`](./03-AR-architecture-review.md) |
+| 2 | `security-auditor` | existing IS agent | Auth model, audit chain integrity, hash-chain, secrets posture, BAA / PII surface | [`04-SA-security-review.md`](./04-SA-security-review.md) |
+| 3 | `backend-architect` | existing IS agent | API contracts, MCP tool schemas, package boundaries, scaling | [`05-BA-backend-review.md`](./05-BA-backend-review.md) |
+| 4 | `docs-architect` | existing IS agent | Blueprint document set completeness, navigability, consistency, OSS-contributor fitness | [`06-DA-docs-review.md`](./06-DA-docs-review.md) |
+| 5 | `business-analyst` | existing IS agent | 4-audience model, commercial framing, OSS distribution thesis, KPIs | [`07-BZ-business-review.md`](./07-BZ-business-review.md) |
+| 6 | `mcp-safety-reviewer` | **NEW** via `/agent-creator` | Per-tool blast radius, three-mode design, refusal scenarios, harness gating | [`08-MS-mcp-safety-review.md`](./08-MS-mcp-safety-review.md) |
+| 7 | `carrier-vocabulary-curator` | **NEW** via `/agent-creator` | Tool-name authenticity (do operators actually say this?), missing carrier-vocabulary surface | [`09-CV-vocabulary-review.md`](./09-CV-vocabulary-review.md) |
+| 8 | `guidewire-api-archaeologist` | **NEW** via `/agent-creator` | Cloud API mapping correctness, LOB / typelist / custom-entity assumptions, App Events / Integration Gateway integration | [`10-GA-guidewire-api-review.md`](./10-GA-guidewire-api-review.md) |
+| 9 | `harness-runtime-architect` | **NEW** via `/agent-creator` | Harness library/CLI surface, plan/approval/audit/rollback semantics, evidence bundle format | [`11-HR-harness-review.md`](./11-HR-harness-review.md) |
+| 10 | `article-consistency-checker` | existing IS agent | Cross-document consistency: PRD vs architecture vs roadmap vs diagram tell the same story | [`12-CC-consistency-review.md`](./12-CC-consistency-review.md) |
+| 11 | `fact-checker` | existing IS agent | All cited Guidewire facts (ProNavigator dates, Cloud API claims, Palisades release contents) verified against authoritative sources | [`13-FC-fact-check.md`](./13-FC-fact-check.md) |
 
 The 4 "NEW" agents (#6-#9) are also the **Phase 0 Day 3 design
 specialists** — they file design memos in `000-docs/00N-DR-MEMO-*.md`
