@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "undici": "^6.0.0",
-    "zod": "^3.23.0"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
