@@ -50,9 +50,10 @@ bd list --type=epic
 |---|---|---|
 | E1 | Foundation | planned |
 | E2 | PolicyCenter MCP (read-only) | planned |
+| E2.5 | Aggregate-query tools (underwriting manager tranche) | planned |
 | E3 | Harness library + CLI | planned |
 | E4 | Customer profile template + cowork fork starter | planned |
-| E5 | Drafting tools (`draft-referral-note`, `propose-endorsement`) | planned |
+| E5 | Drafting tools (`draft-referral-note`, `draft-endorsement`) | planned |
 | E6 | Workflow + Events (webhook + queue + events-mcp) | planned |
 | E7 | ClaimCenter MCP | planned |
 | E8 | BillingCenter + Payments | planned |

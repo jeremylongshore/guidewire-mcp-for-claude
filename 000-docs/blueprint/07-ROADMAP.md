@@ -318,7 +318,7 @@ contract + § Cowork fork-starter contract.
 **Done when:**
 
 - `policycenter-mcp` adds at minimum: `draft-referral-note`,
-  `propose-endorsement` — both in `draft_only` mode
+  `draft-endorsement` (canonical per [D-016](../004-DR-DEC-architecture-decisions.md#d-016); formerly `propose-endorsement`) — both in `draft_only` mode
 - The two slipped-from-E2 tools (`whats-our-appetite-on-this-risk`,
   `explain-why-this-got-referred`) ship here with full UWCenter rule
   trace integration via the `profiles/<customer>/typelists.yaml +
@@ -368,7 +368,7 @@ authenticity test.
   `billingcenter-mcp`) consume from the queue and update their local
   read-side projections / triggers
 - `events-mcp` (small server) provides query-only / replay tools:
-  `replay-event`, `find-events-for-claim`, `find-events-for-policy`
+  `show-event-payload` (canonical per [D-016](../004-DR-DEC-architecture-decisions.md#d-016); formerly `replay-event`), `find-events-for-claim`, `find-events-for-policy`
 - Subscription configuration lives in
   `profiles/<customer>/events.yaml` (the 9th profile YAML from E4)
 - Audit row emitted for every event consumed (provenance: which
@@ -450,8 +450,8 @@ Claude Desktop → "summarize this loss for claim 0001-ABC"
 
 - `servers/billingcenter-mcp/` exists with these read tools:
   - `show-overdue-accounts` (read_only)
-  - `whats-the-payment-status` (read_only)
-  - `find-billing-issues-for-this-policy` (read_only)
+  - `where-are-we-on-this-payment` (read_only; canonical per [D-016](../004-DR-DEC-architecture-decisions.md#d-016) — formerly `whats-the-payment-status`)
+  - `whats-going-on-with-this-account` (read_only; canonical per D-016 — formerly `find-billing-issues-for-this-policy`)
 - **`servers/payments-mcp/` directory does NOT exist in this repo**
   (per 006 memo finding #2: carve at repo level, not just tool
   level — prevents attractive-nuisance contributions). When and if
@@ -471,8 +471,8 @@ Claude Desktop → "summarize this loss for claim 0001-ABC"
 ```
 Claude Desktop → "show overdue accounts for Acme Brokerage"
   → billingcenter-mcp.show-overdue-accounts (filtered by producer)
-  → drill: "what's the payment status on account 0042"
-  → whats-the-payment-status
+  → drill: "where are we on the payment on account 0042"
+  → where-are-we-on-this-payment
 [in CLI, separately, with sandbox creds]:
 guidewire-harness plan create --tool reconcile-this-payment ...
 guidewire-harness approve <plan-id> --by jeremy@intentsolutions.io

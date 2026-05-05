@@ -154,20 +154,22 @@ guidewire/
     └── tofu/
 ```
 
-## 10-Epic Public Roadmap
+## 11-Epic Public Roadmap
 
 | Epic | Title |
 |---|---|
 | E1 | Foundation (mcp-runtime, schemas, auth, audit, client-sdk, observability) |
 | E2 | PolicyCenter MCP (read-only) — 5-7 carrier-vocabulary tools |
+| E2.5 | Aggregate-query tools (underwriting manager tranche, per D-017) |
 | E3 | Harness library + CLI (plan / approve / execute / audit / rollback) |
 | E4 | Customer profile template + cowork fork starter |
-| E5 | Core writes — drafting tools (referral note, endorsement) |
+| E5 | Core writes — drafting tools (`draft-referral-note`, `draft-endorsement`) |
 | E6 | Workflow + Events (webhook receiver + queue + events-mcp query) |
 | E7 | ClaimCenter MCP |
 | E8 | BillingCenter + Payments (separate `payments-mcp` with dual control) |
 | E9 | Producer-side MCP (MGA / broker scope) |
 | E10 | Onboarding + certification CLI |
+| E11+ | Publish to `claude-code-plugins-plus-skills` marketplace |
 
 Public roadmap committed in `000-docs/blueprint/07-ROADMAP.md`.
 
