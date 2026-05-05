@@ -28,7 +28,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.0",
+    "@biomejs/biome": "^2.4.14",
     "@intentsolutions/audit-harness": "^0.1.0",
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0",
