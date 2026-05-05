@@ -452,12 +452,53 @@ export function execute<T>(
   effect: SideEffect<T>,
   opts?: { approval?: Approval }
 ): Promise<ExecuteResult<T>>;
+
+// GA-6: read-after-write consistency. See 02-PRD § 5.4 "Read-after-write
+// consistency" for the operator-facing contract; this is the harness API.
+export type WriteConfirmStrategy =
+  | 'trust_202'           // OSS demo default; emit execute.completed on 202
+  | 'poll_async_job'      // poll /async/v1/jobs/{id} to terminal
+  | 'wait_for_app_event'; // wait for matching App Event by primaryObject.id
+
+export interface ConfirmWriteOptions {
+  readonly strategy: WriteConfirmStrategy;
+  readonly maxWaitMs?: number;        // poll_async_job + wait_for_app_event; default 30000
+  readonly asyncJobId?: string;       // required for poll_async_job
+  readonly expectedEvent?: {          // required for wait_for_app_event
+    readonly eventType: string;       // e.g. 'ClaimReserveChanged'
+    readonly primaryObjectId: string; // for shard-correct event matching
+  };
+}
+
+export interface ConfirmWriteResult {
+  readonly outcome: 'confirmed' | 'timed_out' | 'failed';
+  readonly elapsedMs: number;
+  readonly evidence?: { kind: 'async_job'; status: string } | { kind: 'app_event'; eventId: string };
+}
+
+/**
+ * GA-6 + 008 § 9. Confirm a Guidewire write reached durable state per
+ * the per-profile strategy. Called from inside the SideEffect callback
+ * AFTER the Cloud API write returned 202; the harness writes
+ * execute.completed only when this resolves to `confirmed` (for
+ * non-trust_202 strategies). For trust_202 the harness emits
+ * execute.completed on the 202 response itself and confirmWrite is
+ * a no-op pass-through.
+ */
+export function confirmWrite(
+  plan: Plan,
+  opts: ConfirmWriteOptions
+): Promise<ConfirmWriteResult>;
 ```
 
 `execute()` is the only function in the harness that performs an
 external write. The depcruise CI rule fails any `servers/**` file
 that imports `clients/**` directly, forcing all writes through the
-harness.
+harness. `confirmWrite()` is the read-after-write companion per
+[GA-6](./audits/10-GA-guidewire-api-review.md#f-6) — the strategy
+choice is profile-level, not per-tool, so the operator's mental
+model stays consistent across every `approved_execute` tool in
+the catalog.
 
 ##### 3.4.1 Two distinct keys, two distinct purposes (librarian P1)
 
@@ -518,7 +559,13 @@ export type AuditEventType =
   | 'plan.created' | 'policy.decided'
   | 'approval.requested' | 'approval.decided'
   | 'execute.started' | 'execute.completed' | 'execute.failed' | 'execute.replayed'
-  | 'rollback.hint.issued';
+  | 'rollback.hint.issued'
+  | 'idempotency.pruned';   // HR-3: maintenance event recorded when the harness-side idempotency cache prunes expired keys
+
+/** GA-3: admin-scope OAuth carve. The actual scope used on the wire,
+ *  recorded per-call so a compromised harness cannot quietly broaden
+ *  access without a chain-visible trail. */
+export type OAuthScope = 'read' | 'write' | 'admin' | 'producer';
 
 export interface AuditEntry {
   readonly entryId: string;          // ULID
@@ -536,6 +583,9 @@ export interface AuditEntry {
   readonly prevHash: string;
   readonly entryHash: string;
   readonly blobRef?: string;
+  /** GA-3: which OAuth scope authorized this call. `admin` flags
+   *  commission reads + similar privileged reads for forensic review. */
+  readonly oauthScope?: OAuthScope;
 }
 
 export interface AuditStore {
@@ -785,6 +835,45 @@ export const refuseDbTxnDuplicate = (ctx: ErrorCtx): AppError => /* … */;  // 
 Sentry tagging via `toSentryEvent()` produces a fingerprint of
 `[code, tool_name, mode]` so the same refusal across multiple
 tenants groups into one Sentry issue rather than fragmenting.
+
+##### 4.5.1 Approval timeout (per SA-5 + HR-6)
+
+Per [SA-5](./audits/04-SA-security-review.md#f-5) +
+[HR-6](./audits/11-HR-harness-review.md#f-6) + red-team
+[F-RT-5.2](./audits/02-RED-TEAM-PANEL.md). When `approvals.wait()`
+returns `state: 'expired'` per the
+[02-PRD § 5.3](./02-PRD.md#53-approval--blocking-flow-as-state-machine)
+state machine, the harness MUST emit:
+
+1. **Pino WARN log** carrying the full structured fields per
+   § 4.4 schema (`code: 'APPROVAL_TIMEOUT'`, `trace_id`,
+   `tenant_id`, `tool_name`, `mode`, `plan_id`, plus
+   `approval.duration_ms` and `approval.expired_at`). `pino`
+   defaults to `info` level in prod; the WARN level is the
+   loud-but-not-error tier carriers route to their existing
+   pager surface.
+2. **Typed error** — `AppError({ code: 'APPROVAL_TIMEOUT', tool_name, mode })`,
+   constructed via `refuseApprovalTimeout(ctx)`. Sentry receives
+   the event with the standard fingerprint
+   `[APPROVAL_TIMEOUT, tool_name, mode]` so the same expiry
+   pattern across multiple tenants and approvers groups into one
+   Sentry Issue (per § 4.5 grouping rule above).
+3. **Audit row** — `approval.decided` event type with
+   `outcome: expired`, written before the `AppError` is raised
+   so the audit chain captures the decision regardless of
+   downstream delivery state.
+
+The blueprint commits to **signal availability** at this surface
+— pino WARN, typed AppError, Sentry fingerprint, audit row. The
+blueprint does NOT commit to **delivery** (Slack, PagerDuty,
+ntfy, email) — delivery is the carrier's wiring per § 4.9
+endpoint configuration. This separation is deliberate: a carrier
+already operating a pager surface routes the existing pino-WARN
+stream and the existing Sentry feed into it; the OSS does not
+re-implement notification surfaces it doesn't own. The carrier's
+operator never asks "is the platform notifying my pager?" — the
+blueprint says yes if you wire the existing observability surface
+to your existing pager. Closes red-team F-RT-5.2 + SA-5 + HR-6.
 
 #### 4.6 `packages/observability/getObservability()` factory
 
@@ -1390,6 +1479,74 @@ Token endpoint URL, scopes catalog, and JWKS URI are sandbox-blocked
 per librarian P6 — `auth.yaml` cannot be finalized until
 `guidewire-adj` (sandbox) closes.
 
+##### 8.1.1 Revocation latency (per SA-2)
+
+Per [SA-2](./audits/04-SA-security-review.md#f-2) and [red-team
+F-RT-5.3](./audits/02-RED-TEAM-PANEL.md). With OAuth token-lifetime
+defaults at 3600s (60 min) and proactive refresh at 80%, an
+offboarded employee whose JWT was issued just before HR's
+offboarding event keeps usable access for up to the token's
+remaining lifetime. Carrier offboarding SLOs are typically
+same-day; for sensitive roles, often same-hour. The OSS default is
+deliberately bounded by token lifetime — the platform makes no
+revocation commitment beyond what the OAuth provider issues.
+Carriers requiring tighter revocation have two carrier-side levers:
+
+| Lever | `auth.yaml` change | Trade-off |
+|---|---|---|
+| (a) Reduce token lifetime | `oauth.token_lifetime_seconds: 600` (or lower) | Approximately 6× the OAuth refresh load on Hub; in-flight `approved_execute` writes still need proactive-refresh discipline (§ 8.1 above) |
+| (b) Per-call introspection | `oauth.introspect: true` ([RFC 7662](https://datatracker.ietf.org/doc/html/rfc7662)) | Adds ~30ms per Cloud API call; drops effective revocation latency to the introspection cache TTL (typically <60s); requires the carrier's Hub to expose a `token_introspection_endpoint` in OIDC discovery |
+
+The trade-off is operator-driven, not OSS-defaulted. Carriers with
+faster revocation SLOs pick the levers that match their operational
+posture; the platform ships the surface, the carrier wires the
+policy. The `packages/auth/` factory honors both knobs via the
+extended `auth.yaml` schema at
+[02-PRD § 6.1](./02-PRD.md#61-authyaml--guidewire-hub-oauth--jwt-propagation).
+
+##### 8.1.2 Per-tenant OAuth client lifecycle (per BA-4)
+
+Per [BA-4](./audits/05-BA-backend-review.md#f-4). The
+`packages/auth/` package exposes a thin public API
+(`getOAuthClient(profile.auth)`); the lifecycle around it bears on
+multi-tenant correctness and is not derivable from the per-package
+contract row alone:
+
+- **Cache key.** `getOAuthClient` caches by the
+  `(tenantId, oidcDiscoveryUrl, clientId)` tuple. Two tenants with
+  the same `clientId` against different Hub tenants resolve as
+  distinct entries; reusing a single instance across them would
+  cross-tenant the JWKS cache and is rejected by depcruise +
+  runtime assertion.
+- **Cache invalidation.** Profile-reload events (operator-driven —
+  edit a profile YAML and SIGHUP / restart the server) invalidate
+  the cache entry for that profile slug. The cache is bounded
+  (LRU; default 100 entries; configurable via
+  `auth.yaml.client_cache.max_entries`); evicted clients close
+  their underlying HTTP keep-alive pool.
+- **JWKS refresh.** First call with a `kid` not in the in-memory
+  JWKS cache triggers a foreground refresh; background refresh
+  fires at 80% of the JWKS TTL (`Cache-Control: max-age` from the
+  JWKS endpoint). Refresh failures emit pino WARN (`"jwks.refresh.failed"`)
+  + Sentry tag `auth.jwks_refresh_failed` and are non-fatal — the
+  in-flight cache continues to serve until the next call's `kid`
+  miss.
+- **Token cache.** Per-actor access-token cache keyed by
+  `(tenantId, actorId)`. Eviction is LRU-bounded at 10 000 actors
+  (configurable via `auth.yaml.token_cache.max_entries`). Tokens
+  evicted before expiry trigger a fresh OAuth round-trip on the
+  next call.
+- **In-flight on rotation.** When the JWKS rotates mid-flight, the
+  drain pattern is: existing requests complete with the
+  pre-rotation key; new requests acquire the post-rotation key on
+  next call. The drain window is bounded by Cloud API request-
+  timeout (default 30s). No request is dropped on rotation.
+
+This lifecycle is auth-policy, not just package topology — it
+lives here in § 8 (Security posture) rather than in
+§ 2 (per-package contracts) because the multi-tenant correctness
+properties are what a carrier CISO will probe at SOW review.
+
 #### 8.2 Audit hash-chain — implementation contract
 
 Per `packages/audit/` and
@@ -1434,6 +1591,55 @@ appends serialize on the head row.
 any mismatch = `chain_broken`, harness refuses all writes for that
 tenant until `chain.repair.acknowledged` (manual operator action).
 
+##### 8.2.0 `approvals` table DDL (per HR-4)
+
+Per [HR-4](./audits/11-HR-harness-review.md#f-4) +
+[009 § 1.3](../009-DR-MEMO-harness-runtime.md). The
+`Approval` state machine at
+[02-PRD § 5.3](./02-PRD.md#53-approval--blocking-flow-as-state-machine)
+is load-bearing for `approved_execute` and persists in Postgres so
+that a restart, network partition, or CLI session ending mid-wait
+does not lose the request. The DDL lands in the same migration as
+the audit chain so E3 implementation does not re-derive the schema
+from the TS interface (and risk drift):
+
+```sql
+-- packages/audit/migrations/0001_init.sql (extended per HR-4)
+CREATE TABLE IF NOT EXISTS approvals (
+  approval_id      TEXT PRIMARY KEY,        -- sha256(planId + nonce)
+  tenant_id        TEXT NOT NULL,
+  plan_id          TEXT NOT NULL,
+  decision_id      TEXT NOT NULL,
+  state            TEXT NOT NULL,           -- pending | approved | denied | expired | cancelled
+  requested_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at       TIMESTAMPTZ NOT NULL,
+  approver_votes   JSONB NOT NULL DEFAULT '[]',
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, plan_id)
+);
+
+-- Hot-path query: the CLI's `approve` list + the harness's wait()
+-- poll both filter pending approvals per tenant. The partial index
+-- keeps the index size proportional to in-flight approvals, not
+-- historical decided ones (which dominate after a few weeks of
+-- production traffic).
+CREATE INDEX IF NOT EXISTS approvals_pending_idx
+  ON approvals (tenant_id, state)
+  WHERE state = 'pending';
+```
+
+The `approvals` table is owned by `audit_owner` (same role
+separation as `audit_entries` per § 8.2.1 below). Runtime grants:
+`audit_writer` gets `INSERT, UPDATE` on `approvals` (state
+transitions are idempotent updates keyed by `approval_id`);
+`audit_reader` gets `SELECT` for compliance-job replay. The
+update-path is gated by application-level state-machine rules
+(pending → approved/denied/expired/cancelled is the only legal
+transition) per the
+[02-PRD § 5.3](./02-PRD.md#53-approval--blocking-flow-as-state-machine)
+state machine; the DDL does not enforce that — the harness does.
+
 ##### 8.2.1 Postgres role separation — operational identity
 
 Per [D-019](../004-DR-DEC-architecture-decisions.md#d-019--audit-chain-is-tamper-resistant-not-tamper-evident-against-a-compromised-harness-dba)
@@ -1441,7 +1647,8 @@ and [04-SA F-3](./audits/04-SA-security-review.md#f-3), the audit
 DB ships three roles. Their operational identities (the principals
 that hold the credentials, not just the SQL grants) are:
 
-- **`audit_owner`** — owns `audit_entries` and `audit_chain_heads`;
+- **`audit_owner`** — owns `audit_entries`, `audit_chain_heads`,
+  and `approvals` (per HR-4 above);
   runs `packages/audit/migrations/0001_init.sql` and any future
   schema migration. **NEVER the runtime connection identity.**
   Migrations execute via a dedicated CI job (`pnpm audit:migrate`)
@@ -1456,11 +1663,12 @@ that hold the credentials, not just the SQL grants) are:
   long-lived shell history / env file before starting the harness;
   the harness's `DATABASE_URL` carries only the `audit_writer`
   grant.
-- **`audit_writer`** — INSERT-only on `audit_entries`. The **only**
-  role used by `packages/audit/` at runtime. Loaded into the MCP
-  server / harness process via `DATABASE_URL` from the runtime
-  SOPS-encrypted env. The role-separation testcontainers test
-  asserted in [E1 exit criteria](./07-ROADMAP.md#e1--foundation)
+- **`audit_writer`** — INSERT-only on `audit_entries`; INSERT +
+  UPDATE on `approvals` (state-machine transitions per HR-4). The
+  **only** role used by `packages/audit/` at runtime. Loaded into
+  the MCP server / harness process via `DATABASE_URL` from the
+  runtime SOPS-encrypted env. The role-separation testcontainers
+  test asserted in [E1 exit criteria](./07-ROADMAP.md#e1--foundation)
   (per AR-7) makes this runtime constraint binding: any future
   change that quietly broadens the runtime grant set fails CI.
 - **`audit_reader`** — SELECT-only on `audit_entries` and
@@ -1505,6 +1713,7 @@ the carve-out is honored at boot.
 | Threat | Mitigation |
 |---|---|
 | Compromised agent host issues unauthorized writes | Three-mode declaration + harness gate + `approved_execute` requires policy + approval + audit; even a fully compromised agent cannot write without an approver vote |
+| Admin-scope OAuth surface (commission reads, etc.) is harness-scope-filtered, not Guidewire-scope-filtered (per [GA-3](./audits/10-GA-guidewire-api-review.md#f-3) + red-team [F-RT-4.2](./audits/02-RED-TEAM-PANEL.md)) | `roles.yaml` boot validation refuses any producer-tier role bound to a tool whose endpoint cannot be producer-code-scoped at the harness layer (e.g. `/admin/v1/commission-plans`, which has no `producerCode` filter — the harness must filter the response after fetch). Every admin-scope call writes a distinct `audit_entries` row with `oauth_scope: 'admin'` (vs `producer` / `read` / `write`) for forensic review. Mitigates the "admin scope leaks past the harness" attack shape — the admin scope is granted at OAuth, but the per-call audit row records which scope was actually used so a compromised harness cannot quietly broaden access without a chain-visible trail. |
 | Compromised harness DB (unprivileged operator) | Linear hash chain + serializable single-writer makes tampering tamper-evident; `verifyChain` detects |
 | Compromised harness DB (privileged DBA) | **Defence-in-depth, NOT tamper-evident** per [D-019](../004-DR-DEC-architecture-decisions.md#d-019--audit-chain-is-tamper-resistant-not-tamper-evident-against-a-compromised-harness-dba). Postgres role separation: `audit_writer` is INSERT-only, `audit_reader` is SELECT-only, schema-owner identity is held outside the harness process. Residual risk: a privileged DBA with the schema-owner role can still bypass — closed by E3+ KMS-signed external commitment surface. |
 | Cross-tenant attack | Per-tenant linear hash chain + tenant-isolated rows in `audit_entries` contain blast radius (an attacker who compromises tenant A's chain cannot tamper with tenant B's) |

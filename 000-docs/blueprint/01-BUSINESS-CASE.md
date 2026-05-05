@@ -370,6 +370,18 @@ This is the boundary the business case respects.
 - **Pricing for custom engagements.** Those happen one-on-one with
   carrier / MGA / SI counterparties; pricing depends on profile
   scope, deployment posture, and operational support. Out of scope.
+- **Cost-bounding for the customization surface.** Per [BZ-2](./audits/07-BZ-business-review.md#f-2)
+  the question "in engineer-weeks, what does filling those YAMLs
+  cost me?" is **deliberately not answered in this artifact**.
+  Cost is engagement-specific — a single-LOB, single-state carrier
+  with no custom entities lives in a different scope than a 47-LOB
+  / 12-state / 3-custom-entity carrier — and a published list price
+  would mislead more than it would inform. The cost-bounding
+  conversation belongs in the first inbound call, where the actual
+  shape (LOB count, state count, custom-entity count, typelist-
+  extension count, approval-matrix complexity) is on the table.
+  This is the public stance, not silence: cost is scoping
+  conversation, not list price.
 - **Which inbound to prioritize.** Engagement fit, regulatory
   surface, and timeline determine that — not the business case.
 - **Whether a paid SaaS control plane exists later.**

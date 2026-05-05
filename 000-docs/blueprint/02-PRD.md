@@ -303,6 +303,31 @@ they ship inert (with the banner) against any incomplete profile.
 Slipping these to E5 was a roadmap-side correction made when 008
 clarified the multi-tenant requirement.
 
+##### "Waiting on me" projection (per CV-4)
+
+Per [CV-4](./audits/09-CV-vocabulary-review.md#f-4) +
+[red-team F-RT-2.3](./audits/02-RED-TEAM-PANEL.md). The
+`find-submissions-waiting-on-me` tool's *name* is authentic
+carrier vocabulary; the *underlying projection* is implementer-
+defined. The OSS demo uses `assignedToMe=true` (single Boolean
+filter, the simplest defensible projection); most carriers
+operate "waiting on me" as a **composite** of multiple states:
+`assignedToMe=true` OR `referredTo=me` (escalations bumped to
+the actor) OR `needsApprovalFromMe=true` (pending the actor's
+decision tier). Carriers customize via:
+
+- **`roles.yaml`** ([§ 6.2](#62-rolesyaml--role--tool--mode-permission-matrix))
+  — per-role tool bindings already exist; a tool variant with
+  a wider projection can be bound only to specific roles.
+- **A future `tool-projections.yaml`** — captured for E4+ profile
+  template work; the OSS does not ship a projection schema in v1.
+
+The vocabulary stays the contract; the projection is the
+customization. A line UW reading the OSS demo gets a narrower
+queue than they'd get on their own carrier estate, and the
+profile-driven extension is the carrier's wiring — consistent
+with the OSS-as-lead-magnet thesis ([D-010](../004-DR-DEC-architecture-decisions.md#d-010--oss--lead-magnet-for-custom-build-work-not-a-complete-product)).
+
 #### 3.1.2 Underwriting-manager view (Persona 9, E2 sub-tranche or later)
 
 See § 2.1 above for the operator-voice rationale.
@@ -465,6 +490,30 @@ decide whether to retry, escalate, or stop. A thrown exception that
 bubbles to the agent as "tool errored" is a CI failure (per 009 § 6
 table — `AppError` typed class mandatory in `servers/*` and
 `packages/harness/`).
+
+#### Refusal ordering for read-only tools (per MS-7)
+
+Per [MS-7](./audits/08-MS-mcp-safety-review.md#f-7), `read_only`
+refusal scenarios fall into two ordered classes — the ordering
+matters for audit-row reproducibility because the read-side
+exfil-detection pattern (Persona 5, § 4.1 "Audit emitted" row)
+depends on knowing whether `policy.evaluate()` ran:
+
+| Class | Triggers | What writes to audit | `policy.evaluate()` called? |
+|---|---|---|---|
+| **(a) Pre-plan refusals** | `auth_expired`, `sandbox_unreachable`, `tenant_mismatch` (cross-check), `actor_unresolved` — any condition the harness detects *before* a `Plan` is constructed | One row, `eventType: 'plan.created'` short-circuited to `decision: 'refused'`, `decision_reason: <code>`. No `policy.decided` row. | NO |
+| **(b) Post-plan refusals** | `profile_policy_violation`, `profile_incomplete_for_this_carrier` (⚠ tools), `pii_redaction_failure_in_critical_path` — any condition that requires a constructed `Plan` to evaluate | Two rows: `plan.created` then `policy.decided` with `outcome: 'deny'` and the structured reason. | YES |
+
+The split makes the read-side audit pattern reproducible in tests.
+A test asserting "an exfiltration attempt against an unauthorized
+LOB writes a `policy.decided` row with `outcome: deny`" only
+holds for class (b) refusals; pre-plan refusals (auth, sandbox,
+tenant) never reach `policy.evaluate()` and write a single
+short-circuited audit row instead. This is consistent with the
+read-side exfil threat per § 4.1 — class (a) refusals are
+infrastructure-detected (no LOB knowledge required); class (b)
+refusals are policy-detected (LOB knowledge required and
+recorded).
 
 ### 4.3 OSS demo profile defaults (per 006 § 9 recommendation 3)
 
@@ -684,6 +733,64 @@ is written referencing the original `audit_entry_id`. **On a
 short-circuit, no `GW-DBTransaction-ID` header is sent to Guidewire**
 — the harness layer absorbs the duplicate before the wire call.
 
+#### Read-after-write consistency: `confirmWrite()` (per GA-6)
+
+Per [GA-6](./audits/10-GA-guidewire-api-review.md#f-6) +
+[008 § 9](../008-DR-MEMO-guidewire-api.md). Cloud API writes return
+`202 Accepted` with an Async API job ID; subsequent GETs may return
+stale state for several seconds (typical 1-5s; observed up to 30s
+under load). Reserve changes follow the same pattern. App Events
+fire **after** the read-consistency window closes; consuming the
+relevant App Event is the canonical "the write is durable" signal.
+
+The harness exposes `confirmWrite(plan, options)` per the
+[05-TECHNICAL-SPEC § 3.4 signature](./05-TECHNICAL-SPEC.md#34-execute--side-effect-with-idempotency-p1-librarian-correction-inline)
+that takes one of three confirmation strategies, profile-driven via
+`profile.yaml.write_confirmation.strategy`:
+
+| Strategy | Behavior | When to use | Cost |
+|---|---|---|---|
+| (a) `trust_202` | Return as soon as Cloud API returns 202; emit `execute.completed` immediately | OSS demo + dev-tier engagements; carriers that accept the post-write read can be stale | ~0 added latency |
+| (b) `poll_async_job` | Poll `/async/v1/jobs/{asyncJobId}` until terminal state (max 30s default; configurable); emit `execute.completed` only on terminal `Completed` | Carriers that need synchronous read-after-write semantics for the operator UX (the operator does an immediate read-back to confirm) | adds the async-job poll duration to the call |
+| (c) `wait_for_app_event` | Wait for the corresponding App Event (matched by `primaryObject.id` per [D-004](../004-DR-DEC-architecture-decisions.md#d-004--app-events-shard-by-primaryobjectid)); emit `execute.completed` only on event arrival (max wait configurable) | Carriers with active App Events subscriptions that want canonical durability semantics | requires events-mcp running; latency = event delivery latency |
+
+**OSS demo default:** `trust_202`. Carriers override per profile
+when their operational posture requires stronger semantics. The
+strategy choice is profile-level, not per-tool — mixing strategies
+across `approved_execute` tools breaks the operator's mental model
+("did the harness wait this time?") and is rejected by the profile
+validator.
+
+The architectural failure-mode row is at
+[03-ARCHITECTURE § 6 "Stale read after write"](./03-ARCHITECTURE.md#6-failure-modes);
+the TS interface lands in
+[05-TECHNICAL-SPEC § 3.4](./05-TECHNICAL-SPEC.md#34-execute--side-effect-with-idempotency-p1-librarian-correction-inline);
+this PRD § 5.4 sub-section is the contract authors of new write
+tools read.
+
+#### Idempotency-key TTL + `idempotency.pruned` (per HR-3)
+
+Per [HR-3](./audits/11-HR-harness-review.md#f-3) +
+[009 § 4.5](../009-DR-MEMO-harness-runtime.md). The `gwh1:`
+harness-side keys are pruned after a customer-profile-configured
+retention window — default 30 days; configurable in `profile.yaml`
+via `idempotency.retention_days`. After pruning, the same intent is
+treated as new: a retry post-prune is effectively a fresh
+authorization (the operator has re-affirmed by retrying after the
+window). Pruning is itself a maintenance audit event recorded as
+`eventType: 'idempotency.pruned'` in the per-tenant chain — the
+event carries the count of keys pruned and the
+prune-window boundary so the prune decision is forensic-reviewable
+under the same chain-integrity property as every other harness
+decision (per the principle that *every harness decision lands in
+audit*). The `idempotency.pruned` event type is part of the
+`AuditEventType` union (§ 5.5) and the corresponding Zod schema in
+`packages/schemas/src/harness/audit.ts`. The harness-side TTL is
+**independent** of any Guidewire-side TTL on `GW-DBTransaction-ID`
+— Guidewire's wire-key retention is undocumented in public API
+references and resolves only via the first integration engagement
+(per [D-021](../004-DR-DEC-architecture-decisions.md#d-021--terminology-fix-sandbox-meant-guidewire-isolated-tenant-what-we-actually-need-is-dev-tier-credentials--real-endpoints)).
+
 **Wire idempotency mechanism (librarian P1).** When the side effect
 *does* fire, the `packages/guidewire-client/` wrapper injects
 `Plan.wire.dbTransactionId` as the `GW-DBTransaction-ID` HTTP header
@@ -705,7 +812,13 @@ export type AuditEventType =
   | 'plan.created' | 'policy.decided'
   | 'approval.requested' | 'approval.decided'
   | 'execute.started' | 'execute.completed' | 'execute.failed' | 'execute.replayed'
-  | 'rollback.hint.issued';
+  | 'rollback.hint.issued'
+  | 'idempotency.pruned';   // HR-3: maintenance event when the harness-side cache prunes expired idempotency keys
+
+// GA-3: admin-scope OAuth carve. Records which scope the call ran under
+// so a compromised harness cannot quietly broaden access without a
+// chain-visible trail. See TECH-SPEC § 8.5 threat-model row.
+export type OAuthScope = 'read' | 'write' | 'admin' | 'producer';
 
 export interface AuditEntry {
   readonly entryId: string;          // ULID
@@ -723,6 +836,7 @@ export interface AuditEntry {
   readonly prevHash: string;
   readonly entryHash: string;
   readonly blobRef?: string;
+  readonly oauthScope?: OAuthScope;  // GA-3: which OAuth scope authorized this call
 }
 
 export interface AuditStore {
@@ -914,7 +1028,8 @@ adding the `aggregations:` block to their `lob.yaml`.
 | `oauth.client_secret_env` | yes | Same — env var name only |
 | `oauth.token_endpoint` | yes | Per-tenant URL; resolvable via OIDC discovery once sandbox lands (008 § 14 open question 3) |
 | `oauth.scopes` | yes | List; write scopes appended only when `approved_execute` mode is enabled (008 § 4.1) |
-| `oauth.token_lifetime_seconds` | no | Default 3600; tenant-overridable |
+| `oauth.token_lifetime_seconds` | no | Default 3600; tenant-overridable. Bounds revocation latency — see [05-TECHNICAL-SPEC § 8.1 "Revocation latency"](./05-TECHNICAL-SPEC.md#81-auth-model--oauth--jwt-propagation) for the trade-off and per [SA-2](./audits/04-SA-security-review.md#f-2) |
+| `oauth.introspect` | no | Default `false`. When `true`, the harness performs RFC 7662 token introspection on every Cloud API call — drops revocation latency to near-zero at ~30ms per-call overhead. Operator-driven; OSS does not default it on. Cross-link [SA-2](./audits/04-SA-security-review.md#f-2). |
 | `oauth.refresh_strategy` | yes | `proactive` mandatory — refresh at 80% of lifetime; in-flight `approved_execute` writes cannot afford a mid-write 401 (008 § 10) |
 | `oauth.jwt_propagation.enabled` | yes | Per Persona 5 — no standing service-account credentials |
 | `oauth.jwt_propagation.actor_claim` | yes | Which JWT claim carries `actor_id` (default `sub`) |
@@ -955,9 +1070,15 @@ values in tool code is a CI failure.
 | `lob_mappings.<carrier_code>.canonical` | yes | Cross-carrier label flowing into tool inputs (e.g. `CommercialProperty`) |
 | `lob_mappings.<carrier_code>.uwcenter_rule_set` | yes | Per-carrier UWCenter rule entity name |
 | `lob_mappings.<carrier_code>.coverage_typelist` | yes | Which typelist (in `typelists.yaml`) holds coverage values for this LOB |
+| `lob_mappings.<carrier_code>.lob_class` | no | `health \| non_health` — defaults to `non_health`. Per [SA-6](./audits/04-SA-security-review.md#f-6) + [MS-6](./audits/08-MS-mcp-safety-review.md#f-6), LOBs classed as `health` MUST be paired with `pii-policy.yaml.baa_required: true`; the `packages/schemas/` profile validator's `superRefine` block raises a typed `HarnessError({ code: 'BAA_GATE_MISSING' })` at boot if any LOB carries `lob_class: health` while `baa_required: false`. The carve becomes a runtime check, not policy prose. |
 
 Tools never hard-code LOB codes; the canonical value flows into tool
 inputs, the carrier code flows into Cloud API calls (008 § 4.3).
+The `lob_class` flag is the architectural enforcement point for the
+BAA carve documented at [§ 6.8](#68-pii-policyyaml--pii-redaction-rules)
+and [05-TECHNICAL-SPEC § 8.4](./05-TECHNICAL-SPEC.md#84-baa-path-health-lobs)
+— the policy text was sound but the runtime check was missing
+(SA-6 + MS-6); `lob_class: health` is what the boot validator iterates.
 
 ### 6.4 `typelists.yaml` — typelist value mappings
 
