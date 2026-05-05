@@ -10,7 +10,7 @@
 ClaimCenter, BillingCenter, plus the producer / events / payments
 surfaces around them.
 **Owner:** Jeremy Longshore — Intent Solutions IO
-**Status:** Blueprint authoring in flight (GW-1.x)
+**Status:** Blueprint authoring complete; pending staffed audit panel (GW-1.8) → audit response (GW-1.9) → E1 unlock
 **Marketplace target:** [`claude-code-plugins-plus-skills`](https://github.com/jeremylongshore/claude-code-plugins-plus-skills)
 **Last updated:** 2026-05-04
 
@@ -37,18 +37,16 @@ API-verb wrappers. The harness (plans, approvals, hash-chained audit,
 rollback) is the durable moat; the tools are the language operators
 already speak.
 
-**Why it's OSS.** Demand was already confirmed before the project had
-a public footprint (2 unprompted inbounds 2026-05-04). The repo is a
+**Why it's OSS.** Early demand from carrier-touching engineers
+surfaced before the project had a public footprint. The repo is a
 **lead magnet for custom carrier / MGA / SI build engagements**, not
-a complete product on its own. Same playbook as
-`claude-code-plugins` (2,000+ stars, 300+ forks, 45,000+ npm
-downloads).
+a complete product on its own. Same OSS-distribution playbook
+already validated on prior IS projects.
 
 **Audiences (priority order):**
 
-1. Confirmed inbound + future carrier/MGA/SI inbound — primary
-   economic driver.
-2. Anthropic Enterprise + SI partner credibility.
+1. Inbound carrier / MGA / SI engineers — primary economic driver.
+2. MCP-ecosystem + SI-partner credibility.
 3. Cowork cohort (Claude Code & Cowork Accelerator) using as
    template + curriculum.
 4. Broad OSS reach (stars, forks, npm).
@@ -75,17 +73,17 @@ downloads).
 | File | Section | Status | Bead | PR |
 |---|---|---|---|---|
 | [`00-MASTER-BLUEPRINT.md`](./00-MASTER-BLUEPRINT.md) | Index + executive summary | this file | GW-1.1 (`guidewire-53w`) | — |
-| [`01-BUSINESS-CASE.md`](./01-BUSINESS-CASE.md) | Why this exists, who it serves (4 audiences), commercial framing | skeleton | GW-1.2 | — |
-| [`02-PRD.md`](./02-PRD.md) | Full product spec — carrier-vocabulary tools, harness, profiles, three modes | skeleton | GW-1.2 | — |
-| [`03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) | System architecture narrative — layered model | skeleton | GW-1.3 | — |
-| [`04-USER-JOURNEY.md`](./04-USER-JOURNEY.md) | Underwriter / claims / cowork-forker journeys | skeleton | GW-1.5 | — |
-| [`05-TECHNICAL-SPEC.md`](./05-TECHNICAL-SPEC.md) | Stack, contracts, package layout, observability, NO MOCKS, quality gates | skeleton | GW-1.3 | — |
-| [`06-STATUS.md`](./06-STATUS.md) | Live status (auto-updates from beads) | skeleton | GW-1.7 | — |
-| [`07-ROADMAP.md`](./07-ROADMAP.md) | 10 epics with exit criteria + cowork tie-ins (source of truth) | skeleton | GW-1.6 | — |
-| [`08-COWORK-CURRICULUM.md`](./08-COWORK-CURRICULUM.md) | How epics map to cowork sessions / fork-starter docs | skeleton | GW-1.6 | — |
-| [`09-DR-DIAG-architecture.{md,mmd}`](./09-DR-DIAG-architecture.md) | Architectural diagram — 5 layers + 4 cross-cutting planes + cowork-fork relationship; renders inline as Mermaid on GitHub | landed | GW-1.4 | (this PR) |
+| [`01-BUSINESS-CASE.md`](./01-BUSINESS-CASE.md) | Why this exists, who it serves (4 audiences), commercial framing | **landed** (3.0k words) | GW-1.2.b (`guidewire-9mm`) | [#39](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/39) |
+| [`02-PRD.md`](./02-PRD.md) | Full product spec — carrier-vocabulary tools, harness, profiles, three modes | **landed** (8.2k words; librarian-audit fixes patched) | GW-1.2 (`guidewire-hss`) | [#35](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/35), [#44](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/44) |
+| [`03-ARCHITECTURE.md`](./03-ARCHITECTURE.md) | System architecture narrative — 5-layer model + data planes + 3-mode flow | **landed** (5.3k words) | GW-1.3 (`guidewire-u0o`) | [#38](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/38) |
+| [`04-USER-JOURNEY.md`](./04-USER-JOURNEY.md) | 6 journeys: underwriter triage / claims summary / billing reconcile / producer book / cowork-fork / carrier onboard | **landed** (5.4k words) | GW-1.5 (`guidewire-318`) | [#42](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/42) |
+| [`05-TECHNICAL-SPEC.md`](./05-TECHNICAL-SPEC.md) | Stack, package layout, TS contracts, observability, NO MOCKS, quality gates, build/deploy, security posture | **landed** (7.4k words) | GW-1.3.b/1.10/1.11 (`guidewire-z4j`) | [#41](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/41) |
+| [`06-STATUS.md`](./06-STATUS.md) | Live status (auto-updates from beads) | scaffold + lightweight fill | GW-1.7 | (this PR companion) |
+| [`07-ROADMAP.md`](./07-ROADMAP.md) | 11 epics (E1, E2, **E2.5**, E3-E10, E11+) with exit criteria | **landed** (2.8k+ words; E2.5 inserted per D-017) | GW-1.6 | [#43](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/43) |
+| [`08-COWORK-CURRICULUM.md`](./08-COWORK-CURRICULUM.md) | How epics map to cowork sessions / fork-starter docs | **deferred** per scope call 2026-05-04 | GW-1.6 | — |
+| [`09-DR-DIAG-architecture.{md,mmd}`](./09-DR-DIAG-architecture.md) | Architectural diagram — 5 layers + 4 cross-cutting planes + cowork-fork relationship; renders inline as Mermaid on GitHub | **landed** | GW-1.4 | merged earlier |
 | [`10-AAR/`](./10-AAR/) | Per-epic after-action reports | scaffolded | each Ex closure | — |
-| [`audits/`](./audits/) | Staffed 11-auditor review memos + responses | scaffolded | GW-1.8, GW-1.9 | — |
+| [`audits/`](./audits/) | Librarian citation audit (landed) + staffed 11-auditor review memos (pending GW-1.8) | librarian audit landed; staffed panel pending | GW-1.8, GW-1.9 | [#40](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/40) |
 
 ---
 
@@ -166,18 +164,38 @@ Full list with rationale: [`../../CLAUDE.md`](../../CLAUDE.md).
 
 ---
 
-## Status snapshot (fill from beads)
+## Status snapshot
 
-> Auto-updated section. Source: `bd stats` + `bd ready`. Last manual
-> refresh: 2026-05-04.
+> Source: `bd stats` + `bd ready`. Last manual refresh: 2026-05-04
+> (after blueprint authoring complete + librarian-audit fixes merged).
 
-- **Open beads:** 13
-- **Closed beads:** 0
-- **Ready to work:** 1 (Phase 0 Sandbox)
-- **In progress:** 1 (GW-1.1 Master blueprint scaffold — this PR)
-- **Blocked:** rest (correctly gated on Phase 0 → Blueprint → E1)
+**Phase status:** Blueprint authoring complete. Pending GW-1.8
+staffed audit panel + GW-1.9 audit response → E1 unlock.
 
-For live numbers: `cd repo && bd stats`.
+**What's landed in main:**
+- Blueprint paperwork: 00 (this), 01, 02, 03, 04, 05, 07, 09 — all
+  with authored content (not skeletons).
+- Architecture decisions: D-001 through D-018 (with D-017 wiring
+  E2.5 sub-epic, D-018 sharpening reconcile-vs-payments boundary).
+- 4 specialist memos (006-009) reviewed by librarian + patched for
+  P1/P2/P3/P4/P5 corrections.
+- Librarian citation audit (`audits/00-LIBRARIAN-CITATION-AUDIT.md`)
+  + 5 KB additions to `005-DR-REF`.
+
+**Pending gates before E1:**
+1. **Pre-audit `/validate-consistency` + multi-persona red-team** —
+   informal-but-rigorous check before the staffed panel. Per project
+   memory `project_guidewire_post_blueprint_validation.md`.
+2. **GW-1.8 staffed audit panel** — 11 auditors file written memos
+   to `audits/`. E1 blocked until all FAILs resolved/accepted in
+   `audits/00-AUDIT-RESPONSES.md`.
+3. **GW-1.9 audit response + blueprint v1.0 sign-off**.
+4. **`guidewire-adj` sandbox provisioning** ([GH #1](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/1))
+   — hard prereq for E1 implementation. Sandbox-blocked items in
+   the blueprint are explicitly tagged
+   `(unverified — sandbox-confirm at guidewire-adj)`.
+
+For live numbers: `bd stats` from the repo root.
 
 ---
 
