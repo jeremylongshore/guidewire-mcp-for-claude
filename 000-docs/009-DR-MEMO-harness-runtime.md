@@ -625,11 +625,36 @@ idempotency_key = $1`. If the row exists, the harness:
    `audit_entry_id`.
 2. Annotates the span `harness.execute.replay = true`.
 3. Returns `ExecuteResult { outcome: 'replayed', value: stored.result, ... }`.
-4. Does *not* call the `SideEffect`.
+4. Does *not* call the `SideEffect`. **Crucially: no
+   `GW-DBTransaction-ID` header reaches Guidewire on a replay** — the
+   harness short-circuits the entire wire call.
 
 If the row does *not* exist, the harness invokes the side effect,
 captures the result, INSERTs the row, writes the `execute.completed`
-audit entry, returns `outcome: 'executed'`.
+audit entry, returns `outcome: 'executed'`. The wire call carries
+`GW-DBTransaction-ID` (see § 4.4 below).
+
+### 4.4 Wire idempotency — `GW-DBTransaction-ID` (librarian audit P1)
+
+The harness's `gwh1:`-prefixed key (§ 4.1, § 4.2) is the
+**harness-side** replay short-circuit. It is **NOT** the wire format
+Guidewire understands. The Cloud API uses **`GW-DBTransaction-ID`**
+([authoritative source](https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/request-headers/c_preventing-duplicate-database-transactions.html))
+and **fails** duplicates with `AlreadyExecutedException` — it does
+NOT replay the prior result like Stripe-style `Idempotency-Key`.
+
+The two keys serve complementary purposes:
+
+| Layer | Key | Mechanism on collision | Purpose |
+|---|---|---|---|
+| Harness (Postgres cache) | `gwh1:` (sha256 over canonical args + actor + version) | Returns prior result | Avoid re-issuing the wire call |
+| Guidewire wire | `GW-DBTransaction-ID` (UUID/hash, sandbox-confirm at `guidewire-adj`) | Throws `AlreadyExecutedException` | Server-side defence-in-depth — should never fire |
+
+`Plan.wire.dbTransactionId` is computed alongside `Plan.idempotencyKey`
+and forwarded by `packages/guidewire-client/` as the
+`GW-DBTransaction-ID` header on writes. If `GW_DBTRANSACTION_DUPLICATE`
+ever surfaces in production, it indicates a harness cache miss or a
+cross-process race — forensic-only.
 
 ### 4.3 Collision handling
 
@@ -648,13 +673,15 @@ mode to design against. Defenses:
   key landed against a *different* plan, which means the
   canonicalization is wrong and the harness must refuse the write.
 
-### 4.4 TTL
+### 4.5 TTL
 
 Keys are pruned after the customer-profile-configured retention
 window (default 30 days). After pruning, the same intent is treated
 as new — which is correct, because at that point a retry is
 effectively a fresh authorization. Pruning is a maintenance audit
-event (`'idempotency.pruned'`).
+event (`'idempotency.pruned'`). The harness-side `gwh1:` key TTL is
+independent of any TTL Guidewire applies to `GW-DBTransaction-ID`
+(sandbox-confirm at `guidewire-adj`).
 
 ---
 
