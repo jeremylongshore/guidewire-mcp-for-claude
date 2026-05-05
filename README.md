@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jeremylongshore/guidewire-mcp-for-claude/actions/workflows/ci.yml/badge.svg)](https://github.com/jeremylongshore/guidewire-mcp-for-claude/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Status: Paperwork-First](https://img.shields.io/badge/Status-Paperwork--First-orange)](./000-docs/blueprint/)
+[![Status: v0.1.0 — E1 + E2 built](https://img.shields.io/badge/Status-v0.1.0%20%C2%B7%20E1%20%2B%20E2%20built-3fb950)](./000-docs/blueprint/)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-7c3aed)](https://modelcontextprotocol.io)
 [![Built with Claude](https://img.shields.io/badge/Built%20with-Claude-d4a857)](https://claude.ai)
 [![Marketplace target](https://img.shields.io/badge/Marketplace-claude--code--plugins--plus--skills-success)](https://github.com/jeremylongshore/claude-code-plugins-plus-skills)
@@ -15,12 +15,16 @@
 > [`claude-code-plugins-plus-skills`](https://github.com/jeremylongshore/claude-code-plugins-plus-skills)
 > marketplace.
 
-**Status:** Master blueprint paperwork in flight. Code lands once the
-staffed audit panel passes (see [`000-docs/blueprint/`](./000-docs/blueprint/)).
+**Status:** v0.1.0 — **E1 foundation (6 packages)** and **E2 PolicyCenter
+MCP (5 read-only carrier-vocabulary tools)** are built. Staffed
+11-auditor blueprint review filed (see
+[`000-docs/blueprint/audits/`](./000-docs/blueprint/audits/)). Live
+architecture diagram at
+[guidewire-mcp.intentsolutions.io](https://guidewire-mcp.intentsolutions.io/).
 
-This repository is in **paperwork-first** mode. The architectural
-blueprint, audit memos, and observability/testing/security policies
-live alongside the code from day one — they precede it.
+The blueprint, audit memos, and observability / testing / security
+policies live alongside the code — they precede it and the rest of
+the public 11-epic roadmap (E3-E11+) follows on this foundation.
 
 ---
 
@@ -48,8 +52,8 @@ bd list --type=epic
 
 | Epic | Title | Status |
 |---|---|---|
-| E1 | Foundation | planned |
-| E2 | PolicyCenter MCP (read-only) | planned |
+| E1 | Foundation (`schemas`, `observability`, `auth`, `audit`, `client-sdk`, `mcp-runtime`) | **built** |
+| E2 | PolicyCenter MCP (read-only · 5 carrier-vocabulary tools) | **built** |
 | E2.5 | Aggregate-query tools (underwriting manager tranche) | planned |
 | E3 | Harness library + CLI | planned |
 | E4 | Customer profile template + cowork fork starter | planned |
@@ -100,9 +104,15 @@ infra/                # docker / cloud-run / tofu
 
 ## Getting started
 
-Not yet runnable. Scaffold lands as **E1** ships.
+E1 + E2 are runnable today. From a clone:
 
-To track progress:
+```bash
+pnpm install
+pnpm -r build
+pnpm -r test          # E1 packages: 28+ tests; E2 PolicyCenter: 51 tests
+```
+
+To track upcoming work:
 
 ```bash
 git clone https://github.com/jeremylongshore/guidewire-mcp-for-claude.git
