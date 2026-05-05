@@ -161,7 +161,7 @@ See § 2.1 above for the operator-voice rationale.
 | Tool | Mode | Description | Cloud API endpoint(s) | Persona | Profile dep | Cited |
 |---|---|---|---|---|---|---|
 | `find-claims-at-risk-of-leakage` | read_only | Claims where reserves haven't moved but exposure remains open — leakage heuristic is profile-supplied. | `GET /claim/v1/claims?status=Open` filtered by carrier-defined indicators | 3 | HIGH (`LeakageRiskScore` is a custom entity) | 006 § 2.1, 007 § 2.2, 008 § 3.2 |
-| `summarize-this-loss` | read_only | What happened, who's hurt, where coverage stands — Graph-API one-shot. | `GET /claim/v1/claims/{id}` with Graph expansion (exposures, reserves, activities, documents, notes) | 3, 8 | MEDIUM | 006 § 2.2 (PII-redaction critical-path), 007 § 2.2, 008 § 3.2 |
+| `summarize-this-loss` | read_only | What happened, who's hurt, where coverage stands — multi-resource read via **CC Composite API** (CC has no Graph API per [librarian audit P2](./audits/00-LIBRARIAN-CITATION-AUDIT.md#p2--graph-api-not-present-in-claimcenter-f-prd-007--f-api-014--d)). | `POST /composite/v1/composite` against CC fanning out to claim/exposures/reserves/activities/documents/notes in one round trip ([CC 202411 apiref](https://docs.guidewire.com/cloud/cc/202411/apiref/)) | 3, 8 | MEDIUM | 006 § 2.2 (PII-redaction critical-path), 007 § 2.2, 008 § 3.2, audit § 3 P2 |
 | `whats-the-reserve-picture` | read_only | Reserve and exposure picture on the file — Money-typed throughout. | `GET /claim/v1/claims/{id}/reserves` + `/exposures` | 3, 8 | HIGH (`ReserveCategory`, `ExposureType` extended) | 006 § 2.3, 007 § 2.2, 008 § 3.2 (Money typing critical) |
 | `pull-this-claim` | read_only | Single-claim deep-read used as a leaf in conversational flows. | `GET /claim/v1/claims/{id}` | 8 | LOW | 07-ROADMAP § E7 |
 | `draft-denial-letter` | draft_only (default `disabled` in OSS demo profile) | Compose a denial-letter artifact citing reason codes; promotion to filing is a separate `approved_execute` tool requiring dual-control. | READ side only — the draft is composed in-process, never rendered through Smart Comms in `draft_only` mode | 3, 8 | HIGH (`DenialReason`, `LossCause` extended) | 006 § 2.4 (highest-blast-radius tool in OSS catalog), § 6.3 (default-disabled in demo profile), 007 § 2.2, 008 § 3.2 |
@@ -201,7 +201,7 @@ Per 07-ROADMAP § E9 the 5 missing tools are explicitly enumerated.
 | Tool | Mode | Description | Cloud API endpoint(s) | Persona | Profile dep | Cited |
 |---|---|---|---|---|---|---|
 | `show-my-book-of-business` | read_only | The producer's bound + quoted + expiring book. | `GET /policy/v1/policies?producerCode={code}` + `GET /account/v1/accounts?producerCode={code}` | 4 | producer-code uniqueness model (CRITICAL) | 007 § 2.4, 008 § 3.4 |
-| `whats-my-commission-status` | read_only | Commission earned + pending + statement-light flag, Money-typed. | `GET /billing/v1/commission*` (BC commission endpoints) | 4 | HIGH (commission rules contract-specific) | 007 § 2.4, 008 § 3.4 |
+| `whats-my-commission-status` | read_only | Commission earned + pending + statement-light flag, Money-typed. | `GET /admin/v1/commission-plans` + related Admin API endpoints ([BC Commission plans Consumer Guide](https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/BillingCenter/plans/commission-plans/c_working-with-commission-plans.html)). **Admin scope, NOT billing scope** ([librarian audit P3](./audits/00-LIBRARIAN-CITATION-AUDIT.md#p3--billing-commission-endpoint-path-wrong-f-prd-012--d)). | 4 | HIGH (commission rules contract-specific; admin OAuth scope required) | 007 § 2.4, 008 § 3.4, audit § 3 P3 |
 | `find-my-pending-quotes` | read_only | Submissions started but not bound. | `GET /job/v1/jobs?subtype=Submission&status=Quoted&producerCode={code}` | 4 | MEDIUM | 007 § 2.4, 008 § 3.4 |
 | `whats-my-loss-ratio-by-class` | read_only | Producer-side loss ratio per LOB / class — survival metric. | aggregate of `GET /claim/v1/claims?producerCode=...` and `GET /policy/v1/policies?producerCode=...` (premium denominator) | 4 | HIGH (LOB / class) | 007 § 4.5, 07-ROADMAP § E9 |
 | `whats-my-bind-ratio` | read_only | Quoted vs bound this month vs last — producer-team performance signal. | `GET /job/v1/jobs?subtype=Submission&producerCode=...` aggregated by status | 4 | MEDIUM | 007 § 4.5, 07-ROADMAP § E9 |
@@ -341,7 +341,20 @@ export interface PlanInput {
 export interface Plan extends Readonly<PlanInput> {
   readonly planId: string;        // sha256 content hash, hex
   readonly createdAt: string;
-  readonly idempotencyKey: string; // see § 5.4
+  readonly idempotencyKey: string; // harness-side gwh1: key (see § 5.4)
+  readonly wire: {
+    /**
+     * Guidewire-side server-side duplicate-prevention key, sent as
+     * `GW-DBTransaction-ID` header on Cloud API write requests.
+     * Distinct from `idempotencyKey` (which is the harness-side cache
+     * key for client-side replay short-circuit). Per librarian audit
+     * P1 — Guidewire's mechanism FAILS duplicates with
+     * AlreadyExecutedException, it does not replay.
+     * Currently derived as sha256(idempotencyKey) (64 hex, no prefix);
+     * sandbox-confirm at guidewire-adj for accepted shape/length/TTL.
+     */
+    readonly dbTransactionId: string;
+  };
 }
 
 export function plan(input: PlanInput): Plan;
@@ -349,6 +362,16 @@ export function plan(input: PlanInput): Plan;
 
 Pure (no I/O). Hashing input → planId is the only side work. Plans
 pass by value; mutation throws.
+
+**Two-key model (librarian P1).** `Plan.idempotencyKey` is the
+harness-side `gwh1:`-prefixed key driving Postgres replay
+short-circuit. `Plan.wire.dbTransactionId` is the Guidewire-side
+`GW-DBTransaction-ID` header value the client wrapper injects on
+writes ([IS Consumer Guide — preventing duplicate database
+transactions](https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/request-headers/c_preventing-duplicate-database-transactions.html)).
+The two are complementary safety nets for distinct purposes — never
+the same value, never the same mechanism. See
+[`./audits/00-LIBRARIAN-CITATION-AUDIT.md` § 3 P1](./audits/00-LIBRARIAN-CITATION-AUDIT.md#p1--idempotency-mechanism-misnamed-and-mischaracterized-f-prd-015--d).
 
 ### 5.2 Policy — the gate decision
 
@@ -478,8 +501,24 @@ across the boundary (because `toolVersion` is part of the input).
 
 Replay short-circuit on key match: the side effect is never invoked,
 the previous value is returned, the span is annotated
-`harness.execute.replay = true`, and a `execute.replayed` audit entry
-is written referencing the original `audit_entry_id`.
+`harness.execute.replay = true`, and an `execute.replayed` audit entry
+is written referencing the original `audit_entry_id`. **On a
+short-circuit, no `GW-DBTransaction-ID` header is sent to Guidewire**
+— the harness layer absorbs the duplicate before the wire call.
+
+**Wire idempotency mechanism (librarian P1).** When the side effect
+*does* fire, the `packages/guidewire-client/` wrapper injects
+`Plan.wire.dbTransactionId` as the `GW-DBTransaction-ID` HTTP header
+on the Cloud API write. Per the [IS Consumer Guide](https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/request-headers/c_preventing-duplicate-database-transactions.html),
+Guidewire **fails** duplicate-key writes with `AlreadyExecutedException`
+— it does NOT replay the prior result like Stripe-style
+`Idempotency-Key`. The two-key model is deliberate: `gwh1:` drives
+*harness-side* replay short-circuit (returns prior value); the
+`GW-DBTransaction-ID` header is the *server-side* defence that should
+never fire in normal operation because the harness's own cache will
+have absorbed the duplicate first. If `GW_DBTRANSACTION_DUPLICATE`
+ever surfaces, it indicates a harness cache miss or a cross-process
+race — forensic-only.
 
 ### 5.5 Audit — hash-chained entry
 
@@ -599,7 +638,11 @@ export class HarnessError extends Error {
     | 'AUDIT_UNREACHABLE' | 'POLICY_UNREACHABLE' | 'POLICY_DENIED'
     | 'APPROVAL_TIMEOUT' | 'APPROVAL_DENIED'
     | 'IDEMPOTENCY_MISMATCH' | 'CHAIN_BROKEN'
-    | 'MODE_MISMATCH' | 'TENANT_UNKNOWN';
+    | 'MODE_MISMATCH' | 'TENANT_UNKNOWN'
+    | 'GW_DBTRANSACTION_DUPLICATE';  // librarian P1: forensic-only;
+                                      // surfaces when Guidewire returns
+                                      // AlreadyExecutedException because
+                                      // harness cache missed the duplicate
   readonly planId?: string;
   readonly decisionId?: string;
 }

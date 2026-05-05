@@ -64,16 +64,24 @@ modules:
 | **Async API** | Long-running job tracking — `approved_execute` writes that exceed sync timeouts must check this |
 | **Common API** | **Typelists** + reference data — every tool that emits enum-shaped fields hits Common |
 | **Policy API** | Policy graph reads — primary surface for `policycenter-mcp` reads |
-| **Composite API** | Batched / chained calls — see §6 below; relevant for tools that need multi-graph reads in one round trip |
-| **Graph API** | Object-graph reads — relevant for `summarize-this-loss` and similar wide-fan-out tools |
+| **Composite API** | Batched / chained calls — see §6 below; relevant for tools that need multi-graph reads in one round trip. **For ClaimCenter, this is the canonical multi-resource read surface** (CC has no Graph API per librarian P2). |
+| **Graph API (PolicyCenter only)** | Object-graph reads — **PC-specific module**, NOT present in CC or BC. Per librarian audit P2, `summarize-this-loss` (a CC tool) was originally specified against Graph API and has been corrected to use **CC Composite API**. |
 | **Job API** | Submission / renewal / endorsement / cancellation jobs — primary surface for *write-shaped* PolicyCenter tools (E5+) |
 | **Product Definition API** | LOB / coverage / coverage-term metadata — **the profile-generation source of truth** for `lob.yaml` |
 | **System Tools API** | Diagnostics / hot-reload — never in tool surface; debug only |
 
 ClaimCenter 202411 reference
 ([AUTHORITATIVE](https://docs.guidewire.com/cloud/cc/202411/apiref/),
-verified 2026-05-04) ships **Admin / Async / Common / Claim / System
-Tools**. BillingCenter is documented under the InsuranceSuite
+verified 2026-05-04) ships **Admin / Async / Common / Claim /
+Composite / System Tools** — **NO Graph API** (librarian audit P2,
+correction applied throughout this memo).
+
+BillingCenter has its **own per-version apiref** at
+[`docs.guidewire.com/cloud/bc/202411/apiref/`](https://docs.guidewire.com/cloud/bc/202411/apiref/)
+and [202503](https://docs.guidewire.com/cloud/bc/202503/apiref/)
+shipping **Admin / Async / Billing / Common / Composite / System
+Tools** — including a BC Composite API available for batched
+billingcenter-mcp reads (librarian audit P4). BillingCenter is *also* documented under the InsuranceSuite
 cross-suite docs at `docs.guidewire.com/cloud/is/202603/cloudapibf/`
 ([AUTHORITATIVE](https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/introduction-to-Cloud-API/c_endpoints.html)).
 
@@ -207,7 +215,8 @@ concerns, (e) recording-priority rank for first batch.
 - **Per-customer config:** moderate (template tone varies).
 - **Recording priority:** **HIGH** for the read inputs.
 
-#### `propose-endorsement` — `draft_only` (E5)
+#### `draft-endorsement` — `draft_only` (E5)
+*(formerly `propose-endorsement`; renamed per [D-016](../004-DR-DEC-architecture-decisions.md#d-016).)*
 
 - **Endpoint(s):** READ side: `GET /policy/v1/policies/{policyId}` +
   `GET /policy/v1/policies/{id}/coverages`. The proposed endorsement
@@ -241,10 +250,15 @@ concerns, (e) recording-priority rank for first batch.
 
 #### `summarize-this-loss` — `read_only`
 
-- **Endpoint(s):** **Graph API call** — this is the canonical
-  Graph use case. `GET /claim/v1/claims/{claimId}` with Graph
-  expansion to pull exposures, reserves, activities, documents,
-  notes in one round trip.
+- **Endpoint(s):** **CC Composite API call** — `POST
+  /composite/v1/composite` against ClaimCenter, batching reads of
+  the claim, exposures, reserves, activities, documents, and notes
+  in one round trip. **Librarian audit P2 correction:** ClaimCenter
+  has NO Graph API ([CC 202411 apiref](https://docs.guidewire.com/cloud/cc/202411/apiref/)
+  module list verified 2026-05-04). The original spec called for
+  Graph API one-shot expansion; that doesn't exist for CC. Composite
+  is the right surface — it's a wider call shape but accomplishes
+  the same multi-resource fan-out in a single round trip.
 - **Profile keys:** `field-aliases.yaml`, `pii-policy.yaml`
   (claim notes contain heavy PII), `custom-entities.yaml`.
 - **Per-customer config:** moderate. Claim graph shape is more
@@ -293,7 +307,8 @@ concerns, (e) recording-priority rank for first batch.
   declare the producer code uniqueness model.
 - **Recording priority:** **MEDIUM**.
 
-#### `whats-the-payment-status` — `read_only`
+#### `where-are-we-on-this-payment` — `read_only`
+*(formerly `whats-the-payment-status`; renamed per [D-016](../004-DR-DEC-architecture-decisions.md#d-016).)*
 
 - **Endpoint(s):** `GET /billing/v1/accounts/{accountId}/invoices`
   + `GET /billing/v1/accounts/{accountId}/payments`.
@@ -302,7 +317,8 @@ concerns, (e) recording-priority rank for first batch.
 - **Money typing:** payments are Money-typed.
 - **Recording priority:** **HIGH**.
 
-#### `find-billing-issues-for-this-policy` — `read_only`
+#### `whats-going-on-with-this-account` — `read_only`
+*(formerly `find-billing-issues-for-this-policy`; renamed per [D-016](../004-DR-DEC-architecture-decisions.md#d-016).)*
 
 - **Endpoint(s):** cross-call between `/policy/v1/policies/{id}` →
   `BillingCenter /billing/v1/accounts/{accountId}/...`. Crosses
@@ -339,9 +355,15 @@ concerns, (e) recording-priority rank for first batch.
 
 #### `whats-my-commission-status` — `read_only`
 
-- **Endpoint(s):** BillingCenter commission endpoints — exact
-  paths under `/billing/v1/commission*` (practitioner knowledge,
-  BC docs are lighter; verify).
+- **Endpoint(s):** **`/admin/v1/commission-plans`** + related Admin
+  API endpoints. Per librarian audit P3 correction: commission plans
+  live under the **BC Admin API** (not the Billing API). Authoritative
+  source: [BC Commission Plans Consumer Guide](https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/BillingCenter/plans/commission-plans/c_working-with-commission-plans.html)
+  (verified 2026-05-04). The original `/billing/v1/commission*`
+  spec was practitioner-knowledge inference; the Consumer Guide
+  contradicts it. **Operationally**: this means the producer-mcp
+  needs **admin-scope OAuth** to read commissions, not billing-scope
+  — auth.yaml's scope catalog must include the Admin scope.
 - **Profile keys:** `lob.yaml`, `typelists.yaml`,
   `pii-policy.yaml` (commission amounts are sensitive).
 - **Per-customer config:** **HIGH.** Commission rules are
@@ -357,7 +379,8 @@ concerns, (e) recording-priority rank for first batch.
 
 ### 3.5 `events-mcp` (E6, query-only)
 
-#### `replay-event` — `read_only`
+#### `show-event-payload` — `read_only`
+*(formerly `replay-event`; renamed per [D-016](../004-DR-DEC-architecture-decisions.md#d-016).)*
 
 - **Endpoint(s):** **NOT a Cloud API call.** Reads from the
   internal queue (BullMQ in dev, Cloud Tasks/SQS in prod) and the
@@ -987,13 +1010,23 @@ The following can NOT be resolved from public docs alone. They are
 flagged here so `fact-checker` does not promote practitioner-knowledge
 claims to authoritative without sandbox corroboration:
 
-1. **Exact pagination parameter names.** Public docs cite "pagination
+1. ~~**Exact pagination parameter names.** Public docs cite "pagination
    query parameters" but don't list `pageSize` / `pageOffset` /
-   cursor token names in the AUTHORITATIVE summary. → verify against
-   sandbox response headers + Swagger.
-2. **Idempotency-key header name.** Practitioner knowledge says
-   `Idempotency-Key` (industry standard). → verify against per-tenant
-   Swagger.
+   cursor token names in the AUTHORITATIVE summary.~~ **RESOLVED
+   (librarian audit P5):** `pageSize` and `pageOffset` are
+   AUTHORITATIVE per [IS Consumer Guide pagination page](https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/query-parameters/c_the-pagination-query-parameters.html).
+   Reclassified from C → B (no sandbox confirmation needed).
+2. ~~**Idempotency-key header name.** Practitioner knowledge says
+   `Idempotency-Key` (industry standard).~~ **RESOLVED (librarian
+   audit P1):** Guidewire uses **`GW-DBTransaction-ID`**, not
+   Stripe-style `Idempotency-Key`. Duplicate calls **fail** with
+   `AlreadyExecutedException` — they do **NOT** replay the prior
+   result. Authoritative source: [IS Consumer Guide — Preventing
+   duplicate database transactions](https://docs.guidewire.com/cloud/is/202603/cloudapibf/cloudAPI/Basic-REST-operations/request-headers/c_preventing-duplicate-database-transactions.html).
+   The harness's own Postgres-backed `gwh1:` key (the **harness-side**
+   replay short-circuit) is a complementary client-side cache that
+   short-circuits duplicates before they hit the wire — it is NOT
+   the wire mechanism. Both keys ship; they serve distinct purposes.
 3. **Token endpoint URL pattern.** Per-tenant; only resolvable via
    Hub OIDC discovery once a sandbox is provisioned.
 4. **Rate-limit values per tenant.** Not in public docs; tenant-

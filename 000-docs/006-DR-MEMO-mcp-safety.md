@@ -129,7 +129,9 @@ generate a draft the actor can't file — that's a honeypot UX.
 the audit log (Persona 5 doesn't want denial-letter drafts in the
 audit DB). Hash + length + redaction-applied flag is sufficient.
 
-### 1.8 `propose-endorsement` — **draft_only** (E5)
+### 1.8 `draft-endorsement` — **draft_only** (E5)
+
+*(formerly `propose-endorsement`; renamed per [D-016](../004-DR-DEC-architecture-decisions.md#d-016--tool-vocabulary-canonical-names-carrier-vocabulary-curator-renames--adjuster-split). Tool-name canon is `draft-endorsement`.)*
 
 Same shape as 1.7. Add a refusal for "endorsement would change a
 field the profile's `pii-policy.yaml` marks immutable for the actor's
@@ -214,7 +216,9 @@ when the caller is a broker.
 **Refusal:** if producer-scope filter can't be applied (profile lacks
 broker-id mapping), refuse rather than return all accounts.
 
-### 3.2 `whats-the-payment-status` / 3.3 `find-billing-issues-for-this-policy` — **read_only**
+### 3.2 `where-are-we-on-this-payment` / 3.3 `whats-going-on-with-this-account` — **read_only**
+
+*(formerly `whats-the-payment-status` / `find-billing-issues-for-this-policy`; renamed per [D-016](../004-DR-DEC-architecture-decisions.md#d-016--tool-vocabulary-canonical-names-carrier-vocabulary-curator-renames--adjuster-split). Tool-name canon is `where-are-we-on-this-payment` and `whats-going-on-with-this-account`.)*
 
 Bounded to one policy/account. Standard refusal set.
 
@@ -285,7 +289,9 @@ just be present in the profile.
 
 ## 5. Per-tool review — `events-mcp` (E6)
 
-### 5.1 `replay-event` — **read_only** (carrier-vocabulary handoff)
+### 5.1 `show-event-payload` — **read_only** (carrier-vocabulary handoff)
+
+*(formerly `replay-event`; renamed per [D-016](../004-DR-DEC-architecture-decisions.md#d-016--tool-vocabulary-canonical-names-carrier-vocabulary-curator-renames--adjuster-split). Tool-name canon is `show-event-payload`.)*
 
 The name suggests a side effect ("replay" = fire it again). Per D-004
 `events-mcp` is query-only — this tool returns the historical event
