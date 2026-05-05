@@ -53,6 +53,22 @@
   other package consumes it
 - `tests/TESTING.md` is hash-pinned via `audit-harness init`; the
   policy file's hash matches what's committed
+- **Audit-DB role separation runtime check** (per [03-AR F-7](./audits/03-AR-architecture-review.md#f-7),
+  [04-SA F-3](./audits/04-SA-security-review.md#f-3),
+  [11-HR F-2](./audits/11-HR-harness-review.md#f-2),
+  binding [D-019](../004-DR-DEC-architecture-decisions.md#d-019--audit-chain-is-tamper-resistant-not-tamper-evident-against-a-compromised-harness-dba)
+  at runtime): a testcontainers integration test in
+  `packages/audit/tests/role-separation.test.ts` boots a Postgres
+  container, runs `migrations/0001_init.sql` as `audit_owner`, then
+  asserts that a connection assuming the `audit_writer` role can
+  `INSERT INTO audit_entries` but `UPDATE` and `DELETE` against the
+  same table fail with `permission denied for table audit_entries`.
+  A parallel assertion confirms `audit_reader` can `SELECT` but
+  cannot `INSERT`. The test runs in CI on every PR. This makes the
+  D-019 tamper-resistance claim binding at runtime, not just policy
+  prose; without it, a future harness change that quietly broadens
+  the runtime grant set silently re-creates the threat surface
+  D-019 was scoped to defend against.
 - `.github/workflows/ci.yml` swap from paperwork-no-op to real
   pipeline (pnpm + Biome + Vitest + audit-harness gates)
 - `LICENSE` (Apache-2.0) and `CONTRIBUTING.md` are real (currently

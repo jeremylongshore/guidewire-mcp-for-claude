@@ -1288,6 +1288,49 @@ appends serialize on the head row.
 any mismatch = `chain_broken`, harness refuses all writes for that
 tenant until `chain.repair.acknowledged` (manual operator action).
 
+##### 8.2.1 Postgres role separation — operational identity
+
+Per [D-019](../004-DR-DEC-architecture-decisions.md#d-019--audit-chain-is-tamper-resistant-not-tamper-evident-against-a-compromised-harness-dba)
+and [04-SA F-3](./audits/04-SA-security-review.md#f-3), the audit
+DB ships three roles. Their operational identities (the principals
+that hold the credentials, not just the SQL grants) are:
+
+- **`audit_owner`** — owns `audit_entries` and `audit_chain_heads`;
+  runs `packages/audit/migrations/0001_init.sql` and any future
+  schema migration. **NEVER the runtime connection identity.**
+  Migrations execute via a dedicated CI job (`pnpm audit:migrate`)
+  or an out-of-band ops job, both authenticating with credentials
+  scoped only to the migration window. The `audit_owner` password /
+  cert lives in `runbook/secrets.prod.sops.yaml` (SOPS + age, per
+  repo `CLAUDE.md` § Stack and the rotation cadence in § 8.3
+  below), is decrypted only by the migration job, and is **never
+  injected into MCP server or harness runtime envs**. In single-operator OSS deployments where
+  the operator is also the DBA, the operator runs the migration
+  with `audit_owner` credentials, then drops them from any
+  long-lived shell history / env file before starting the harness;
+  the harness's `DATABASE_URL` carries only the `audit_writer`
+  grant.
+- **`audit_writer`** — INSERT-only on `audit_entries`. The **only**
+  role used by `packages/audit/` at runtime. Loaded into the MCP
+  server / harness process via `DATABASE_URL` from the runtime
+  SOPS-encrypted env. The role-separation testcontainers test
+  asserted in [E1 exit criteria](./07-ROADMAP.md#e1--foundation)
+  (per AR-7) makes this runtime constraint binding: any future
+  change that quietly broadens the runtime grant set fails CI.
+- **`audit_reader`** — SELECT-only on `audit_entries` and
+  `audit_chain_heads`. Used by `verifyChain()` in compliance jobs
+  (re-hash sweep, regulator-export bundle). Held by an ops-only
+  identity; never granted to the MCP server runtime.
+
+The `audit_writer` ↔ `audit_owner` split is the **defence-in-depth
+layer D-019 names**; the `audit_reader` split is operational
+hygiene (read traffic doesn't share connection limits or risk
+posture with write traffic). Residual risk: a privileged DBA
+holding `audit_owner` credentials can still bypass the chain and
+is the trigger for the E3+ KMS-signed external-commitment surface
+(implementation TBD per customer trust model — see
+[D-019 § operational consequences](../004-DR-DEC-architecture-decisions.md#d-019--audit-chain-is-tamper-resistant-not-tamper-evident-against-a-compromised-harness-dba)).
+
 #### 8.3 Secret rotation cadence
 
 | Secret | Rotation | Mechanism |
