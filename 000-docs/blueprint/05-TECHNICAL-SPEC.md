@@ -152,6 +152,152 @@ The Zod schemas that round-trip the wire shapes live one level
 shallower in `packages/schemas/src/` — their module names (not the
 full schemas) are listed alongside each interface for traceability.
 
+#### 3.0 Tool manifest — what the server registers
+
+The canonical `ToolManifestEntry` interface is authored in
+[`./02-PRD.md`](./02-PRD.md#30-tool-manifest-contract) § 3.0 (per
+staffed-audit
+[BA-3](./audits/05-BA-backend-review.md#f-3) +
+[MS-5](./audits/08-MS-mcp-safety-review.md#f-5)) and
+shipped today as the type-erased interface in
+[`servers/policycenter-mcp/src/manifest.ts`](../../servers/policycenter-mcp/src/manifest.ts).
+The Zod round-trip below validates the same shape at boot. The
+schema lands as `packages/schemas/src/manifest/tool-manifest-entry.ts`
+in the next E1 follow-up — the policycenter-mcp server currently
+duplicates the structural shape inline so the server boots
+before the schemas package ships its `manifest/` subpath. When
+the package lands, the server imports
+`ToolManifestEntrySchema` from
+`@intentsolutions/guidewire-schemas` and the inline interface
+deletes.
+
+```ts
+import { z } from 'zod';
+import { ProfileSchemaVersionSchema } from '../profile/profile-version.js';
+
+export const ToolModeSchema = z.enum(['read_only', 'draft_only', 'approved_execute']);
+export type ToolMode = z.infer<typeof ToolModeSchema>;
+
+export const EpicTagSchema = z.enum(['E2', 'E2.5', 'E5', 'E6', 'E7', 'E8', 'E9', 'E10']);
+export type EpicTag = z.infer<typeof EpicTagSchema>;
+
+export const ProfileFileNameSchema = z.enum([
+  'auth.yaml',
+  'roles.yaml',
+  'lob.yaml',
+  'typelists.yaml',
+  'custom-entities.yaml',
+  'field-aliases.yaml',
+  'approval-matrix.yaml',
+  'pii-policy.yaml',
+  'events.yaml',
+]);
+
+/** Operator-voice description-shape rule (CV-6). */
+export const ToolVocabularySchema = z.object({
+  question: z.string().min(1).max(80),    // ≤10 words by character-budget proxy
+  whenToUse: z.string().min(1).max(160),  // ≤25 words by character-budget proxy
+});
+
+/**
+ * Validates the static, JSON-serialisable surface of `ToolManifestEntry`.
+ * `inputSchema` (a `z.ZodTypeAny`) and `handler` (a function) are
+ * `z.unknown()` here because they are runtime-only objects — the
+ * boot-validator checks them by predicate ("is a Zod schema?", "is a
+ * function?") rather than via `z.unknown()`.parse(...). The structural
+ * shape is what's worth round-tripping through Zod for boot-time
+ * REFUSE-on-bad-manifest behaviour per MS-5.
+ */
+export const ToolManifestEntrySchema = z.object({
+  name: z.string()
+    .min(1)
+    .regex(/^[a-z][a-z0-9-]*[a-z0-9]$/, 'kebab-case, no API verb prefix (D-001)'),
+  version: z.string().regex(/^\d+\.\d+\.\d+/, 'semver — pinned into Plan.idempotencyKey'),
+  mode: ToolModeSchema,
+  description: z.string().min(1),
+  vocabulary: ToolVocabularySchema,
+  inputSchema: z.unknown().refine(
+    (v) => typeof v === 'object' && v !== null && '_def' in v,
+    { message: 'inputSchema must be a Zod schema' },
+  ),
+  requiredProfileSchema: z.string().regex(
+    /^(>=|>|<=|<|=)?v\d+\.\d+(\.\d+)?(\s+\|\|\s+.+)?$/,
+    'semver-range string per D-020 (e.g. ">=v1.0")',
+  ),
+  requiredProfileFiles: z.array(ProfileFileNameSchema).readonly(),
+  epicTag: EpicTagSchema,
+  personas: z.array(z.number().int().min(1).max(9)).readonly(),
+  requiresHarnessExecute: z.boolean(),
+  incompleteWithoutProfile: z.boolean(),
+  handler: z.unknown().refine(
+    (v) => typeof v === 'function',
+    { message: 'handler must be a function' },
+  ),
+}).superRefine((entry, ctx) => {
+  // MS-5 boot-validation rule: requiresHarnessExecute parity with mode.
+  if (entry.mode === 'read_only' && entry.requiresHarnessExecute) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'read_only tools must not set requiresHarnessExecute (writes-only-via-execute, AR-2)',
+      path: ['requiresHarnessExecute'],
+    });
+  }
+  if (entry.mode !== 'read_only' && !entry.requiresHarnessExecute) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'draft_only / approved_execute tools must set requiresHarnessExecute=true (AR-2)',
+      path: ['requiresHarnessExecute'],
+    });
+  }
+  // CV-6: description must equal formatDescription(vocabulary).
+  const expected = `${entry.vocabulary.question} · ${entry.vocabulary.whenToUse}`;
+  if (entry.description !== expected) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'description must equal formatDescription(vocabulary) — CV-6',
+      path: ['description'],
+    });
+  }
+});
+export type ToolManifestEntry = z.infer<typeof ToolManifestEntrySchema>;
+```
+
+**Boot-time validation contract (MS-5).** Each MCP server
+iterates its registered tools and calls
+`ToolManifestEntrySchema.parse(entry)`. Any failure throws and
+the runtime surfaces it as a typed
+`HarnessError({ code: 'MODE_MISMATCH' })` per
+[02-PRD § 5.8](./02-PRD.md#58-factory--result--error) (the same
+typed code the runtime uses for plan/manifest mode parity, so
+boot vs. runtime failures group into one Sentry issue per the
+`[code, tool_name, mode]` grouping rule). The harness's
+`createHarness()` factory in § 3.7 below additionally validates
+that:
+
+1. `requiredProfileSchema` resolves against the active
+   profile's `schemaVersion` (loaded via
+   `ProfileSchemaVersionSchema` from
+   `packages/schemas/src/profile/profile-version.ts`).
+2. Every `ProfileFileName` in `requiredProfileFiles` is present
+   in the loaded profile bundle.
+3. For `requiresHarnessExecute: true` tools — the `Harness`
+   handle is non-null at server-boot time.
+4. For `mode === 'draft_only'` tools — the `EvidenceExporter`
+   binding is non-null.
+
+A failed precondition refuses the server boot with a typed
+error citing the failing tool's `name` + the failing predicate
+— consistent with the read/audit precedent in § 8.2.1 (audit-DB
+role separation) where boot-time refusal is the safest stance.
+
+**Cross-reference.** The PRD § 3.0 contract is the
+authoritative shape; this section is the Zod realisation. When
+the schemas package adds the `manifest/` subpath in E1, the
+sketch above lands verbatim at
+`packages/schemas/src/manifest/tool-manifest-entry.ts` and
+`servers/policycenter-mcp/src/manifest.ts` switches from the
+inline interface to the published export.
+
 #### 3.1 Plan — what the agent intends
 
 ```ts

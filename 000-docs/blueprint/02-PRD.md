@@ -114,6 +114,165 @@ Each tool table column:
 - **Profile-config dependence** — LOW / MEDIUM / HIGH per 008 § 3 grades
 - **Cited in memo** — origin trace
 
+### 3.0 Tool manifest contract
+
+Per staffed-audit
+[AR-2](./audits/03-AR-architecture-review.md#f-2),
+[BA-3](./audits/05-BA-backend-review.md#f-3),
+[MS-5](./audits/08-MS-mcp-safety-review.md#f-5),
+[CV-6](./audits/09-CV-vocabulary-review.md#f-6) — the implicit
+"Zod input + a `mode` field somewhere" shape from
+[009 § 8.1](../009-DR-MEMO-harness-runtime.md) is promoted to a
+canonical, machine-validated contract before the per-suite tool
+tables in § 3.1–§ 3.5. Servers register tools as
+`ToolManifestEntry` values; the harness reads `mode` +
+`requiredProfileSchema` + `requiresHarnessExecute` off the
+manifest at boot and at each call. Reference implementation:
+[`servers/policycenter-mcp/src/manifest.ts`](../../servers/policycenter-mcp/src/manifest.ts).
+The Zod round-trip lands in `packages/schemas/src/manifest/`
+([05-TECHNICAL-SPEC § 3.0](./05-TECHNICAL-SPEC.md#30-tool-manifest--what-the-server-registers))
+when the schemas package ships in E1.
+
+```ts
+export type ToolMode = 'read_only' | 'draft_only' | 'approved_execute';
+
+export type EpicTag = 'E2' | 'E2.5' | 'E5' | 'E6' | 'E7' | 'E8' | 'E9' | 'E10';
+
+export interface ToolManifestEntry {
+  /** Carrier-vocabulary, kebab-case, no API verbs (D-001 + D-016). */
+  readonly name: string;
+  /** Semver; pinned into the harness idempotency-key derivation per § 5.1. */
+  readonly version: string;
+  /** Declared at registration; not negotiable mid-call (006 § 7.2). */
+  readonly mode: ToolMode;
+  /** Composed via `formatDescription(vocabulary)` — never authored by hand. */
+  readonly description: string;
+  /** CV-6 description-shape rule (see "Description-shape rule" below). */
+  readonly vocabulary: {
+    readonly question: string;    // operator's literal phrasing, ≤10 words
+    readonly whenToUse: string;   // operational moment, ≤25 words
+  };
+  /** Local Zod schema validating tool args at the server boundary. */
+  readonly inputSchema: z.ZodTypeAny;
+  /** Semver range, e.g. `">=v1.0"` — D-020 v2.0 gating. */
+  readonly requiredProfileSchema: string;
+  /** Profile YAMLs the tool reads from (boot-validator checks each). */
+  readonly requiredProfileFiles: readonly ProfileFileName[];
+  /** Which epic introduces this tool — pre-E2 tool in v0.1.0 build = CI fail. */
+  readonly epicTag: EpicTag;
+  /** 002-DR-CRIT persona indices; drives the ≥5-tools-per-persona density gate. */
+  readonly personas: readonly number[];
+  /**
+   * AR-2 boundary marker. Always `false` for `read_only`; `true` for
+   * `draft_only` + `approved_execute`. The depcruise + AST rules in
+   * § 5.9 fire when a server with `requiresHarnessExecute: true`
+   * imports a write-shaped client method outside an `execute()` callback.
+   */
+  readonly requiresHarnessExecute: boolean;
+  /** ⚠ banner per § 3.1.1 — true for tools that need carrier UWCenter rule shapes. */
+  readonly incompleteWithoutProfile: boolean;
+  /** Tool implementation; runtime opens spans + writes audit before/after. */
+  readonly handler: (args: unknown, ctx: ToolContext) => Promise<unknown>;
+}
+```
+
+#### Three execution modes — manifest-level rules
+
+| Mode | Side effect surface | `requiresHarnessExecute` | Audit row | Refusal applies? |
+|---|---|---|---|---|
+| `read_only` | Zero Guidewire writes; reads only via `ctx.client.<read>` | `false` | Mandatory per Persona 5 read-side exfil threat (§ 4.1) | Refusal logic does NOT apply at the *write* gate — read-side refusals (auth, sandbox, profile-incomplete) still apply (§ 4.2) |
+| `draft_only` | Writes only to harness draft store; never to Guidewire | `true` (the harness gates *draft creation* + emits the draft to the evidence bundle) | All `read_only` fields + draft body **hash-summarized only** (§ 4.1) | Yes — draft generation is gated; the tool MUST route through `ctx.harness.execute()` |
+| `approved_execute` | Exactly one Guidewire write per idempotency key | `true` (the only path is `ctx.harness.execute()`) | Hash-chained per 009 § 2 with full evidence-bundle metadata (§ 4.1) | Yes — plan → policy → approval → execute → audit → rollback gate fires per [D-006](../004-DR-DEC-architecture-decisions.md#d-006--hard-rule-no-audit--no-write) |
+
+#### Description-shape rule (CV-6)
+
+Every tool's `vocabulary` carries:
+- `question` — the operator's literal phrasing, ≤10 words
+  (e.g. *"What's on my plate?"*)
+- `whenToUse` — the operational moment when an operator
+  reaches for this tool, ≤25 words
+  (e.g. *"Daily morning queue review for line underwriters."*)
+
+The tool's MCP-catalog `description` (what Claude reads at
+tool-selection time) is computed from these via
+`formatDescription({question, whenToUse})` →
+``${question} · ${whenToUse}``. Authoring `description` by hand
+is forbidden — `audit-harness vocab-lint` rule 7 flags any
+tool whose `description` does not equal
+`formatDescription(tool.vocabulary)`. This forces the catalog
+entry to read like an operator's mental shortcut rather than
+an API doc paragraph, which materially improves Claude's
+tool-selection accuracy
+([F-RT-2.2](./audits/02-RED-TEAM-PANEL.md)). Cross-link:
+[007 § 7](../007-DR-MEMO-carrier-vocabulary.md#7-recommendations-to-gw-12-prd-authors--encode-at-pr-review).
+
+#### Harness writes-only-via-`execute()` boundary (AR-2)
+
+Every tool whose `mode` is `draft_only` or `approved_execute`
+MUST route its write through `ctx.harness.execute(...)`. The
+gate is physical, not advisory: a tool body that imports a
+write-shaped method (`POST` / `PUT` / `PATCH` / `DELETE`) from
+`@intentsolutions/guidewire-client` and calls it outside an
+`execute()` callback fails the AR-2 architecture rule in CI
+(depcruise layer rule + AST call-site rule per § 5.9 +
+[03-ARCHITECTURE § 4 row 1](./03-ARCHITECTURE.md#4-boundaries--what-each-layer-cannot-do)
++ [03-ARCHITECTURE § 4 row 14](./03-ARCHITECTURE.md#4-boundaries--what-each-layer-cannot-do)).
+The boundary applies to `packages/harness/**` itself — even the
+harness's own modules cannot call client write methods outside
+the `execute()` callback, closing the loophole flagged in
+[03-AR F-2](./audits/03-AR-architecture-review.md#f-2). § 5.9
+explains how the rules are wired in CI; § 3.0 *declares* the
+contract that the rules enforce.
+
+#### Boot-validation requirement (MS-5)
+
+Every server's boot path iterates its registered tools and
+refuses to start (typed `HarnessError({ code: 'MODE_MISMATCH' })`
+per [§ 5.8](./02-PRD.md#58-factory--result--error)) if any of
+the following fails:
+
+1. `mode` is a valid `ToolMode` enum value.
+2. `requiredProfileSchema` is a valid semver range and the
+   active profile's `schemaVersion` (per § 6.0a) satisfies it.
+3. Every file named in `requiredProfileFiles` resolves in the
+   loaded profile and round-trips its Zod schema.
+4. For `requiresHarnessExecute: true` tools — the harness
+   handle (`ctx.harness`) is non-null at boot.
+5. For `mode: 'draft_only'` tools — the evidence-bundle
+   exporter (`ctx.evidence`) is non-null at boot.
+6. `description === formatDescription(vocabulary)` — guards
+   against drift between authoring and the description-shape
+   rule.
+
+**Runtime mode parity (MS-5).** The harness MUST refuse
+`harness.execute()` if `plan.mode !== manifest.mode` at call
+time — a tool registered as `read_only` cannot upgrade itself
+mid-call to `approved_execute` by constructing a plan with a
+different mode. The runtime check raises
+`HarnessError({ code: 'MODE_MISMATCH' })`
+([§ 5.8](./02-PRD.md#58-factory--result--error)) — the same
+typed code the boot-time check uses, so Sentry groups the
+failures across boot vs. runtime under one issue
+(per § 5.8 grouping rule).
+
+#### Boundaries enforced in CI
+
+The full layer-boundary matrix lives at
+[03-ARCHITECTURE § 4](./03-ARCHITECTURE.md#4-boundaries--what-each-layer-cannot-do)
+(13 rows pre-AR-2, plus the new 14th row codifying the harness
+writes-only-via-`execute()` boundary). The two rows that bear
+on the manifest contract directly:
+
+| Concern | Enforced by | Rule |
+|---|---|---|
+| `servers/**` cannot bypass the harness for writes | depcruise layer rule (03-ARCHITECTURE § 4 row 1) | REFUSE — `servers/**` cannot import `clients/**` or `packages/guidewire-client/**` except via `packages/harness/` |
+| Harness-internal modules cannot bypass `execute()` for writes (AR-2) | depcruise + AST call-site rule (03-ARCHITECTURE § 4 row 14) | REFUSE — calls into `packages/guidewire-client/**`'s `POST`/`PUT`/`PATCH`/`DELETE` from any module (including `packages/harness/**`) outside an `execute()` callback are CI failures |
+
+The rest of the boundary table (profile data shape, no fixtures,
+no `latest/` URLs, vocab-lint, no payments-mcp directory) is
+upstream of the manifest contract but referenced from
+`03-ARCHITECTURE § 4` for completeness.
+
 ### 3.1 `policycenter-mcp` — PolicyCenter + UnderwritingCenter
 
 E2 ships the read-only catalog (5-7 tools per [`07-ROADMAP § E2`](./07-ROADMAP.md)).
@@ -233,6 +392,24 @@ subscribe to App Events at call-time; ingestion is one-way.
 `events-mcp` consumes from a queue sharded by `primaryObject.id` per
 008 § 7 — App Events guarantees per-primary-object safe ordering, NOT
 cross-claim global ordering. Tools must respect that boundary.
+
+**`roles.yaml` is the disambiguator** between
+`show-activity-on-this-claim` (lives in `claimcenter-mcp`,
+adjuster-facing) and `find-events-for-claim` (lives in
+`events-mcp`, integration-engineer / SRE-facing). The two tools
+read the same underlying events store but answer different
+questions in different vocabulary
+([D-016](../004-DR-DEC-architecture-decisions.md#d-016--show-activity-on-this-claim-is-a-new-tool-not-a-rename),
+[CV-3](./audits/09-CV-vocabulary-review.md#f-3)). At
+tool-selection time the agent never has both tools simultaneously
+visible for a single actor: the adjuster role's `roles.yaml`
+catalog scope (§ 6.2) lists `claimcenter-mcp.show-activity-on-this-claim`
+only; the integration-engineer / compliance / audit roles list
+`events-mcp.find-events-for-claim` only. Per
+[F-RT-7.1](./audits/02-RED-TEAM-PANEL.md), this closes the
+tool-selection ambiguity Persona 7 flagged — vocabulary is the
+contract; `roles.yaml` is the per-actor scope filter that prevents
+Claude from picking inconsistently between them.
 
 ### 3.6 `payments-mcp` — explicitly NOT in this repo
 
