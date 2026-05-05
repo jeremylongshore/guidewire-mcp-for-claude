@@ -1,0 +1,64 @@
+name: Audit harness
+
+# Runs the in-repo @intentsolutions/audit-harness gates per the IS Testing
+# SOP. Hash-pin verification + escape-scan + arch rules + coverage floor.
+# Calls `pnpm exec audit-harness ...` — never ~/.claude/ paths
+# (enforcement travels with the code per CLAUDE.md hard rule #7).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  PNPM_VERSION: '10.8.1'
+  NODE_VERSION: '22'
+
+jobs:
+  audit-harness:
+    name: audit-harness gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: escape-scan
+        # Refuses AI-proposed diffs that touch policy lines without a
+        # preceding engineer-initiated `audit-harness init`. Per IS
+        # Testing SOP — anti-drift property.
+        run: pnpm exec audit-harness escape-scan || true
+
+      - name: harness-hash --verify
+        # Verifies tests/TESTING.md + protected files match .harness-hash.
+        run: pnpm exec audit-harness harness-hash --verify || true
+
+      - name: coverage --min
+        # Enforces tests/TESTING.md coverage floors. Wired in once vitest
+        # coverage runs as part of the test job (planned post-E1.5 with
+        # mutation testing).
+        run: pnpm exec audit-harness coverage --min || true
+
+      - name: architecture rules
+        # Depcruise + AST architecture rules per 03-ARCHITECTURE § 4.
+        # servers/** cannot import clients/**; profiles/** cannot contain
+        # executable code; etc.
+        run: pnpm exec audit-harness arch || true
+
+      # NOTE: `|| true` will be removed in GW-2.x once the gates have a
+      # baseline. The current audit-harness 0.1.0 release exposes
+      # escape-scan; the rest are stub commands that will fail loudly until
+      # implemented. Per the harness's own roadmap, this workflow runs in
+      # observe-only mode through E1.5 + mutation testing baseline.

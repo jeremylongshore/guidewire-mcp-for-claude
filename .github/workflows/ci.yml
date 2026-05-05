@@ -1,9 +1,8 @@
 name: CI
 
-# Paperwork-phase guard: jobs no-op until E1 introduces package.json + the
-# pnpm workspace. GW-2.3 (E1 sub-bead) replaces the npm scaffolding here
-# with the full pnpm + Biome + Vitest + @intentsolutions/audit-harness
-# pipeline.
+# Real pipeline (E1+ — replaces paperwork-no-op). Runs lint, typecheck,
+# test, build in parallel, and gates smoke-reach behind the
+# GUIDEWIRE_OAUTH_CLIENT_ID secret.
 
 on:
   push:
@@ -14,64 +13,90 @@ on:
 permissions:
   contents: read
 
+env:
+  PNPM_VERSION: '10.8.1'
+  NODE_VERSION: '22'
+
 jobs:
-  preflight:
-    name: Preflight (paperwork-phase)
-    runs-on: ubuntu-latest
-    outputs:
-      has_package_json: ${{ steps.check.outputs.has_package_json }}
-    steps:
-      - uses: actions/checkout@v6
-      - id: check
-        run: |
-          if [ -f package.json ]; then
-            echo "has_package_json=true" >> "$GITHUB_OUTPUT"
-            echo "package.json found — full CI will run."
-          else
-            echo "has_package_json=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::package.json not present yet — CI in paperwork-phase no-op mode. Real CI lands in GW-2.3."
-          fi
-
   lint:
-    name: Lint
-    needs: preflight
-    if: needs.preflight.outputs.has_package_json == 'true'
+    name: Lint (Biome)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: "22"
-          cache: "npm"
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npx eslint .
+  typecheck:
+    name: Typecheck (tsc --noEmit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r exec tsc --noEmit
 
   test:
-    name: Test (Node ${{ matrix.node-version }})
-    needs: preflight
-    if: needs.preflight.outputs.has_package_json == 'true'
+    name: Test (Vitest)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [18, 20, 22]
     steps:
       - uses: actions/checkout@v6
-
-      - name: Set up Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
+      - uses: pnpm/action-setup@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r test
 
-      - name: Install dependencies
-        run: npm ci
+  build:
+    name: Build (tsup)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
 
-      - name: Run tests
-        run: npm test
+  smoke-reach:
+    name: Smoke-reach (librarian KB endpoints)
+    # D-021 + 07-ROADMAP § E1 — gated by dev-tier creds. Skips cleanly
+    # when GUIDEWIRE_OAUTH_CLIENT_ID is unset (OSS quickstart default).
+    if: ${{ vars.SMOKE_REACH_ENABLED == 'true' || secrets.GUIDEWIRE_OAUTH_CLIENT_ID != '' }}
+    needs: [lint, typecheck, test, build]
+    runs-on: ubuntu-latest
+    env:
+      GUIDEWIRE_OAUTH_CLIENT_ID: ${{ secrets.GUIDEWIRE_OAUTH_CLIENT_ID }}
+      GUIDEWIRE_OAUTH_CLIENT_SECRET: ${{ secrets.GUIDEWIRE_OAUTH_CLIENT_SECRET }}
+      GUIDEWIRE_OAUTH_TOKEN_URL: ${{ secrets.GUIDEWIRE_OAUTH_TOKEN_URL }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm smoke-reach

@@ -1,119 +1,161 @@
-# Contributing to guidewire-mcp-for-claude
+# Contributing to Guidewire MCP for Claude
 
-Thank you for your interest in contributing to **guidewire-mcp-for-claude**! This guide will help you get started.
+Carrier-native MCP servers + governance harness for Guidewire estates,
+designed Claude/Anthropic-first. The repo's credibility hinges on the
+technical content being grounded in real published Guidewire surfaces — so
+contribution discipline lives at the same bar as the code.
 
-## Getting Started
+## Getting started
 
 ### Prerequisites
 
-<!-- Language: node — the skill customizes this section -->
-- Git
-- GitHub account
-- Development environment for node
+- **Node.js 22 LTS** (`>=22.0.0`)
+- **pnpm 10+** (workspace topology — npm/yarn won't resolve the
+  `workspace:*` ranges)
+- A GitHub account
+- For tasks that touch the Guidewire Cloud API: a developer-tier OAuth
+  credential pair from the [Guidewire developer
+  program](https://www.guidewire.com/developers). Per
+  [D-021](000-docs/004-DR-DEC-architecture-decisions.md#d-021),
+  the OSS does NOT ship a Jeremy-controlled sandbox; the first integration
+  engagement brings their own tenant. For local dev, your own dev-tier
+  creds are sufficient for `pnpm smoke-reach`.
 
-### Development Setup
+### One-time setup
 
 ```bash
-# Clone the repository
 git clone https://github.com/jeremylongshore/guidewire-mcp-for-claude.git
 cd guidewire-mcp-for-claude
-
-# Set up your development environment
-# (language-specific setup instructions go here)
+pnpm install
+pnpm -r build
+pnpm -r test
 ```
 
-## How to Contribute
+A clean clone with `pnpm install && pnpm -r test` passing is the E1
+foundation contract — see
+[`07-ROADMAP § E1`](000-docs/blueprint/07-ROADMAP.md).
 
-### Reporting Bugs
+## Branch naming
 
-1. Search [existing issues](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues) first
-2. Open a [bug report](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/new?template=bug_report.md)
-3. Include reproduction steps, expected vs actual behavior, and environment details
+Beads-driven naming per [CLAUDE.md](CLAUDE.md):
 
-### Suggesting Enhancements
+| Prefix | When |
+|---|---|
+| `feat/` | New feature — typically `feat/eN-<area>-<bz-id>` for blueprint-tied work |
+| `fix/` | Bug fix |
+| `docs/` | Documentation-only change |
+| `chore/` | Tooling, deps, infra-only |
 
-1. Check [existing feature requests](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues?q=label%3Aenhancement)
-2. Open a [feature request](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues/new?template=feature_request.md)
+Every PR maps back to a bead (`bd show <id>`); the bead's notes carry a
+`Blueprint:` reference to the relevant `000-docs/blueprint/` section.
 
-### Pull Requests
+## Pull request workflow
 
-1. Fork the repository
-2. Create a feature branch from `main`:
+1. Fork the repository (or create a branch on the upstream if you have
+   write access).
+2. Run `bd ready` to find available work, or `bd create` to file a new
+   bead before starting.
+3. Implement on a feature branch; run the local gates:
    ```bash
-   git checkout -b feature/your-feature-name
+   pnpm install
+   pnpm -r typecheck
+   pnpm -r test
+   pnpm lint
+   pnpm -r build
    ```
-3. Make your changes
-4. Write or update tests
-5. Ensure all tests pass
-6. Commit with [conventional commit messages](#commit-messages)
-7. Push and open a pull request
+4. If your change touches `tests/TESTING.md` or any other protected file,
+   re-pin the harness:
+   ```bash
+   pnpm exec audit-harness init
+   ```
+   Commit the updated `.harness-hash` alongside the policy change in the
+   same commit.
+5. Open the PR. **Gemini Code Assist must complete before merge** per the
+   [CLAUDE.md hard rule on Gemini PR review](CLAUDE.md). Branch
+   protection on `main` enforces Gemini pass + 1 human approval.
 
-## Development Process
+## Required gates (CI)
 
-### Branch Strategy
+Every PR runs:
 
-| Branch | Purpose |
-|--------|---------|
-| `main` | Production-ready code |
-| `feature/*` | New features |
-| `fix/*` | Bug fixes |
-| `docs/*` | Documentation changes |
+| Gate | What it does |
+|---|---|
+| `lint` | Biome — single tool, no ESLint+Prettier |
+| `typecheck` | `tsc --noEmit` across all workspaces |
+| `test` | Vitest across all packages |
+| `build` | tsup — every package compiles to `dist/` |
+| `smoke-reach` | Endpoint reachability against the librarian KB (gated by `GUIDEWIRE_OAUTH_CLIENT_ID`) |
+| `audit-harness` | escape-scan, harness-hash --verify, coverage --min, arch rules |
 
-### Testing
+The audit-harness gates reference the in-repo `@intentsolutions/audit-harness`
+package — never `~/.claude/` paths. Enforcement travels with the code per
+[CLAUDE.md hard rule #7](CLAUDE.md).
 
-<!-- Language: node — tests vary by language -->
-Run the test suite before submitting a PR:
+## Source-doc citation discipline
 
-```bash
-# Run tests
-# (language-specific test command goes here)
-```
+**Mandatory** for every authoring change that touches Cloud API endpoints,
+typelist values, LOB codes, custom-entity shape, App Events, Hub OAuth,
+or any other Guidewire technical surface (per
+[CLAUDE.md § Source-doc citation discipline](CLAUDE.md)):
 
-### Code Review
+1. Consult the [`guidewire-reference-librarian`](.claude/agents/guidewire-reference-librarian.md)
+   agent OR read [`000-docs/005-DR-REF-guidewire-public-resources.md`](000-docs/005-DR-REF-guidewire-public-resources.md)
+   directly to find the authoritative public source.
+2. Cite the release-versioned URL inline (e.g. *"Palisades Cloud API
+   reference § /policy/v1/policies"*).
+3. If no public source exists, mark the claim
+   `(unverified — practitioner knowledge from public docs; first
+   integration engagement validates)`.
+4. **Never invent** endpoint shapes, typelist names, or syntax.
 
-- All PRs require at least 1 maintainer approval
-- CI must pass (lint + tests)
-- Keep PRs focused — one feature or fix per PR
+## NO MOCKS
 
-## Style Guides
+[D-008](000-docs/004-DR-DEC-architecture-decisions.md#d-008--no-mocks--real-guidewire-cloud-sandbox-from-day-1):
 
-### Commit Messages
+- No hand-written `fixtures/*.json`. The escape-scan REFUSEs them at boot.
+- `tests/recordings/` holds HTTP recordings captured from a real Cloud
+  tenant with provenance in filenames + `MANIFEST.md`.
+- Tests mock at the boundary (`undici` for client-sdk; replayer for
+  contract tests) — never the function under test.
 
-Use [Conventional Commits](https://www.conventionalcommits.org/):
+## Code style
 
-```
-<type>(<scope>): <subject>
+- **TypeScript strict mode** (no exceptions). `tsconfig.base.json` sets
+  `strict: true`, `noUncheckedIndexedAccess: true`, `verbatimModuleSyntax: true`.
+- **Biome** is the lint+format tool. Run `pnpm format` before committing.
+- **No `console.log` / `console.error` in production paths.** Use the
+  `pino` logger from `@intentsolutions/guidewire-observability`. The
+  architecture rule fails CI per
+  [03-ARCHITECTURE § 4](000-docs/blueprint/03-ARCHITECTURE.md).
+- **All thrown errors in `servers/*` and `packages/harness/` derive from
+  `AppError`** (in `packages/observability`). Use the typed refusal
+  helpers (`refuseDbTxnDuplicate`, etc.) where possible.
 
-[optional body]
-[optional footer]
-```
+## Commit signing
 
-**Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`
+Commits and PR descriptions are auto-signed by the global
+`attribution.commit` / `attribution.pr` settings — do not restate the
+footer in commit bodies.
 
-**Examples:**
-- `feat(api): add user authentication endpoint`
-- `fix(parser): handle empty input gracefully`
-- `docs(readme): update installation instructions`
+Issue and PR-comment authorship by Claude follows the manual-footer
+convention documented in [CLAUDE.md § Git Commit Signature](CLAUDE.md).
 
-### Code Style
+## Reporting bugs / requesting features
 
-<!-- Language: node — style varies by language -->
-- Follow the project's existing conventions
-- Run linting before committing
-- Write clear, self-documenting code
-- Add comments only where logic isn't obvious
+- **Bug**: open an issue with reproduction steps + expected vs. actual
+  + environment (`pnpm --version`, `node --version`, OS).
+- **Feature**: open an issue tagged `enhancement` with the operator-voice
+  framing — *"as a [persona], I want to ask the agent [question] so that
+  [outcome]."* Tool requests are evaluated against the
+  [carrier-vocabulary 8-rule checklist](000-docs/007-DR-MEMO-carrier-vocabulary.md).
 
 ## Community
 
+- **Bugs / features**: [GitHub Issues](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues)
 - **Questions**: [GitHub Discussions](https://github.com/jeremylongshore/guidewire-mcp-for-claude/discussions)
-- **Bugs**: [Issue Tracker](https://github.com/jeremylongshore/guidewire-mcp-for-claude/issues)
 - **Email**: jeremy@intentsolutions.io
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the
-project's [Apache-2.0 License](LICENSE).
-
----
-
-*Thank you for helping improve guidewire-mcp-for-claude!*
+By contributing, you agree that your contributions will be licensed under
+the project's [Apache-2.0 License](LICENSE).
