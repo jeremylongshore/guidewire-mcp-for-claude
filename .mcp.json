@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "policycenter": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/servers/policycenter-mcp/dist/cli.js"],
+      "env": {}
+    }
+  }
+}

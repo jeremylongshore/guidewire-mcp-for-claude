@@ -5,149 +5,155 @@
 [![Status: v0.1.0 — E1 + E2 built](https://img.shields.io/badge/Status-v0.1.0%20%C2%B7%20E1%20%2B%20E2%20built-3fb950)](./000-docs/blueprint/)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-7c3aed)](https://modelcontextprotocol.io)
 [![Built with Claude](https://img.shields.io/badge/Built%20with-Claude-d4a857)](https://claude.ai)
-[![Marketplace target](https://img.shields.io/badge/Marketplace-claude--code--plugins--plus--skills-success)](https://github.com/jeremylongshore/claude-code-plugins-plus-skills)
-[![Live architecture diagram](https://img.shields.io/badge/Live%20diagram-guidewire--mcp.intentsolutions.io-58a6ff)](https://guidewire-mcp.intentsolutions.io/)
+[![Live architecture](https://img.shields.io/badge/Live%20diagram-guidewire--mcp.intentsolutions.io-58a6ff)](https://guidewire-mcp.intentsolutions.io/)
 
-> Works with the Guidewire **InsuranceSuite** (PolicyCenter,
-> ClaimCenter, BillingCenter, etc.). Carrier-native MCP servers +
-> governance harness for Guidewire estates. Built
-> Claude/Anthropic-first. Will publish to the
-> [`claude-code-plugins-plus-skills`](https://github.com/jeremylongshore/claude-code-plugins-plus-skills)
-> marketplace.
-
-**Status:** v0.1.0 — **E1 foundation (6 packages)** and **E2 PolicyCenter
-MCP (5 read-only carrier-vocabulary tools)** are built. Staffed
-11-auditor blueprint review filed (see
-[`000-docs/blueprint/audits/`](./000-docs/blueprint/audits/)). Live
-architecture diagram at
-[guidewire-mcp.intentsolutions.io](https://guidewire-mcp.intentsolutions.io/).
-
-The blueprint, audit memos, and observability / testing / security
-policies live alongside the code — they precede it and the rest of
-the public 11-epic roadmap (E3-E11+) follows on this foundation.
+> Carrier-native MCP server for the Guidewire **InsuranceSuite**
+> (PolicyCenter, ClaimCenter, BillingCenter). Ask Claude underwriter /
+> claims / billing questions in operator vocabulary; the harness gates
+> writes. Built Claude/Anthropic-first.
 
 ---
 
-## Why this exists
+## Install (Claude Code plugin)
 
-Underwriters don't say `search_policies(query, limit)`. They say
-*"find submissions waiting on me"* or *"what's our appetite on this
-risk."* This repo's thesis is that **carrier-native tool vocabulary
-+ a governance harness is the right MCP surface** for Guidewire
-estates — not API-verb wrappers. The harness (plans, approvals,
-audit hash-chain, rollback) is the durable moat; the tools are the
-language operators already speak.
-
-For full context: [`000-docs/blueprint/01-BUSINESS-CASE.md`](./000-docs/blueprint/01-BUSINESS-CASE.md)
-(once filed).
-
-## Roadmap (11 public epics)
-
-See [`000-docs/blueprint/07-ROADMAP.md`](./000-docs/blueprint/07-ROADMAP.md)
-for per-epic exit criteria + demo paths. Tracked live in beads:
-
-```bash
-bd list --type=epic
 ```
+/plugin install jeremylongshore/guidewire-mcp-for-claude
+```
+
+That's it. Claude Code clones the repo, runs `pnpm install` (the
+`prepare` hook builds all workspaces), and registers the
+`policycenter` MCP server. Restart Claude Code; the 5 carrier-
+vocabulary tools are now in your tool catalog.
+
+## Configure (4 environment variables)
+
+Set these in your shell, `.env`, or wherever your Claude Code
+session inherits env from. The MCP server reads them on boot.
+
+| Variable | What it is |
+|---|---|
+| `GUIDEWIRE_OAUTH_CLIENT_ID` | Dev-tier OAuth client ID from your Guidewire Hub |
+| `GUIDEWIRE_OAUTH_CLIENT_SECRET` | Matching client secret |
+| `GUIDEWIRE_TOKEN_ENDPOINT` | OAuth token endpoint URL — your tenant's Hub `/oauth2/v1/token` |
+| `GUIDEWIRE_PC_BASE_URL` | PolicyCenter Cloud API base URL — `https://<your-tenant>.pc.guidewire.net/pc/api` |
+
+No dev-tier creds yet? Apply to the
+[Guidewire developer program](https://developer.guidewire.com/) — the
+[librarian KB](./000-docs/005-DR-REF-guidewire-public-resources.md)
+maps every public Guidewire surface, including the developer access
+path.
+
+## Use it
+
+In any Claude Code session, ask carrier questions:
+
+> *"find submissions waiting on me"*
+> *"show me policies for **Acme Manufacturing**"*
+> *"summarize submission **6-2845-1**"*
+> *"why isn't the **Acme** account active anymore?"*
+> *"open submission **6-2845-1**"*
+
+The MCP server hits the real Cloud API, returns responses in your
+operator's vocabulary (`namedInsured`, not `Account.insured`;
+`submissionNumber`, not `jobNumber`), and every call writes to the
+hash-chained audit trail.
+
+## What ships v0.1.0
+
+**5 read-only PolicyCenter tools** (E2 built):
+
+- `find-submissions-waiting-on-me` — assigned-to-me queue
+- `show-policies-for-this-insured` — cross-LOB policy lookup
+- `summarize-this-submission` — full submission narrative
+- `did-we-lose-this-account` — non-renewal / cancellation history
+- `pull-this-submission` — single submission detail
+
+**6 E1 foundation packages** (used by every server):
+
+`@gw/schemas` (Zod) · `@gw/observability` (OTel + pino + Sentry) ·
+`@gw/auth` (Hub OAuth + JWT propagation) · `@gw/audit` (Postgres +
+hash-chain) · `@gw/client-sdk` (undici + two-key idempotency) ·
+`@gw/mcp-runtime` (stdio + HTTP transports)
+
+54 tests pass. Architecture diagram:
+[guidewire-mcp.intentsolutions.io](https://guidewire-mcp.intentsolutions.io/).
+
+## What's next on the public roadmap
 
 | Epic | Title | Status |
 |---|---|---|
-| E1 | Foundation (`schemas`, `observability`, `auth`, `audit`, `client-sdk`, `mcp-runtime`) | **built** |
-| E2 | PolicyCenter MCP (read-only · 5 carrier-vocabulary tools) | **built** |
-| E2.5 | Aggregate-query tools (underwriting manager tranche) | planned |
-| E3 | Harness library + CLI | planned |
-| E4 | Customer profile template + cowork fork starter | planned |
+| E1 | Foundation (6 packages) | **built** |
+| E2 | PolicyCenter MCP (read-only · 5 tools) | **built** |
+| E2.5 | Aggregate-query tools (UW manager tranche) | planned |
+| E3 | Harness library + CLI (writes gate behind plan/approve/audit/rollback) | planned |
+| E4 | Per-tenant profile loader | partial — scaffold landed in [#75](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/75) |
 | E5 | Drafting tools (`draft-referral-note`, `draft-endorsement`) | planned |
-| E6 | Workflow + Events (webhook + queue + events-mcp) | planned |
+| E6 | Workflow + Events (webhook receiver + events-mcp) | planned |
 | E7 | ClaimCenter MCP | planned |
-| E8 | BillingCenter + Payments | planned |
+| E8 | BillingCenter + Payments (separate dual-control `payments-mcp`) | planned |
 | E9 | Producer-side MCP (MGA / broker scope) | planned |
 | E10 | Onboarding + certification CLI | planned |
-| E11+ | Publish to `claude-code-plugins-plus-skills` marketplace | planned |
+
+Full per-epic exit criteria:
+[`000-docs/blueprint/07-ROADMAP.md`](./000-docs/blueprint/07-ROADMAP.md).
 
 ## Hard rules
 
-These rules are **codified now, enforced when E1 lands**. Until E1
-introduces `packages/`, `servers/`, and CI/CD, the rules are policy
-— not yet machine-enforced. From E1 onward the `audit-harness` and
-architecture rules in CI fail any change that violates them.
-
-This isn't a fixture-toy. From day 1:
-
-- **No mocks.** Real Guidewire Cloud sandbox required.
+- **No mocks.** Real Guidewire Cloud endpoints from day one.
 - **No API-verb tools.** Carrier-vocabulary names only.
 - **Three execution modes per tool:** `read_only`, `draft_only`,
-  `approved_execute`. Per-tool selection via customer profile.
+  `approved_execute` — selected via customer profile.
 - **No write without audit, policy, idempotency.** Hash-chained audit
   trail mandatory.
 - **Observability from line 1.** OpenTelemetry + pino + Sentry wired
   into every server + the harness.
-- **Blueprint-first.** No `servers/` or `packages/` code until the
-  staffed 11-auditor panel passes.
 
-See [`CLAUDE.md`](./CLAUDE.md) for the full hard-rules list.
+Full list: [`CLAUDE.md`](./CLAUDE.md).
 
-## Repo layout
+## Per-tenant profile (advanced)
 
-```
-000-docs/blueprint/   # Master paperwork (lands first, before any code)
-000-docs/             # Phase 0 design inputs + Guidewire public-docs reference
-.claude/agents/       # 5 project-level specialist agents
-servers/              # Per-Guidewire-suite MCP servers (E2, E7, E8, E9, E6)
-packages/             # harness, observability, schemas, auth, audit, client
-profiles/             # Per-customer config (auth/roles/LOB/typelists/etc.)
-templates/            # cowork-fork-starter
-clients/              # Vendor adapters (One Inc, etc.)
-tests/recordings/     # Real-sandbox HTTP recordings (with provenance)
-infra/                # docker / cloud-run / tofu
-```
-
-## Getting started
-
-E1 + E2 are runnable today. From a clone:
+The default plug-and-play install uses an in-memory profile that
+covers all 5 v0.1.0 read-only tools. Carriers with custom LOB codes,
+typelists, role mappings, or field aliases override via a 9-YAML
+profile directory. See
+[`profiles/_template/README.md`](./profiles/_template/README.md) and
+[`profiles/oss-demo/`](./profiles/oss-demo/) for the schema, then run:
 
 ```bash
-pnpm install
-pnpm -r build
-pnpm -r test          # E1 packages: 28+ tests; E2 PolicyCenter: 51 tests
+node servers/policycenter-mcp/dist/cli.js --profile profiles/<your-tenant>
 ```
 
-To track upcoming work:
+## Develop / contribute
 
 ```bash
 git clone https://github.com/jeremylongshore/guidewire-mcp-for-claude.git
 cd guidewire-mcp-for-claude
-bd ready    # see what's next; install bd from gastownhall/beads
+pnpm install              # prepare hook builds all workspaces
+pnpm -r test              # 54 tests
+pnpm smoke-reach          # ping Guidewire endpoints with your dev-tier creds
 ```
 
-To explore the design without cloning:
+Contribution guide: [CONTRIBUTING.md](./CONTRIBUTING.md). The
+[5 specialist agents](./.claude/agents/) auto-review carrier-vocabulary
+tool design, harness contract semantics, Guidewire Cloud API
+correctness, MCP safety, and authoritative-doc citation.
 
-- [Master blueprint](./000-docs/blueprint/00-MASTER-BLUEPRINT.md) — index + executive summary
-- [Architecture decisions](./000-docs/004-DR-DEC-architecture-decisions.md) — D-001 through D-015
-- [Persona red team](./000-docs/002-DR-CRIT-personas.md) — 9 perspectives that shaped v4
-- [Public Guidewire docs map](./000-docs/005-DR-REF-guidewire-public-resources.md) — every public reference surface, librarian-curated
+## Design + audit
 
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md). For Guidewire-specific
-contributions (carrier-vocabulary tools, profile templates), the
-[5 specialist agents](./.claude/agents/) review designs against
-blast-radius, vocabulary authenticity, Cloud API correctness,
-harness contract semantics, and authoritative-doc citation. PRs
-that follow the agent-reviewed pattern land faster.
+- [Master blueprint](./000-docs/blueprint/00-MASTER-BLUEPRINT.md) — index
+- [Architecture decisions D-001..D-021](./000-docs/004-DR-DEC-architecture-decisions.md)
+- [Public Guidewire docs map](./000-docs/005-DR-REF-guidewire-public-resources.md) — librarian-curated
+- [11-auditor staffed panel](./000-docs/blueprint/audits/) — security, MCP safety, harness contract, etc.
 
 ## License
 
 [Apache-2.0](./LICENSE) — same license as the Guidewire developer
-documentation paths we cite, and as Anthropic's reference Claude
-plugins.
+documentation paths we cite.
 
 ## Author
 
-Jeremy Longshore — [intentsolutions.io](https://intentsolutions.io)
-· [jeremylongshore.com](https://jeremylongshore.com)
-
----
-
-*[ROADMAP](./000-docs/blueprint/07-ROADMAP.md) and
-[blueprint](./000-docs/blueprint/) are the source of truth.*
+Jeremy Longshore — Intent Solutions ·
+[intentsolutions.io](https://intentsolutions.io) ·
+[jeremylongshore.com](https://jeremylongshore.com) ·
+[startaitools.com](https://startaitools.com) ·
+`jeremy@intentsolutions.io`
