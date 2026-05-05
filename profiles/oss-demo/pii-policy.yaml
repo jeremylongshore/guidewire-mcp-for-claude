@@ -1,0 +1,37 @@
+# pii-policy.yaml — OSS demo PII redaction rules
+#
+# Per 02-PRD § 6.8 and the worked example from 02-PRD § 6.8.
+#
+# OSS demo default (02-PRD § 6.10): baa_required.enabled: false.
+# This profile covers P&C commercial lines only — no health LOBs.
+# Health-LOB profiles MUST set baa_required.enabled: true (006 § 6.2).
+#
+# Three PII classes from the 02-PRD § 6.8 canonical example.
+# PII redaction is applied by the harness pipeline (packages/harness/redaction/,
+# E3+) — not by individual tools. Tools declare redactable fields in their
+# Zod schemas; the harness applies these rules at response time.
+
+classes:
+  high_pii:
+    fields:
+      - "Claim.lossDescription"
+      - "Claim.notes[*].body"
+      - "Account.contactInfo[*].email"
+    handling: "redact_in_summaries"
+
+  medium_pii:
+    fields:
+      - "Account.namedInsured"
+    handling: "redact_unless_role_in"
+    allowed_roles:
+      - "Claims_Adjuster_II"
+      - "Claims_Manager"
+
+  low_pii:
+    fields:
+      - "Producer.code"
+    handling: "pass_through"
+
+baa_required:
+  # false — OSS demo covers P&C only. No health LOBs (006 § 6.2).
+  enabled: false

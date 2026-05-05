@@ -1,0 +1,15 @@
+# approval-matrix.yaml — OSS demo write action approval thresholds
+#
+# Per 02-PRD § 6.7 and 02-PRD § 6.10 defaults.
+#
+# OSS demo default (§ 6.10): all approved_execute tools are disabled.
+# An empty matrix (`matrix: {}`) is valid for read-only deployments.
+# No approval entries needed; the harness will not consult this file
+# for read_only or draft_only tools.
+#
+# When approved_execute tools ship (E5+) and this profile is upgraded
+# to enable them, populate the matrix per the example in
+# profiles/_template/approval-matrix.yaml.
+
+matrix:
+  {}

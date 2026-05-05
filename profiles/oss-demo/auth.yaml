@@ -1,0 +1,61 @@
+# auth.yaml — OSS demo Guidewire Hub OAuth + JWT propagation
+#
+# Per 02-PRD § 6.1 and 005-DR-REF § 1 (Palisades API references).
+#
+# SECURITY: this file stores env-var names only — never credential values.
+# Dev-tier creds come from the Guidewire developer program or PartnerConnect
+# sandbox (005-DR-REF § 5 — same-day partner onboarding in Palisades).
+#
+# To connect this demo profile to a real tenant:
+#   1. Obtain client_id + client_secret from Guidewire Hub (developer program
+#      or PartnerConnect sandbox per 005-DR-REF § 5).
+#   2. export GUIDEWIRE_OAUTH_CLIENT_ID=<your-client-id>
+#   3. export GUIDEWIRE_OAUTH_CLIENT_SECRET=<your-client-secret>
+#   4. Set GUIDEWIRE_PC_BASE_URL to your tenant's PC endpoint (see api.base_url_pc).
+#   5. pnpm dev policycenter-mcp -- --profile profiles/oss-demo
+
+oauth:
+  client_id_env: "GUIDEWIRE_OAUTH_CLIENT_ID"
+  client_secret_env: "GUIDEWIRE_OAUTH_CLIENT_SECRET"
+
+  # Dev-tier token endpoint. Guidewire Hub OIDC follows the pattern:
+  #   https://<tenant-id>.guidewire.net/oauth2/v1/token
+  # The oss-demo env var allows operators to override at startup without
+  # editing this file (per cli.ts GUIDEWIRE_TOKEN_ENDPOINT env var).
+  # (unverified — sandbox-confirm at first integration engagement per D-021)
+  token_endpoint: "https://oss-demo.guidewire.net/oauth2/v1/token"
+
+  scopes:
+    - "pc.read"
+    # write scopes appended at server startup only when approved_execute
+    # mode is active (02-PRD § 6.1 + 008 § 4.1). Not needed for E2.
+
+  # 1-hour Guidewire Hub token lifetime. Standard for dev-tier.
+  token_lifetime_seconds: 3600
+
+  # Proactive refresh at 80% of lifetime (2880 s). Mandatory per 008 § 10.
+  refresh_strategy: "proactive"
+
+  jwt_propagation:
+    # false for the OSS demo — uses service-account OAuth token only.
+    # Set true in production when Hub is configured for actor JWT propagation
+    # (eliminates standing service-account credentials, Persona 5).
+    enabled: false
+    actor_claim: "sub"
+
+api:
+  # PolicyCenter Cloud API base URL.
+  # Public PC apiref (Palisades-era, 202503): https://docs.guidewire.com/cloud/pc/202503/apiref/
+  # Actual tenant base URL is per-provisioning; override via GUIDEWIRE_PC_BASE_URL
+  # env var when connecting to a real tenant (per cli.ts startup logic).
+  # (unverified — tenant-specific URL; sandbox-confirm per D-021)
+  base_url_pc: "https://oss-demo.pc.guidewire.net/pc/api"
+
+  # ClaimCenter and BillingCenter are E7 and E8 respectively. Omitted here.
+  # Uncomment when those servers ship.
+  # base_url_cc: "https://oss-demo.cc.guidewire.net/cc/api"
+  # base_url_bc: "https://oss-demo.bc.guidewire.net/bc/api"
+
+  # Palisades — the current Cloud Platform release per 005-DR-REF § 1.
+  # Corresponds to the 202603 cross-suite documentation track.
+  cloud_release: "Palisades"

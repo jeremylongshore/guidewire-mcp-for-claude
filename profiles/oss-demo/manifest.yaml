@@ -1,0 +1,32 @@
+# manifest.yaml — OSS demo profile root metadata
+#
+# Per 02-PRD § 6.10 and § 6.0a. This is the fully-populated reference profile
+# for the guidewire-mcp-for-claude OSS repo. It demonstrates E2 read-only
+# defaults against the Palisades-release Cloud API.
+#
+# PER 02-PRD § 6.10: This profile is read-only reference material.
+# Customers fork to a new directory and edit. DO NOT use oss-demo as the
+# production path for any live tenant.
+#
+# Schema versioning (D-020): v1.0 — 9 YAMLs only. Upgrade to v2.0 by adding
+# the `aggregations:` block to lob.yaml and changing schemaVersion here.
+
+schemaVersion: "v1.0"
+tenantId: "oss-demo"
+displayName: "Guidewire MCP for Claude — OSS Demo"
+
+# Palisades — the current Cloud Platform release as of 2026-05 per 005-DR-REF § 1.
+# OSS demos target Palisades for maximum public API coverage.
+cloudRelease: "Palisades"
+
+declaredLobs:
+  - "BOP-CommercialProperty"
+  - "CommercialAuto"
+
+# oss-demo covers only policycenter-mcp (E2). Other servers listed as they ship.
+declaredServers:
+  - "policycenter-mcp"
+
+# Populated by `pnpm exec audit-harness init` — empty in the repo scaffold,
+# stamped by the harness when policy files are finalized.
+profileChecksum: ""

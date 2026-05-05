@@ -1,0 +1,55 @@
+# lob.yaml — Line-of-business code mappings
+#
+# Per 02-PRD § 6.3 and packages/schemas/src/profile/lob.ts.
+#
+# This is THE ONLY PLACE LOB code mapping lives. Hard-coding LOB or typelist
+# values directly in tool source code is a CI failure (008 § 4.3 + § 12
+# "avoid" item 1).
+#
+# Structure:
+#   lob_mappings.<carrier_code>:
+#     canonical:          cross-carrier label flowing into tool inputs
+#     uwcenter_rule_set:  per-carrier UWCenter rule entity name
+#     coverage_typelist:  which typelist (in typelists.yaml) holds coverage values
+#
+# Tools never hard-code LOB codes. The canonical value flows into tool inputs;
+# the carrier code flows into Cloud API calls (02-PRD § 6.3).
+#
+# Schema versioning (D-020):
+#   v1.0 profile — this file contains lob_mappings only.
+#   v2.0 profile — add an `aggregations:` block to this same file (NOT a 10th
+#                  YAML). Each dimension declares source_field, grouping_rule,
+#                  rollup_unit. Required by E2.5 aggregate-query tools.
+#                  See packages/schemas/src/profile/lob.ts → LobYamlV2Schema.
+
+lob_mappings:
+
+  # TODO: replace this placeholder with your first carrier LOB code.
+  # The key (e.g. "BOP-CommercialProperty") is your carrier's internal code.
+  # "canonical" is the cross-carrier label the MCP tools use in inputs/outputs.
+  YOUR_LOB_CODE_1:
+    canonical: "YourCanonicalLabel1"           # e.g. "CommercialProperty"
+    uwcenter_rule_set: "YourUWCenterRuleSet1"  # e.g. "CL_BusinessOwners"
+    coverage_typelist: "YourCoverageTypelist1" # must match a key in typelists.yaml
+
+  # TODO: replace with your second LOB code (if applicable).
+  YOUR_LOB_CODE_2:
+    canonical: "YourCanonicalLabel2"
+    uwcenter_rule_set: "YourUWCenterRuleSet2"
+    coverage_typelist: "YourCoverageTypelist2"
+
+# TODO (v2.0 only): uncomment and populate the aggregations block when
+# upgrading to schemaVersion v2.0 and enabling E2.5 tools.
+# aggregations:
+#   class:
+#     source_field: "job.productCode"
+#     grouping_rule: "exact_match"
+#     rollup_unit: "count"
+#   segment:
+#     source_field: "account.segment"
+#     grouping_rule: "exact_match"
+#     rollup_unit: "count"
+#   cycle_time:
+#     source_field: "job.closeDate"
+#     grouping_rule: "business_days_from_open"
+#     rollup_unit: "avg"

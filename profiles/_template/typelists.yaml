@@ -1,0 +1,58 @@
+# typelists.yaml — Typelist value mappings
+#
+# Per 02-PRD § 6.4 and packages/schemas/src/profile/typelists.ts.
+#
+# Typelists in the Guidewire Cloud API are extensible per carrier.
+# NEVER treat them as closed enums in tool code — treat as string + profile-
+# validated (008 § 4.4 + § 12 "avoid" item 8). This file is the profile's
+# declaration of which typelists exist, where their base spec lives, and
+# any carrier-extended values.
+#
+# `source` flag semantics:
+#   base              — values are from the Guidewire-published base catalog.
+#                       Drift check needed only on Guidewire release boundary.
+#   customer_extended — carrier has added custom codes beyond the base.
+#                       Drift check needed on every carrier update.
+#
+# `base_uri` must be a release-versioned URL per 005-DR-REF § 1.
+# Generic "latest/" URLs are forbidden (008 § 12 "avoid" item 11).
+# Example base URIs by suite/release:
+#   PC 202503: https://docs.guidewire.com/cloud/pc/202503/apiref/
+#   CC 202411: https://docs.guidewire.com/cloud/cc/202411/apiref/
+#   BC 202411: https://docs.guidewire.com/cloud/bc/202411/apiref/
+#
+# Validation rule: every tool that emits a typelist field must declare
+# its typelist binding, and every declared typelist must round-trip a
+# sample value through the Zod schema at boot.
+
+typelists:
+
+  # TODO: replace "YourTypelist1" with your first typelist name.
+  # Example: "JobSubtype", "PolicyTermStatus", "LossCause"
+  YourTypelist1:
+    # "base" or "customer_extended"
+    source: "base"
+    # Release-versioned URL to the typelist's spec in the Guidewire apiref.
+    # TODO: replace with the actual versioned URL for this typelist.
+    base_uri: "https://docs.guidewire.com/cloud/pc/202503/apiref/"
+    # values: omitted for source=base (profile inherits base definition).
+    # For source=customer_extended, list the extended codes:
+    # values:
+    #   - code: "acme_custom_code"
+    #     label: "Acme-Specific Label"
+    #     carrier_extension: true
+
+  # TODO: replace "YourTypelist2" with a customer_extended typelist example.
+  YourTypelist2:
+    source: "customer_extended"
+    # TODO: replace with the actual versioned base spec URL.
+    base_uri: "https://docs.guidewire.com/cloud/pc/202503/apiref/"
+    values:
+      # Base codes (inherited — list representative ones for documentation)
+      - code: "base_code_example"
+        label: "Base Label"
+        carrier_extension: false
+      # Carrier-extended codes
+      - code: "your_custom_code"   # TODO: replace with your actual code
+        label: "Your Custom Label" # TODO: replace with your carrier label
+        carrier_extension: true

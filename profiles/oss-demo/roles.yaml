@@ -1,0 +1,29 @@
+# roles.yaml — OSS demo role × tool × mode permission matrix
+#
+# Per 02-PRD § 6.2, § 6.10 defaults, and 02-PRD § 6.2 worked examples.
+#
+# OSS demo defaults (per § 6.10):
+#   All read_only tools enabled.
+#   All draft_only tools enabled except draft-denial-letter (disabled).
+#   All approved_execute tools disabled.
+#
+# Two worked roles from 02-PRD § 6.2: CL_Underwriter, Claims_Adjuster_II.
+# These are carrier-mapped names — a real carrier's roles.yaml would use
+# their own naming convention (Acme's "CL_Underwriter" vs Beta's "Comm_UW_L1").
+#
+# Validation rule (boot-time): every tool listed here must exist in the
+# corresponding server's manifest. Unknown names = boot failure.
+
+roles:
+  CL_Underwriter:
+    policycenter-mcp:
+      find-submissions-waiting-on-me: read_only
+      show-policies-for-this-insured: read_only
+      summarize-this-submission: read_only
+      did-we-lose-this-account: read_only
+      pull-this-submission: read_only
+    claimcenter-mcp: {}      # E7 — not yet shipped; no access granted
+
+  Claims_Adjuster_II:
+    policycenter-mcp: {}     # Policy access limited for adjusters in this demo
+    claimcenter-mcp: {}      # E7 — not yet shipped; no access granted

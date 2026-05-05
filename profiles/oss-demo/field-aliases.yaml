@@ -1,0 +1,60 @@
+# field-aliases.yaml — OSS demo Guidewire field name → carrier-vocabulary terms
+#
+# Per 02-PRD § 6.6 and packages/schemas/src/profile/field-aliases.ts.
+# This is the canonical worked example from 02-PRD § 6.6.
+#
+# aliases: maps carrier-vocabulary terms to Guidewire raw field names.
+#   Key = carrier term (what your operators say in natural language).
+#   Value = Guidewire Cloud API field name (from the PC/CC/BC apiref response).
+#
+# money_fields (MANDATORY per 008 § 11): every field carrying
+#   { amount: string, currency: string } must be declared. Stripping currency
+#   is a catastrophic error for multi-currency carriers.
+#   `amount` is string for arbitrary precision — never JS number.
+#   Currency precision: USD = 2dp, JPY = 0dp.
+#
+# date_fields: declare per-field whether date-only or datetime-with-tz.
+#   ISO_8601_date     = date only (YYYY-MM-DD)
+#   ISO_8601_datetime = datetime with timezone (YYYY-MM-DDTHH:mm:ssZ)
+#   Wrong format = mid-summary parse error.
+
+aliases:
+  Account:
+    # "insured" is the carrier-vocabulary term. "namedInsured" is the Guidewire
+    # Cloud API field name in the PC Account resource.
+    # Reference: PC 202503 apiref, Account resource definition.
+    insured: "namedInsured"
+    # "policyholder" is a synonym — same mapping to same Guidewire field.
+    policyholder: "namedInsured"
+
+  Producer:
+    # PC apiref: ProducerCode.code — unique within the carrier's system.
+    # Per 02-PRD § 6.6: "Producer.code uniqueness is not portable."
+    agency_code: "code"
+
+  Claim:
+    # CC apiref 202411: lossDescription field on Claim resource.
+    loss_summary_text: "lossDescription"
+    # CC apiref: paidAmount — Money-typed field; preserve { amount, currency }.
+    paid_to_date_amount: "paidAmount"
+
+money_fields:
+  # Non-negotiable per 008 § 11. Every field with Money shape declared here.
+  # Format: <EntityName>.<fieldName>
+  - "Claim.paidAmount"
+  - "Claim.reserveAmount"
+  - "Policy.totalPremiumAmount"
+  - "Payment.amount"
+
+date_fields:
+  # Per 02-PRD § 6.6: declare per-field, date-only vs datetime-with-tz.
+  # PC apiref 202503: effectiveDate is date-only (YYYY-MM-DD).
+  - field: "Policy.effectiveDate"
+    format: "ISO_8601_date"
+  # PC apiref 202503: boundDate carries time-of-bind — datetime with TZ.
+  - field: "Policy.boundDate"
+    format: "ISO_8601_datetime"
+  # CC apiref 202411: lossDate is date-only per standard practice.
+  # (variable per carrier — declare explicitly per 02-PRD § 6.6)
+  - field: "Claim.lossDate"
+    format: "ISO_8601_date"

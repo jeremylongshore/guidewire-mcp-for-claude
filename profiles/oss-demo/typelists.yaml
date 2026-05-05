@@ -1,0 +1,55 @@
+# typelists.yaml — OSS demo typelist value mappings
+#
+# Per 02-PRD § 6.4 and 005-DR-REF § 1 (PC apiref 202503, CC apiref 202411).
+# Typelists are extensible per carrier — never treat as closed enums in tool
+# code (008 § 4.4 + § 12 "avoid" item 8).
+#
+# `source: base` — values from Guidewire's published base catalog.
+#   Drift check needed only on Guidewire release boundary.
+# `source: customer_extended` — carrier has added custom codes beyond base.
+#   Drift check needed on every carrier update.
+#
+# `base_uri` must be release-versioned (005-DR-REF § 1 versioning convention).
+# Generic "latest/" URLs are forbidden per 008 § 12 "avoid" item 11.
+#
+# PC typelists are documented in the PC 202503 apiref Common API module:
+#   https://docs.guidewire.com/cloud/pc/202503/apiref/
+# CC typelists are documented in the CC 202411 apiref Common API module:
+#   https://docs.guidewire.com/cloud/cc/202411/apiref/
+
+typelists:
+
+  # --- source: base example ---
+  # PolicyTermStatus is a standard PC typelist. No carrier extension needed
+  # for the OSS demo; the base catalog is sufficient.
+  PolicyTermStatus:
+    source: "base"
+    # Release-versioned PC 202503 apiref — the Palisades-era PC reference.
+    # Full typelist catalog is inside the Common API module of this apiref.
+    base_uri: "https://docs.guidewire.com/cloud/pc/202503/apiref/"
+    # values: omitted for source=base — profile inherits the base definition.
+
+  # --- source: customer_extended example ---
+  # BOPCoverageType references the coverage_typelist declared in lob.yaml for
+  # the BOP-CommercialProperty LOB. A carrier has extended it with a custom
+  # code ("acme_equipment_breakdown") beyond the Guidewire base catalog.
+  BOPCoverageType:
+    source: "customer_extended"
+    base_uri: "https://docs.guidewire.com/cloud/pc/202503/apiref/"
+    values:
+      # Representative base codes (informational; base catalog is authoritative)
+      - code: "building"
+        label: "Building"
+        carrier_extension: false
+      - code: "businessPersonalProperty"
+        label: "Business Personal Property"
+        carrier_extension: false
+      # Carrier-extended code — OSS demo placeholder
+      - code: "acme_equipment_breakdown"
+        label: "Equipment Breakdown (Carrier Extension)"
+        carrier_extension: true
+
+  AutoCoverageType:
+    source: "base"
+    base_uri: "https://docs.guidewire.com/cloud/pc/202503/apiref/"
+    # values: omitted for source=base
