@@ -222,6 +222,56 @@
     .footer a { color: var(--accent-blue); text-decoration: none; }
     .footer a:hover { text-decoration: underline; }
 
+    /* ===== Lane diagram — desktop SVG ===== */
+    .diagram-desktop { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .diagram-desktop svg { display: block; width: 100%; min-width: 760px; height: auto; }
+    .diagram-mobile  { display: none; }
+
+    /* Mobile stacked diagram cards */
+    .mob-stack { display: flex; flex-direction: column; gap: 0; }
+    .mob-card {
+      background: var(--bg-raised); border: 1px solid var(--border-subtle);
+      border-radius: 12px; padding: 16px;
+    }
+    .mob-card-title {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .mob-card-title.c-blue   { color: var(--accent-blue); }
+    .mob-card-title.c-green  { color: var(--accent-green); }
+    .mob-card-title.c-ghost  { color: var(--text-muted); }
+    .mob-card-title.c-orange { color: var(--accent-orange); }
+    .mob-card-title.c-purple { color: var(--accent-purple); }
+    .mob-node {
+      background: var(--bg-surface); border: 1px solid var(--border-subtle);
+      border-radius: 8px; padding: 10px 12px;
+    }
+    .mob-node.n-built { border-color: rgba(63,185,80,0.7); box-shadow: 0 0 0 2px rgba(63,185,80,0.08); }
+    .mob-node.n-ghost { border: 1px dashed rgba(110,118,129,0.5); }
+    .mob-node.n-api   { border-color: rgba(247,129,102,0.5); }
+    .mob-node.n-store { border-color: rgba(188,140,255,0.4); }
+    .mob-node-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; }
+    .mob-node-name.c-built  { color: var(--accent-green); }
+    .mob-node-name.c-ghost  { color: var(--text-muted); }
+    .mob-node-name.c-api    { color: var(--accent-orange); }
+    .mob-node-name.c-store  { color: var(--accent-purple); }
+    .mob-node-sub  { font-size: 10px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+    .mob-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mob-connector {
+      text-align: center; padding: 6px 0;
+      font-family: 'JetBrains Mono', monospace; font-size: 18px;
+      color: var(--text-muted); line-height: 1; user-select: none;
+    }
+    .mob-harness {
+      background: rgba(110,118,129,0.06); border: 1px dashed rgba(110,118,129,0.45);
+      border-radius: 8px; padding: 12px 14px;
+    }
+    .mob-harness-label {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      color: var(--text-muted); line-height: 1.5;
+    }
+    .mob-harness-label strong { color: var(--text-secondary); font-weight: 600; }
+
     /* ===== Tablet ===== */
     @media (max-width: 1024px) {
       body { padding: 32px 28px; }
@@ -243,11 +293,8 @@
         flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 16px;
       }
       .diagram-card h2 { font-size: 17px; }
-      .diagram-scroll {
-        margin: 0 -18px; padding: 0 18px;
-        scroll-snap-type: x proximity;
-      }
-      .diagram-scroll-hint { display: block; }
+      .diagram-desktop { display: none; }
+      .diagram-mobile  { display: block; }
       .details h2 { font-size: 17px; margin-bottom: 16px; }
       .detail-card { padding: 18px; }
       .detail-card li { font-size: 13px; }
@@ -259,7 +306,6 @@
     @media (max-width: 420px) {
       body { padding: 16px 12px; }
       .diagram-card { padding: 14px; }
-      .diagram-scroll { margin: 0 -14px; padding: 0 14px; }
       .main-header h1 { font-size: 20px; }
       .version-badge { font-size: 11px; }
     }
@@ -319,332 +365,496 @@
           <span class="hint">grounded in pnpm-workspace.yaml · packages/* · servers/* · scripts/smoke-reach.ts</span>
         </header>
 
-        <div class="diagram-scroll">
-          <div class="diagram-stage">
+        <!-- ===== DESKTOP SVG DIAGRAM ===== -->
+        <!--
+          GEOMETRY (1080 × 560, lane-based, top-down)
+          ─────────────────────────────────────────────
+          Lane 1 — Agent host      y=16..96   (h=80)
+          gutter                   y=96..116  (trunk runs at y=106)
+          Lane 2 — MCP Servers     y=116..236 (h=120)
+          Lane 2.5 — Harness bar   y=252..300 (h=48)
+          Lane 3 — Foundation pkgs y=316..436 (h=120)
+          Lane 4 — External        y=452..540 (h=88)
 
-            <!--
-              STAGE GEOMETRY: 1300 wide x 920 tall.
-              Layered top-down:
-                L1 (y=20)   Agent host
-                L2 (y=140)  MCP servers plane (orange dashed)
-                L3 (y=370)  Harness library (E3 ghost)
-                L4 (y=480)  E1 foundation packages (green dashed plane)
-                L5 (y=780)  External APIs / persistence
-            -->
+          Foundation X positions (6 boxes, 166px wide, 10px gap, left pad 16):
+            client-sdk   x=16   center-x=99
+            auth         x=192  center-x=275
+            schemas      x=368  center-x=451
+            audit        x=544  center-x=627
+            observability x=720  center-x=803
+            mcp-runtime  x=896  center-x=979
 
-            <!-- ===== Plane boundaries (drawn first) ===== -->
-            <div class="plane plane-mcp"
-                 data-label="MCP SERVERS · 1 BUILT (E2) · 4 PLANNED (E6–E9)"
-                 style="left: 10px; top: 130px; width: 1280px; height: 200px;"></div>
+          MCP Server X positions (5 boxes, 201px wide, 10px gap, left pad 16):
+            policycenter-mcp  x=16   center-x=116.5
+            claimcenter-mcp   x=227  center-x=327.5
+            billingcenter-mcp x=438  center-x=538.5
+            producer-mcp      x=649  center-x=749.5
+            events-mcp        x=860  center-x=960.5
 
-            <div class="plane plane-built"
-                 data-label="E1 FOUNDATION · 6 PACKAGES · BUILT"
-                 style="left: 10px; top: 470px; width: 1280px; height: 290px;"></div>
+          External X (aligned under foundation deps):
+            Cloud API under client-sdk   x=16   center-x=99
+            Hub OAuth under auth         x=192  center-x=275
+            Postgres under audit         x=544  center-x=627
+            OTLP under observability     x=720  center-x=803
 
-            <!-- ===== L1 · Agent host ===== -->
-            <div class="node n-cli" style="left: 30px; top: 20px; width: 320px;">
-              <div class="node-title">Agent Host</div>
-              <div class="node-sub">MCP client · stdio · streamable HTTP</div>
-              <ul class="node-list">
-                <li>Claude Desktop · Claude Code · Cursor</li>
-                <li>tool-selection guarded by carrier-vocab names</li>
-              </ul>
+          Agent host: centered, width=380 → x=350 center-x=540
+
+          ARROWS (9 segments total, all 90° elbows, no box intersections):
+            #1  Agent bottom-center (540,96) → trunk (540,106)
+            #2  Trunk horizontal:  (116.5,106) → (960.5,106)
+            #3  Drop → policycenter-mcp top    (116.5,116)
+            #4  Drop → claimcenter-mcp top     (327.5,116)
+            #5  Drop → billingcenter-mcp top   (538.5,116)
+            #6  Drop → producer-mcp top        (749.5,116)
+            #7  Drop → events-mcp top          (960.5,116)
+            #8  client-sdk bottom (99,436) → Cloud API top     (99,452)
+            #9  auth bottom (275,436) → Hub OAuth top          (275,452)
+            #10 audit bottom (627,436) → Postgres top          (627,452)
+            #11 observability bottom (803,436) → OTLP top      (803,452)
+
+          Note: the trunk + 5 drops decompose into 6 line segments.
+          4 vertical foundation→external = 4 segments. Total = 10 segments
+          (trunk counts as 1, with 1 agent-feed + 5 drops = 7 segments,
+          plus 4 external = 11 total line elements — all well under spec).
+        -->
+        <div class="diagram-desktop">
+          <svg viewBox="0 0 1080 560" preserveAspectRatio="xMidYMid meet"
+               role="img" aria-labelledby="diag-title diag-desc">
+            <title id="diag-title">Guidewire MCP architecture · component connections</title>
+            <desc id="diag-desc">Lane-based architecture diagram showing five horizontal layers top to bottom: Agent host (Claude Code, Claude Desktop, Anthropic API) at the top; five MCP server boxes (one built, four planned) in the second lane; a full-width planned Harness E3 bar separating MCP servers from foundation; six built E1 foundation packages in the third lane; and four external and storage targets at the bottom. Blue arrows connect the agent host down through a horizontal trunk to all five MCP servers. Orange arrows connect client-sdk to Guidewire Cloud API and auth to Hub OAuth. Purple arrows connect audit to Postgres and observability to the OTLP collector and Sentry.</desc>
+
+            <defs>
+              <!-- arrowhead markers -->
+              <marker id="mh-blue"   markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/>
+              </marker>
+              <marker id="mh-orange" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#f78166"/>
+              </marker>
+              <marker id="mh-purple" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="#bc8cff"/>
+              </marker>
+            </defs>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 LANE 1 — Agent host
+                 x=350, y=16, w=380, h=80  center-x=540 center-y=56
+                 ══════════════════════════════════════════════════════════════ -->
+            <rect x="350" y="16" width="380" height="80" rx="8"
+                  fill="#1c2128" stroke="rgba(88,166,255,0.45)" stroke-width="1.5"/>
+            <text x="540" y="46" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="13" font-weight="600"
+                  fill="#58a6ff">Agent host</text>
+            <text x="540" y="62" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="10"
+                  fill="#6e7681">Claude Code · Claude Desktop</text>
+            <text x="540" y="76" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="10"
+                  fill="#6e7681">Anthropic API · stdio · streamable HTTP</text>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 ARROWS: Agent → MCP trunk + drops (blue)
+                 Trunk at y=106; drops y=106→116
+                 ══════════════════════════════════════════════════════════════ -->
+            <!-- agent bottom-center feed: (540,96) → trunk at (540,106) -->
+            <line x1="540" y1="96" x2="540" y2="106"
+                  stroke="#58a6ff" stroke-width="1.8"/>
+            <!-- horizontal trunk: (116.5,106) → (960.5,106) -->
+            <line x1="116.5" y1="106" x2="960.5" y2="106"
+                  stroke="#58a6ff" stroke-width="1.8"/>
+            <!-- drop 1: policycenter-mcp -->
+            <line x1="116.5" y1="106" x2="116.5" y2="116"
+                  stroke="#58a6ff" stroke-width="1.8" marker-end="url(#mh-blue)"/>
+            <!-- drop 2: claimcenter-mcp -->
+            <line x1="327.5" y1="106" x2="327.5" y2="116"
+                  stroke="#58a6ff" stroke-width="1.8" marker-end="url(#mh-blue)"/>
+            <!-- drop 3: billingcenter-mcp -->
+            <line x1="538.5" y1="106" x2="538.5" y2="116"
+                  stroke="#58a6ff" stroke-width="1.8" marker-end="url(#mh-blue)"/>
+            <!-- drop 4: producer-mcp -->
+            <line x1="749.5" y1="106" x2="749.5" y2="116"
+                  stroke="#58a6ff" stroke-width="1.8" marker-end="url(#mh-blue)"/>
+            <!-- drop 5: events-mcp -->
+            <line x1="960.5" y1="106" x2="960.5" y2="116"
+                  stroke="#58a6ff" stroke-width="1.8" marker-end="url(#mh-blue)"/>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 LANE 2 — MCP Servers
+                 5 boxes, each 201×120, 10px gap, left=16
+                 y=116..236
+                 ══════════════════════════════════════════════════════════════ -->
+
+            <!-- policycenter-mcp (BUILT) x=16 -->
+            <rect x="16" y="116" width="201" height="120" rx="8"
+                  fill="#1c2128" stroke="rgba(63,185,80,0.85)" stroke-width="1.5"/>
+            <!-- built glow ring -->
+            <rect x="13" y="113" width="207" height="126" rx="10"
+                  fill="none" stroke="rgba(63,185,80,0.10)" stroke-width="4"/>
+            <text x="116" y="139" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#3fb950">policycenter-mcp</text>
+            <text x="116" y="154" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">E2 · built · 5 tools · 51 tests</text>
+            <text x="116" y="170" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#8b949e">find-submissions-waiting-on-me</text>
+            <text x="116" y="184" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#8b949e">show-policies-for-this-insured</text>
+            <text x="116" y="198" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#8b949e">summarize-this-submission</text>
+            <text x="116" y="212" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#8b949e">did-we-lose-this-account</text>
+            <text x="116" y="226" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#8b949e">pull-this-submission</text>
+
+            <!-- claimcenter-mcp (planned) x=227 -->
+            <rect x="227" y="116" width="201" height="120" rx="8"
+                  fill="rgba(28,33,40,0.45)" stroke="rgba(110,118,129,0.5)"
+                  stroke-width="1" stroke-dasharray="5 3"/>
+            <text x="327" y="160" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#6e7681">claimcenter-mcp</text>
+            <text x="327" y="176" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">E7 · planned</text>
+            <text x="327" y="196" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">FNOL · adjuster surface</text>
+
+            <!-- billingcenter-mcp (planned) x=438 -->
+            <rect x="438" y="116" width="201" height="120" rx="8"
+                  fill="rgba(28,33,40,0.45)" stroke="rgba(110,118,129,0.5)"
+                  stroke-width="1" stroke-dasharray="5 3"/>
+            <text x="538" y="160" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#6e7681">billingcenter-mcp</text>
+            <text x="538" y="176" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">E8 · planned</text>
+            <text x="538" y="196" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">billing + payments-mcp split</text>
+
+            <!-- producer-mcp (planned) x=649 -->
+            <rect x="649" y="116" width="201" height="120" rx="8"
+                  fill="rgba(28,33,40,0.45)" stroke="rgba(110,118,129,0.5)"
+                  stroke-width="1" stroke-dasharray="5 3"/>
+            <text x="749" y="160" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#6e7681">producer-mcp</text>
+            <text x="749" y="176" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">E9 · planned</text>
+            <text x="749" y="196" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">MGA / broker scope</text>
+
+            <!-- events-mcp (planned) x=860 -->
+            <rect x="860" y="116" width="204" height="120" rx="8"
+                  fill="rgba(28,33,40,0.45)" stroke="rgba(110,118,129,0.5)"
+                  stroke-width="1" stroke-dasharray="5 3"/>
+            <text x="962" y="160" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#6e7681">events-mcp</text>
+            <text x="962" y="176" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">E6 · query-only · planned</text>
+            <text x="962" y="196" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">App Events tail · queue</text>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 LANE 2.5 — Harness E3 bar (full width, planned/ghost)
+                 y=252, h=48
+                 ══════════════════════════════════════════════════════════════ -->
+            <rect x="16" y="252" width="1048" height="48" rx="8"
+                  fill="rgba(110,118,129,0.06)"
+                  stroke="rgba(110,118,129,0.45)" stroke-width="1" stroke-dasharray="6 3"/>
+            <text x="540" y="272" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#8b949e">harness E3 · planned</text>
+            <text x="540" y="285" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9.5"
+                  fill="#6e7681">plan · policy · approval · execute</text>
+            <text x="540" y="297" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9.5"
+                  fill="#6e7681">audit · rollback · gates all writes</text>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 LANE 3 — E1 Foundation packages (6 boxes, all built/green)
+                 y=316..436, each 166×120, 10px gap, left=16
+                 Order: client-sdk, auth, schemas, audit, observability, mcp-runtime
+                 ══════════════════════════════════════════════════════════════ -->
+
+            <!-- client-sdk x=16 center-x=99 -->
+            <rect x="16" y="316" width="166" height="120" rx="8"
+                  fill="#1c2128" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+            <text x="99" y="345" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#3fb950">client-sdk</text>
+            <text x="99" y="360" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">undici · two-key</text>
+            <text x="99" y="374" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">idempotency</text>
+
+            <!-- auth x=192 center-x=275 -->
+            <rect x="192" y="316" width="166" height="120" rx="8"
+                  fill="#1c2128" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+            <text x="275" y="345" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#3fb950">auth</text>
+            <text x="275" y="360" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">openid-client v5</text>
+
+            <!-- schemas x=368 center-x=451 -->
+            <rect x="368" y="316" width="166" height="120" rx="8"
+                  fill="#1c2128" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+            <text x="451" y="345" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#3fb950">schemas</text>
+            <text x="451" y="360" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">Zod · v1.0 + v2.0</text>
+
+            <!-- audit x=544 center-x=627 -->
+            <rect x="544" y="316" width="166" height="120" rx="8"
+                  fill="#1c2128" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+            <text x="627" y="345" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#3fb950">audit</text>
+            <text x="627" y="360" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">Postgres + hash-chain</text>
+
+            <!-- observability x=720 center-x=803 -->
+            <rect x="720" y="316" width="166" height="120" rx="8"
+                  fill="#1c2128" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+            <text x="803" y="345" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#3fb950">observability</text>
+            <text x="803" y="360" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">OTel + pino + Sentry</text>
+
+            <!-- mcp-runtime x=896 center-x=979 -->
+            <rect x="896" y="316" width="168" height="120" rx="8"
+                  fill="#1c2128" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+            <text x="980" y="345" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#3fb950">mcp-runtime</text>
+            <text x="980" y="360" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">stdio + HTTP transports</text>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 ARROWS: Foundation → External (4 vertical drops)
+                 client-sdk (99,436) → Cloud API (99,452)    orange
+                 auth (275,436) → Hub OAuth (275,452)         orange
+                 audit (627,436) → Postgres (627,452)         purple
+                 observability (803,436) → OTLP (803,452)     purple
+                 ══════════════════════════════════════════════════════════════ -->
+            <!-- client-sdk → Cloud API -->
+            <line x1="99" y1="436" x2="99" y2="452"
+                  stroke="#f78166" stroke-width="1.8" marker-end="url(#mh-orange)"/>
+            <!-- auth → Hub OAuth -->
+            <line x1="275" y1="436" x2="275" y2="452"
+                  stroke="#f78166" stroke-width="1.8" marker-end="url(#mh-orange)"/>
+            <!-- audit → Postgres -->
+            <line x1="627" y1="436" x2="627" y2="452"
+                  stroke="#bc8cff" stroke-width="1.8" marker-end="url(#mh-purple)"/>
+            <!-- observability → OTLP -->
+            <line x1="803" y1="436" x2="803" y2="452"
+                  stroke="#bc8cff" stroke-width="1.8" marker-end="url(#mh-purple)"/>
+
+            <!-- ══════════════════════════════════════════════════════════════
+                 LANE 4 — External & Storage (4 boxes)
+                 y=452..540 (h=88)
+                 Cloud API x=16 (under client-sdk)   center=99
+                 Hub OAuth x=192 (under auth)         center=275
+                 Postgres  x=544 (under audit)        center=627
+                 OTLP      x=720 (under observability) center=803
+                 ══════════════════════════════════════════════════════════════ -->
+
+            <!-- Guidewire Cloud API (orange) x=16 -->
+            <rect x="16" y="452" width="166" height="88" rx="8"
+                  fill="#1c2128" stroke="rgba(247,129,102,0.5)" stroke-width="1.2"/>
+            <text x="99" y="480" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#f78166">Guidewire Cloud API</text>
+            <text x="99" y="496" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">PolicyCenter · Job · Account</text>
+            <text x="99" y="512" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">per librarian KB</text>
+
+            <!-- Hub OAuth (orange) x=192 -->
+            <rect x="192" y="452" width="166" height="88" rx="8"
+                  fill="#1c2128" stroke="rgba(247,129,102,0.5)" stroke-width="1.2"/>
+            <text x="275" y="480" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#f78166">Hub OAuth</text>
+            <text x="275" y="496" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">openid · access tokens</text>
+            <text x="275" y="512" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">tenant-scoped</text>
+
+            <!-- Postgres (purple) x=544 -->
+            <rect x="544" y="452" width="166" height="88" rx="8"
+                  fill="#1c2128" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+            <text x="627" y="480" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#bc8cff">Postgres</text>
+            <text x="627" y="496" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">audit chain · per-tenant</text>
+            <text x="627" y="512" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">append-only · hash-linked</text>
+
+            <!-- OTLP collector + Sentry (purple) x=720 -->
+            <rect x="720" y="452" width="166" height="88" rx="8"
+                  fill="#1c2128" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+            <text x="803" y="480" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="11" font-weight="600"
+                  fill="#bc8cff">OTLP collector + Sentry</text>
+            <text x="803" y="496" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">user-configured · OTLP</text>
+            <text x="803" y="512" text-anchor="middle"
+                  font-family="JetBrains Mono,monospace" font-size="9"
+                  fill="#6e7681">spans every public fn</text>
+
+          </svg>
+        </div><!-- /.diagram-desktop -->
+
+        <!-- ===== MOBILE STACKED DIAGRAM (≤720px, no SVG) ===== -->
+        <div class="diagram-mobile" aria-label="System topology — stacked mobile view">
+
+          <div class="mob-stack">
+
+            <!-- Layer 1: Agent host -->
+            <div class="mob-card">
+              <div class="mob-card-title c-blue">Agent host</div>
+              <div class="mob-node">
+                <div class="mob-node-name c-built" style="color:var(--accent-blue)">Claude Code · Claude Desktop · Anthropic API</div>
+                <div class="mob-node-sub">MCP client · stdio · streamable HTTP</div>
+              </div>
             </div>
 
-            <!-- ===== L2 · MCP SERVERS plane ===== -->
-            <!-- BUILT: policycenter-mcp (n-built, prominent) — 5 carrier-vocab tools -->
-            <div class="node n-built" style="left: 30px; top: 150px; width: 360px;">
-              <div class="node-title">@intentsolutions/policycenter-mcp</div>
-              <div class="node-sub">E2 · 5 read-only tools · stdio + HTTP</div>
-              <ul class="node-list">
-                <li>find-submissions-waiting-on-me</li>
-                <li>show-policies-for-this-insured</li>
-                <li>summarize-this-submission</li>
-                <li>did-we-lose-this-account</li>
-                <li>pull-this-submission</li>
-              </ul>
+            <div class="mob-connector" aria-hidden="true">&#9660;</div>
+
+            <!-- Layer 2: MCP Servers -->
+            <div class="mob-card">
+              <div class="mob-card-title c-green">MCP Servers</div>
+              <div class="mob-node n-built" style="margin-bottom:8px">
+                <div class="mob-node-name c-built">policycenter-mcp</div>
+                <div class="mob-node-sub">E2 · built · 5 carrier-vocabulary tools · 51 tests</div>
+              </div>
+              <div class="mob-grid-2">
+                <div class="mob-node n-ghost">
+                  <div class="mob-node-name c-ghost">claimcenter-mcp</div>
+                  <div class="mob-node-sub">E7 · planned</div>
+                </div>
+                <div class="mob-node n-ghost">
+                  <div class="mob-node-name c-ghost">billingcenter-mcp</div>
+                  <div class="mob-node-sub">E8 · planned</div>
+                </div>
+                <div class="mob-node n-ghost">
+                  <div class="mob-node-name c-ghost">producer-mcp</div>
+                  <div class="mob-node-sub">E9 · planned</div>
+                </div>
+                <div class="mob-node n-ghost">
+                  <div class="mob-node-name c-ghost">events-mcp</div>
+                  <div class="mob-node-sub">E6 · query-only</div>
+                </div>
+              </div>
             </div>
 
-            <!-- GHOST: claimcenter-mcp (E7 planned) -->
-            <div class="node n-ghost" style="left: 410px; top: 150px; width: 200px;">
-              <div class="node-title">claimcenter-mcp</div>
-              <div class="node-sub">E7 · planned</div>
-              <ul class="node-list">
-                <li>FNOL · adjuster surface</li>
-              </ul>
+            <div class="mob-connector" aria-hidden="true">&#9660;</div>
+
+            <!-- Layer 2.5: Harness E3 -->
+            <div class="mob-card">
+              <div class="mob-harness">
+                <div class="mob-harness-label">
+                  <strong>harness E3 · planned</strong><br>
+                  plan &#x2192; policy &#x2192; approval &#x2192; execute &#x2192; audit &#x2192; rollback<br>
+                  gates all writes · library + CLI, not an MCP server
+                </div>
+              </div>
             </div>
 
-            <!-- GHOST: billingcenter-mcp (E8 planned) -->
-            <div class="node n-ghost" style="left: 630px; top: 150px; width: 200px;">
-              <div class="node-title">billingcenter-mcp</div>
-              <div class="node-sub">E8 · planned</div>
-              <ul class="node-list">
-                <li>billing + payments-mcp split</li>
-              </ul>
+            <div class="mob-connector" aria-hidden="true">&#9660;</div>
+
+            <!-- Layer 3: E1 Foundation -->
+            <div class="mob-card">
+              <div class="mob-card-title c-green">E1 Foundation packages · built</div>
+              <div class="mob-grid-2">
+                <div class="mob-node">
+                  <div class="mob-node-name c-built">client-sdk</div>
+                  <div class="mob-node-sub">undici · two-key idempotency</div>
+                </div>
+                <div class="mob-node">
+                  <div class="mob-node-name c-built">auth</div>
+                  <div class="mob-node-sub">openid-client v5</div>
+                </div>
+                <div class="mob-node">
+                  <div class="mob-node-name c-built">schemas</div>
+                  <div class="mob-node-sub">Zod · v1.0 + v2.0</div>
+                </div>
+                <div class="mob-node">
+                  <div class="mob-node-name c-built">audit</div>
+                  <div class="mob-node-sub">Postgres + hash-chain</div>
+                </div>
+                <div class="mob-node">
+                  <div class="mob-node-name c-built">observability</div>
+                  <div class="mob-node-sub">OTel + pino + Sentry</div>
+                </div>
+                <div class="mob-node">
+                  <div class="mob-node-name c-built">mcp-runtime</div>
+                  <div class="mob-node-sub">stdio + HTTP transports</div>
+                </div>
+              </div>
             </div>
 
-            <!-- GHOST: producer-mcp (E9 planned) -->
-            <div class="node n-ghost" style="left: 850px; top: 150px; width: 200px;">
-              <div class="node-title">producer-mcp</div>
-              <div class="node-sub">E9 · planned</div>
-              <ul class="node-list">
-                <li>MGA / broker scope</li>
-              </ul>
+            <div class="mob-connector" aria-hidden="true">&#9660;</div>
+
+            <!-- Layer 4: External & Storage -->
+            <div class="mob-card">
+              <div class="mob-card-title c-orange">External &amp; Storage</div>
+              <div class="mob-grid-2">
+                <div class="mob-node n-api">
+                  <div class="mob-node-name c-api">Guidewire Cloud API</div>
+                  <div class="mob-node-sub">PolicyCenter · Job · Account</div>
+                </div>
+                <div class="mob-node n-api">
+                  <div class="mob-node-name c-api">Hub OAuth</div>
+                  <div class="mob-node-sub">openid · tenant-scoped tokens</div>
+                </div>
+                <div class="mob-node n-store">
+                  <div class="mob-node-name c-store">Postgres</div>
+                  <div class="mob-node-sub">audit chain · hash-linked</div>
+                </div>
+                <div class="mob-node n-store">
+                  <div class="mob-node-name c-store">OTLP + Sentry</div>
+                  <div class="mob-node-sub">user-configured · spans</div>
+                </div>
+              </div>
             </div>
 
-            <!-- GHOST: events-mcp (E6 planned, query-only) -->
-            <div class="node n-ghost" style="left: 1070px; top: 150px; width: 200px;">
-              <div class="node-title">events-mcp</div>
-              <div class="node-sub">E6 · query-only</div>
-              <ul class="node-list">
-                <li>App Events tail · queue</li>
-              </ul>
-            </div>
+          </div><!-- /.mob-stack -->
+        </div><!-- /.diagram-mobile -->
 
-            <!-- ===== L3 · Harness library (E3 ghost) ===== -->
-            <div class="node n-ghost" style="left: 30px; top: 360px; width: 1240px;">
-              <div class="node-title">@intentsolutions/guidewire-harness  ·  E3 · planned (library + CLI, NOT an MCP server)</div>
-              <div class="node-sub">plan → policy gate → human approval → execute → audit (hash-chain) → rollback hint  ·  gwh1: idempotency cache key</div>
-            </div>
-
-            <!-- ===== L4 · E1 FOUNDATION plane (BUILT) ===== -->
-            <!-- top row: mcp-runtime, schemas, client-sdk -->
-            <div class="node n-service" style="left: 30px; top: 500px; width: 240px;">
-              <div class="node-title">@gw/mcp-runtime</div>
-              <div class="node-sub">SDK transport-agnostic</div>
-              <ul class="node-list">
-                <li>createMcpServer()</li>
-                <li>carrier-vocab + 3-mode binding gate</li>
-              </ul>
-            </div>
-
-            <div class="node n-service" style="left: 290px; top: 500px; width: 240px;">
-              <div class="node-title">@gw/schemas</div>
-              <div class="node-sub">Zod · v1.0 + v2.0 (D-020)</div>
-              <ul class="node-list">
-                <li>Plan · Approval · Execute · Audit</li>
-                <li>9 profile-YAML schemas</li>
-              </ul>
-            </div>
-
-            <div class="node n-service" style="left: 550px; top: 500px; width: 240px;">
-              <div class="node-title">@gw/client-sdk</div>
-              <div class="node-sub">undici · HTTP</div>
-              <ul class="node-list">
-                <li>GW-DBTransaction-ID (P1 fix)</li>
-                <li>withPagination(pageSize/pageOffset)</li>
-              </ul>
-            </div>
-
-            <!-- bottom row: auth, audit, observability -->
-            <div class="node n-service" style="left: 30px; top: 630px; width: 240px;">
-              <div class="node-title">@gw/auth</div>
-              <div class="node-sub">openid-client v5</div>
-              <ul class="node-list">
-                <li>createAuth() · OAuth + JWT</li>
-                <li>structural JWT validation</li>
-              </ul>
-            </div>
-
-            <div class="node n-service" style="left: 290px; top: 630px; width: 240px;">
-              <div class="node-title">@gw/audit</div>
-              <div class="node-sub">Postgres · memory · hash-chain</div>
-              <ul class="node-list">
-                <li>computeEntryHash() · canonical serialize</li>
-                <li>migrations/0001_init.sql · 3 PG roles</li>
-              </ul>
-            </div>
-
-            <div class="node n-service" style="left: 550px; top: 630px; width: 240px;">
-              <div class="node-title">@gw/observability</div>
-              <div class="node-sub">OTel · pino · Sentry</div>
-              <ul class="node-list">
-                <li>getObservability() factory</li>
-                <li>AppError · refuseDbTxnDuplicate()</li>
-              </ul>
-            </div>
-
-            <!-- entry point script (cli) inside foundation plane on right -->
-            <div class="node n-cli" style="left: 830px; top: 500px; width: 240px;">
-              <div class="node-title">scripts/smoke-reach.ts</div>
-              <div class="node-sub">tsx · librarian KB endpoints</div>
-              <ul class="node-list">
-                <li>dev-tier OAuth creds (D-021)</li>
-                <li>endpoint reachability check</li>
-              </ul>
-            </div>
-
-            <!-- migrations call-out inside plane -->
-            <div class="node n-store" style="left: 830px; top: 630px; width: 240px;">
-              <div class="node-title">audit migrations</div>
-              <div class="node-sub">SQL · 3 Postgres roles</div>
-              <ul class="node-list">
-                <li>writer · reader · verifier</li>
-                <li>tamper-resistant per D-019</li>
-              </ul>
-            </div>
-
-            <!-- ===== L5 · External (right column outside the foundation plane) ===== -->
-            <!-- These sit to the right at x>=1090, outside both planes -->
-            <div class="node n-api" style="left: 1100px; top: 500px; width: 180px;">
-              <div class="node-title">Guidewire Cloud API</div>
-              <div class="node-sub">PolicyCenter · Job · Account</div>
-              <ul class="node-list">
-                <li>per librarian KB</li>
-              </ul>
-            </div>
-
-            <div class="node n-api" style="left: 1100px; top: 630px; width: 180px;">
-              <div class="node-title">Guidewire Hub OAuth</div>
-              <div class="node-sub">openid · access tokens</div>
-              <ul class="node-list">
-                <li>tenant-scoped</li>
-              </ul>
-            </div>
-
-            <!-- ===== Below-plane externals: Postgres + OTel collector ===== -->
-            <div class="node n-store" style="left: 30px; top: 800px; width: 240px;">
-              <div class="node-title">Postgres</div>
-              <div class="node-sub">audit chain · per-tenant</div>
-              <ul class="node-list">
-                <li>append-only · hash-linked</li>
-              </ul>
-            </div>
-
-            <div class="node n-api" style="left: 290px; top: 800px; width: 280px;">
-              <div class="node-title">OTel collector / Sentry</div>
-              <div class="node-sub">user-configured · OTLP · JSON logs</div>
-              <ul class="node-list">
-                <li>spans on every public function</li>
-                <li>arch-rules enforce in CI (E1+)</li>
-              </ul>
-            </div>
-
-            <div class="node n-store" style="left: 590px; top: 800px; width: 280px;">
-              <div class="node-title">tests/recordings/</div>
-              <div class="node-sub">real Cloud sandbox · MANIFEST.md</div>
-              <ul class="node-list">
-                <li>provenance-stamped HTTP captures</li>
-                <li>NO MOCKS — D-008 / D-021</li>
-              </ul>
-            </div>
-
-            <!-- ===== ARROW OVERLAY ===== -->
-            <svg class="arrows-overlay" viewBox="0 0 1300 920" preserveAspectRatio="none"
-                 role="img" aria-labelledby="arrows-title arrows-desc">
-              <title id="arrows-title">Guidewire MCP for Claude component connection overlay</title>
-              <desc id="arrows-desc">Directional edges between agent host, MCP servers, harness, foundation packages, and external Guidewire surfaces. Blue lines are MCP entry invocations; green lines are intra-monorepo workspace imports; orange lines are calls to the live Guidewire Cloud API or Hub OAuth; muted lines are persistence and observability writes; dashed green outlines mark planned edges that the harness (E3) will introduce.</desc>
-              <defs>
-                <marker id="a-blue"   markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/></marker>
-                <marker id="a-green"  markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#3fb950"/></marker>
-                <marker id="a-orange" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#f78166"/></marker>
-                <marker id="a-muted"  markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6e7681"/></marker>
-                <marker id="a-purple" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#bc8cff"/></marker>
-              </defs>
-
-              <!-- =================================================================
-                   L1 → L2 · Agent host invokes MCP servers (blue, MCP transport)
-                   ================================================================= -->
-
-              <!-- Agent Host → policycenter-mcp (built) · solid blue -->
-              <line x1="190" y1="120" x2="190" y2="148" stroke="#58a6ff" stroke-width="1.8" marker-end="url(#a-blue)"/>
-              <text x="200" y="136" fill="#58a6ff" font-family="JetBrains Mono" font-size="10" text-anchor="start">MCP · stdio | HTTP</text>
-
-              <!-- =================================================================
-                   L2 → L4 · policycenter-mcp imports E1 foundation (green workspace deps)
-                   Routed down the LEFT corridor inside the planes (x ~ 410, just right
-                   of policycenter card edge) so they don't collide with the harness ghost.
-                   ================================================================= -->
-
-              <!-- policycenter-mcp → mcp-runtime (workspace dep) -->
-              <polyline points="150,290 150,500" fill="none" stroke="#3fb950" stroke-width="1.5" marker-end="url(#a-green)"/>
-              <text x="158" y="345" fill="#3fb950" font-family="JetBrains Mono" font-size="10" text-anchor="start">workspace:*</text>
-
-              <!-- policycenter-mcp → schemas -->
-              <polyline points="200,290 200,355 410,355 410,500" fill="none" stroke="#3fb950" stroke-width="1.3" marker-end="url(#a-green)"/>
-
-              <!-- policycenter-mcp → client-sdk -->
-              <polyline points="250,290 250,348 670,348 670,500" fill="none" stroke="#3fb950" stroke-width="1.3" marker-end="url(#a-green)"/>
-
-              <!-- policycenter-mcp → auth (transitive but explicit dep) -->
-              <polyline points="100,290 100,610 30,610 30,660 28,660" fill="none" stroke="#3fb950" stroke-width="1.0" stroke-dasharray="3 3" opacity="0.55" marker-end="url(#a-green)"/>
-
-              <!-- policycenter-mcp → observability -->
-              <polyline points="300,290 300,343 670,343 670,500 670,628" fill="none" stroke="#3fb950" stroke-width="1.0" stroke-dasharray="3 3" opacity="0.55" marker-end="url(#a-green)"/>
-
-              <!-- =================================================================
-                   L4 internal · client-sdk → auth (workspace dep)
-                   Cross-plane within E1 foundation — green dashed (cross-row read).
-                   ================================================================= -->
-              <!-- client-sdk (550..790, mid y=560) → auth (30..270, mid y=665) -->
-              <polyline points="550,560 540,560 540,665 270,665" fill="none" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a-green)"/>
-              <text x="540" y="610" fill="#3fb950" font-family="JetBrains Mono" font-size="10" text-anchor="end">auth (workspace)</text>
-
-              <!-- audit → schemas (vertical, dep) -->
-              <line x1="410" y1="630" x2="410" y2="588" stroke="#6e7681" stroke-width="1.2" marker-end="url(#a-muted)"/>
-
-              <!-- audit → observability (right-going) -->
-              <line x1="530" y1="660" x2="548" y2="660" stroke="#6e7681" stroke-width="1.2" marker-end="url(#a-muted)"/>
-
-              <!-- mcp-runtime → schemas (right-going at top row) -->
-              <line x1="270" y1="540" x2="288" y2="540" stroke="#6e7681" stroke-width="1.2" marker-end="url(#a-muted)"/>
-
-              <!-- mcp-runtime → observability (down-right, dotted/muted) -->
-              <polyline points="180,588 180,660 28,660" fill="none" stroke="#6e7681" stroke-width="1.0" stroke-dasharray="3 4" opacity="0.7"/>
-              <!-- (visual only; observability dependency from runtime — no head, decorative parallel cue) -->
-
-              <!-- =================================================================
-                   L4 → L5 · External calls (orange) — live Guidewire surfaces
-                   ================================================================= -->
-              <!-- client-sdk → Guidewire Cloud API · solid orange (right-going) -->
-              <line x1="790" y1="540" x2="1098" y2="540" stroke="#f78166" stroke-width="1.6" marker-end="url(#a-orange)"/>
-              <text x="940" y="533" fill="#f78166" font-family="JetBrains Mono" font-size="10" text-anchor="middle">undici · GW-DBTransaction-ID</text>
-
-              <!-- auth → Guidewire Hub OAuth · solid orange -->
-              <polyline points="270,665 1090,665 1098,665" fill="none" stroke="#f78166" stroke-width="1.6" marker-end="url(#a-orange)"/>
-              <text x="900" y="658" fill="#f78166" font-family="JetBrains Mono" font-size="10" text-anchor="middle">openid-client · OAuth tokens</text>
-
-              <!-- =================================================================
-                   L4 → L5 (below) · Persistence + observability + recordings (muted)
-                   ================================================================= -->
-              <!-- audit → Postgres · down arrow (muted) -->
-              <polyline points="150,690 150,798" fill="none" stroke="#bc8cff" stroke-width="1.5" marker-end="url(#a-purple)"/>
-              <text x="158" y="745" fill="#bc8cff" font-family="JetBrains Mono" font-size="10" text-anchor="start">audit chain</text>
-
-              <!-- observability → OTel collector -->
-              <polyline points="430,690 430,798" fill="none" stroke="#6e7681" stroke-width="1.3" marker-end="url(#a-muted)"/>
-              <text x="438" y="745" fill="#6e7681" font-family="JetBrains Mono" font-size="10" text-anchor="start">OTLP · logs</text>
-
-              <!-- client-sdk → tests/recordings (test-time only, dashed muted) -->
-              <polyline points="730,690 730,798" fill="none" stroke="#6e7681" stroke-width="1.0" stroke-dasharray="3 4" marker-end="url(#a-muted)"/>
-              <text x="738" y="745" fill="#6e7681" font-family="JetBrains Mono" font-size="9" text-anchor="start">test-time replay</text>
-
-              <!-- =================================================================
-                   L3 · Harness ghost edges (E3 planned) — dashed green to show future wiring
-                   ================================================================= -->
-              <!-- policycenter-mcp ↔ harness (top edge of harness, planned) -->
-              <line x1="900" y1="290" x2="900" y2="358" stroke="#3fb950" stroke-width="1.0" stroke-dasharray="5 4" opacity="0.50"/>
-              <text x="908" y="328" fill="#3fb950" font-family="JetBrains Mono" font-size="9" text-anchor="start" opacity="0.85">E3 · planned</text>
-
-              <!-- harness → audit (planned, dashed green) -->
-              <line x1="500" y1="408" x2="410" y2="628" stroke="#3fb950" stroke-width="1.0" stroke-dasharray="5 4" opacity="0.50"/>
-
-              <!-- harness → schemas (planned, dashed green) -->
-              <line x1="700" y1="408" x2="410" y2="498" stroke="#3fb950" stroke-width="1.0" stroke-dasharray="5 4" opacity="0.50"/>
-
-              <!-- =================================================================
-                   smoke-reach.ts → Guidewire Cloud API (verification check, orange dotted)
-                   ================================================================= -->
-              <line x1="1070" y1="528" x2="1098" y2="528" stroke="#f78166" stroke-width="1.0" stroke-dasharray="3 3" marker-end="url(#a-orange)"/>
-
-              <!-- smoke-reach → auth (uses dev-tier creds) — short green-dashed -->
-              <polyline points="950,580 950,665 270,665" fill="none" stroke="#3fb950" stroke-width="0.9" stroke-dasharray="3 4" opacity="0.50"/>
-
-            </svg>
-
-          </div>
-        </div>
-        <p class="diagram-scroll-hint">← swipe to see the full topology →</p>
       </section>
 
       <!-- ===== Detail grid ===== -->
