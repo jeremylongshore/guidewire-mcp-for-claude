@@ -80,15 +80,29 @@ jobs:
 
   smoke-reach:
     name: Smoke-reach (librarian KB endpoints)
-    # D-021 + 07-ROADMAP § E1 — gated by dev-tier creds. Skips cleanly
-    # when GUIDEWIRE_OAUTH_CLIENT_ID is unset (OSS quickstart default).
-    if: ${{ vars.SMOKE_REACH_ENABLED == 'true' || secrets.GUIDEWIRE_OAUTH_CLIENT_ID != '' }}
+    # D-021 + 07-ROADMAP § E1 — gated by dev-tier creds. Opt-in via the
+    # repo variable `SMOKE_REACH_ENABLED=true` (set alongside the secrets
+    # GUIDEWIRE_OAUTH_CLIENT_ID, GUIDEWIRE_OAUTH_CLIENT_SECRET, and
+    # GUIDEWIRE_TOKEN_ENDPOINT). Skips cleanly on the OSS quickstart
+    # default (variable unset).
+    #
+    # The variable check (instead of `secrets.X != ''`) is required:
+    # GitHub Actions does not allow direct secrets context references
+    # in job-level `if:` expressions — doing so causes a silent workflow
+    # startup failure (zero jobs dispatched, no logs). Operators that
+    # configure the secrets must also set the variable to enable the job.
+    #
+    # Env-var names match the canonical contract used by cli.ts +
+    # smoke-reach.ts + the cloud-api-contract workflow + every README.
+    # Do not introduce an alias here — the secret name on both sides
+    # must equal what the runtime reads (`GUIDEWIRE_TOKEN_ENDPOINT`).
+    if: ${{ vars.SMOKE_REACH_ENABLED == 'true' }}
     needs: [lint, typecheck, test, build]
     runs-on: ubuntu-latest
     env:
       GUIDEWIRE_OAUTH_CLIENT_ID: ${{ secrets.GUIDEWIRE_OAUTH_CLIENT_ID }}
       GUIDEWIRE_OAUTH_CLIENT_SECRET: ${{ secrets.GUIDEWIRE_OAUTH_CLIENT_SECRET }}
-      GUIDEWIRE_OAUTH_TOKEN_URL: ${{ secrets.GUIDEWIRE_OAUTH_TOKEN_URL }}
+      GUIDEWIRE_TOKEN_ENDPOINT: ${{ secrets.GUIDEWIRE_TOKEN_ENDPOINT }}
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
