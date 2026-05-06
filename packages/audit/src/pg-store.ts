@@ -230,7 +230,9 @@ export function createPgAuditStore(pool: Pool): AuditStore {
         prevHash: row.prev_hash,
         entryHash: row.entry_hash,
         ...(row.blob_ref !== null && { blobRef: row.blob_ref }),
-        ...(row.oauth_scope !== null && { oauthScope: row.oauth_scope }),
+        ...(row.oauth_scope !== null && {
+          oauthScope: row.oauth_scope as AuditEntry['oauthScope'],
+        }),
       };
     }
   }
