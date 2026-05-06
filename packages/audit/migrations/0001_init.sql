@@ -59,6 +59,21 @@ CREATE INDEX IF NOT EXISTS audit_entries_trace_idx
 -- or CLI session ending mid-wait does not lose the request. The
 -- application enforces the legal transitions
 -- (pending → approved | denied | expired | cancelled); the DDL does not.
+--
+-- Two intentional deviations from the literal blueprint § 8.2.0 SQL,
+-- both flagged + filed for blueprint update:
+--   1. Column `approvers` (JSONB) — the blueprint label `approver_votes`
+--      drifts from the runtime contract in `packages/schemas/src/harness/
+--      approval.ts` line 37 (field `approvers`). The DDL aligns with the
+--      runtime schema so pg-store reads/writes do not need a name remap.
+--   2. UNIQUE (tenant_id, plan_id) is REMOVED in favor of a partial
+--      unique index on the `pending` state below. The blueprint constraint
+--      contradicts `approval_id = sha256(planId + nonce)` — the system is
+--      designed to support multiple distinct approvals per plan (e.g.
+--      a re-request after a previous request expired or was denied);
+--      a hard UNIQUE blocks every legitimate re-request. The partial index
+--      keeps the spec's intent (only one *active* approval per plan) while
+--      allowing the historical chain.
 CREATE TABLE IF NOT EXISTS approvals (
   approval_id      TEXT PRIMARY KEY,        -- sha256(planId + nonce)
   tenant_id        TEXT NOT NULL,
@@ -67,11 +82,18 @@ CREATE TABLE IF NOT EXISTS approvals (
   state            TEXT NOT NULL,           -- pending | approved | denied | expired | cancelled
   requested_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   expires_at       TIMESTAMPTZ NOT NULL,
-  approver_votes   JSONB NOT NULL DEFAULT '[]',
+  approvers        JSONB NOT NULL DEFAULT '[]',
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, plan_id)
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Enforce: at most one PENDING approval per (tenant, plan). Approved /
+-- denied / expired / cancelled rows are retained for forensics and do
+-- not block a re-request. Replaces the blueprint's UNIQUE (tenant_id,
+-- plan_id) which would have blocked legitimate re-requests.
+CREATE UNIQUE INDEX IF NOT EXISTS approvals_one_pending_per_plan_idx
+  ON approvals (tenant_id, plan_id)
+  WHERE state = 'pending';
 
 -- Hot-path query: the CLI's `approve` list and the harness's `wait()`
 -- poll filter pending approvals per tenant. Partial index keeps size
@@ -80,6 +102,25 @@ CREATE TABLE IF NOT EXISTS approvals (
 CREATE INDEX IF NOT EXISTS approvals_pending_idx
   ON approvals (tenant_id, state)
   WHERE state = 'pending';
+
+-- HR-4 / D-019: keep `updated_at` honest on every state-machine
+-- transition. Postgres does NOT auto-update DEFAULT now() on UPDATE;
+-- a trigger is the only way the column reflects the actual last-write
+-- time. Without this, `updated_at` equals `requested_at` for the life
+-- of the row — useless for forensic timelines.
+CREATE OR REPLACE FUNCTION approvals_set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS approvals_updated_at_trg ON approvals;
+CREATE TRIGGER approvals_updated_at_trg
+  BEFORE UPDATE ON approvals
+  FOR EACH ROW
+  EXECUTE FUNCTION approvals_set_updated_at();
 
 -- Role separation per D-019. The schema owner runs this migration; the
 -- harness process and verifier process bind via the writer / reader roles.
@@ -98,11 +139,16 @@ GRANT INSERT ON audit_entries TO audit_writer;
 GRANT SELECT, UPDATE ON audit_chain_heads TO audit_writer;
 GRANT INSERT ON audit_chain_heads TO audit_writer;
 
--- HR-4: approvals are state-transitioned by the harness via idempotent
--- updates keyed by approval_id. INSERT for new requests, UPDATE for
--- transitions; DELETE is denied (audit-trail concern — expired/cancelled
--- rows are retained per the same forensic rationale as audit_entries).
-GRANT INSERT, UPDATE ON approvals TO audit_writer;
+-- HR-4 + D-019: approvals are state-transitioned by the harness via
+-- idempotent updates keyed by approval_id. INSERT for new requests;
+-- UPDATE is COLUMN-RESTRICTED to (state, approvers, updated_at) so a
+-- compromised harness cannot rewrite immutable provenance metadata
+-- (tenant_id, plan_id, decision_id, requested_at, expires_at, created_at,
+-- approval_id) and silently erase the history of a specific request.
+-- DELETE is denied — expired/cancelled rows are retained for forensics
+-- per the same rationale as audit_entries.
+GRANT INSERT ON approvals TO audit_writer;
+GRANT UPDATE (state, approvers, updated_at) ON approvals TO audit_writer;
 
 GRANT SELECT ON audit_entries TO audit_reader;
 GRANT SELECT ON audit_chain_heads TO audit_reader;
