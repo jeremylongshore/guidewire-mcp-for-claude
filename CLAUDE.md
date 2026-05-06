@@ -150,9 +150,21 @@ gh pr merge <N> --squash --auto --delete-branch     # auto-merges after Gemini r
 - **1 required PR approval** — author cannot self-approve.
 - **No force-push, no deletion of `main`.**
 
-Personal-repo OWNER (Jeremy) bypasses by default for emergency
-admin-merges via `gh pr merge --admin`; everyone else (including
-Claude as the PR author) is gated.
+**Bypass:** the ruleset's `bypass_actors` list explicitly grants
+the `RepositoryRole=Admin` (id 5) `bypass_mode: always`. Without
+that explicit entry, even repo OWNER cannot bypass — verified
+empirically 2026-05-06 (an unconfigured ruleset blocked the OWNER's
+own admin-merge attempt). With it, `gh pr merge --admin` succeeds
+for owner-authored PRs (the common case where Claude opens the PR
+on Jeremy's behalf — GitHub blocks the PR author from approving
+their own PR, so admin-merge is the only CLI path; web-UI workflows
+are not used).
+
+If a separate bot account is ever set up for Claude's commits, the
+PR-author / approver split would be natural: bot opens PR, owner
+approves via `gh pr review --approve`, normal merge works without
+the bypass. Until then, every Claude-opened PR ends with
+`gh pr merge --admin --squash --delete-branch`.
 
 **Gemini Code Assist** is the **convention** for external review on
 every PR but is NOT enforced as a required reviewer (Gemini posts as
