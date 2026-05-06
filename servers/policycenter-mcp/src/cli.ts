@@ -32,6 +32,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
 import { createAuth } from '@intentsolutions/guidewire-auth';
 import { createClient } from '@intentsolutions/guidewire-client';
+import { tryAsHarnessError } from '@intentsolutions/guidewire-harness';
 import { getObservability } from '@intentsolutions/guidewire-observability';
 import { context, trace } from '@opentelemetry/api';
 
@@ -184,9 +185,25 @@ async function buildServer(
       );
     } catch (err) {
       // ProfileLoadError: typed error naming the exact file + Zod path.
-      // Any other error: re-wrap with context. Both are hard boot failures
-      // per D-008 — never silently degrade to the default profile.
-      if (err instanceof ProfileLoadError) {
+      // When it carries a HarnessErrorCode (currently BAA_GATE_MISSING from
+      // the SA-6/MS-6 cross-file BAA carve), translate to HarnessError so
+      // observability tags + Sentry grouping use the canonical code. The
+      // process still exits — translation is for diagnostics, not recovery.
+      // Per D-008: never silently degrade to the default profile.
+      const wrapped = tryAsHarnessError(err);
+      if (wrapped !== undefined) {
+        observability.logger.error(
+          {
+            err: wrapped,
+            code: wrapped.code,
+            cause: { name: (err as Error).name, message: (err as Error).message },
+          },
+          'mcp.profile.harness_error',
+        );
+        process.stderr.write(
+          `policycenter-mcp: ${wrapped.code} — ${wrapped.message}\n  (boot refusal — see observability for the full HarnessError)\n`,
+        );
+      } else if (err instanceof ProfileLoadError) {
         process.stderr.write(
           `policycenter-mcp: profile load failed — ${err.message}\n` +
             `  file: ${err.file}\n` +

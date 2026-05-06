@@ -220,4 +220,77 @@ describe('HarnessError codes', () => {
     expect(err).toBeInstanceOf(HarnessError);
     expect(err.code).toBe('IDEMPOTENCY_MISMATCH');
   });
+
+  // ─── tryAsHarnessError — boot-path translation ──────────────────────────
+  // Bridges loader-thrown errors that carry a HarnessErrorCode (currently
+  // ProfileLoadError from policycenter-mcp's loader) into proper
+  // HarnessError instances. Duck-typed to avoid a harness→server dep edge.
+
+  it('tryAsHarnessError: ProfileLoadError-shaped with BAA_GATE_MISSING → HarnessError', async () => {
+    const { tryAsHarnessError } = await import('../src/error-translation.js');
+
+    // Mimic the structural shape policycenter-mcp's ProfileLoadError emits
+    // when the BAA carve fires at boot. Duck-typing means we don't import
+    // the actual class — only Error + .code + .message matter here.
+    const profileErr = Object.assign(
+      new Error(
+        'BAA_GATE_MISSING: lob.yaml declares lob_class:health for [acme] but ' +
+          'pii-policy.yaml has baa_required.enabled:false.',
+      ),
+      {
+        name: 'ProfileLoadError',
+        file: 'lob.yaml + pii-policy.yaml',
+        zodPath: 'lob_mappings.[acme].lob_class',
+        code: 'BAA_GATE_MISSING' as const,
+      },
+    );
+
+    const wrapped = tryAsHarnessError(profileErr, {
+      trace_id: 'trace-boot',
+      tenant_id: 'acme',
+    });
+
+    expect(wrapped).toBeInstanceOf(HarnessError);
+    expect(wrapped?.code).toBe('BAA_GATE_MISSING');
+    expect(wrapped?.message).toContain('BAA_GATE_MISSING');
+    expect((wrapped?.cause as Error)?.name).toBe('ProfileLoadError');
+  });
+
+  it('tryAsHarnessError: returns undefined for plain Error without code', async () => {
+    const { tryAsHarnessError } = await import('../src/error-translation.js');
+    const wrapped = tryAsHarnessError(new Error('boot failed for other reasons'));
+    expect(wrapped).toBeUndefined();
+  });
+
+  it('tryAsHarnessError: returns undefined when code is not a known HarnessErrorCode', async () => {
+    const { tryAsHarnessError } = await import('../src/error-translation.js');
+    const errWithBogusCode = Object.assign(new Error('something else'), {
+      code: 'NOT_A_HARNESS_CODE',
+    });
+    const wrapped = tryAsHarnessError(errWithBogusCode);
+    expect(wrapped).toBeUndefined();
+  });
+
+  it('tryAsHarnessError: returns undefined for non-Error inputs', async () => {
+    const { tryAsHarnessError } = await import('../src/error-translation.js');
+    expect(tryAsHarnessError(undefined)).toBeUndefined();
+    expect(tryAsHarnessError(null)).toBeUndefined();
+    expect(tryAsHarnessError('string thrown')).toBeUndefined();
+    expect(tryAsHarnessError({ code: 'BAA_GATE_MISSING' })).toBeUndefined();
+  });
+
+  it('tryAsHarnessError: defaults trace_id/tenant_id to honest sentinels', async () => {
+    const { tryAsHarnessError } = await import('../src/error-translation.js');
+    const profileErr = Object.assign(new Error('boot'), {
+      name: 'ProfileLoadError',
+      code: 'BAA_GATE_MISSING' as const,
+    });
+    const wrapped = tryAsHarnessError(profileErr);
+    expect(wrapped).toBeInstanceOf(HarnessError);
+    // Sentinels surface in observability tags so ops can filter on them.
+    // Verify they're present on the AppError-shaped fields.
+    type AppErrorish = HarnessError & { trace_id?: string; tenant_id?: string };
+    expect((wrapped as AppErrorish)?.trace_id).toBe('boot');
+    expect((wrapped as AppErrorish)?.tenant_id).toBe('unknown');
+  });
 });

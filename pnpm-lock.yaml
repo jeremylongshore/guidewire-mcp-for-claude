@@ -226,6 +226,9 @@ importers:
       '@intentsolutions/guidewire-client':
         specifier: workspace:*
         version: link:../../packages/client-sdk
+      '@intentsolutions/guidewire-harness':
+        specifier: workspace:^
+        version: link:../../packages/harness
       '@intentsolutions/guidewire-mcp-runtime':
         specifier: workspace:*
         version: link:../../packages/mcp-runtime

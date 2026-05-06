@@ -23,6 +23,7 @@ export type { Harness, HarnessConfig } from './types.js';
 
 // ─── Typed error ─────────────────────────────────────────────────────────────
 export { HarnessError, makeHarnessError } from './error.js';
+export { tryAsHarnessError } from './error-translation.js';
 export type { HarnessErrorOpts } from './error.js';
 
 // ─── Pipeline interfaces ──────────────────────────────────────────────────────
