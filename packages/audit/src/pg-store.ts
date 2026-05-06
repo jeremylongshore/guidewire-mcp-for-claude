@@ -104,6 +104,14 @@ export function createPgAuditStore(pool: Pool): AuditStore {
   };
 
   const verifyChain = async (tenantId: string, fromSeq = 1): Promise<ChainVerification> => {
+    // Note on recorded_at typing: the `pg` driver returns TIMESTAMPTZ as a
+    // JavaScript Date object by default, NOT the original ISO string. The
+    // canonical serialization that produced entry_hash on append used the
+    // ISO string from `input.recordedAt`, so on readback we must coerce
+    // back to ISO before recomputing the hash — otherwise verifyChain
+    // never matches on a chain populated through pg-store. The TS field
+    // is typed `string` because callers see it post-coercion via
+    // toIsoString() below; the actual driver-level value is a Date.
     const res = await pool.query<{
       entry_id: string;
       tenant_id: string;
@@ -116,7 +124,7 @@ export function createPgAuditStore(pool: Pool): AuditStore {
       tool_version: string;
       mode: string;
       idempotency_key: string;
-      recorded_at: string;
+      recorded_at: Date | string;
       prev_hash: string;
       entry_hash: string;
       blob_ref: string | null;
@@ -155,7 +163,7 @@ export function createPgAuditStore(pool: Pool): AuditStore {
         toolVersion: row.tool_version,
         mode: row.mode as AuditEntry['mode'],
         idempotencyKey: row.idempotency_key,
-        recordedAt: row.recorded_at,
+        recordedAt: toIsoString(row.recorded_at),
         prevHash: row.prev_hash,
         ...(row.blob_ref !== null && { blobRef: row.blob_ref }),
         ...(row.oauth_scope !== null && {
@@ -226,7 +234,7 @@ export function createPgAuditStore(pool: Pool): AuditStore {
         toolVersion: row.tool_version,
         mode: row.mode,
         idempotencyKey: row.idempotency_key,
-        recordedAt: row.recorded_at,
+        recordedAt: toIsoString(row.recorded_at),
         prevHash: row.prev_hash,
         entryHash: row.entry_hash,
         ...(row.blob_ref !== null && { blobRef: row.blob_ref }),
@@ -247,4 +255,15 @@ async function fetchPrevHashFor(pool: Pool, tenantId: string, fromSeq: number): 
     [tenantId, fromSeq - 1],
   );
   return res.rows[0]?.entry_hash ?? GENESIS_PREV_HASH;
+}
+
+/**
+ * Coerce a TIMESTAMPTZ value from the `pg` driver to the ISO 8601 string
+ * shape the canonical-serialization expects. The driver returns Date by
+ * default, but the hash was computed on append using the ISO string from
+ * `input.recordedAt`. Without coercion, verifyChain on a pg-populated
+ * chain would never match — caught by the AR-7 testcontainers test.
+ */
+function toIsoString(v: Date | string): string {
+  return v instanceof Date ? v.toISOString() : v;
 }

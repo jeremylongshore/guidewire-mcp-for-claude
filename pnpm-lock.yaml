@@ -49,9 +49,15 @@ importers:
         specifier: ^8.0.0
         version: 8.20.0
     devDependencies:
+      '@testcontainers/postgresql':
+        specifier: ^11.14.0
+        version: 11.14.0
       '@types/pg':
         specifier: ^8.0.0
         version: 8.20.0
+      testcontainers:
+        specifier: ^11.14.0
+        version: 11.14.0
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(postcss@8.5.14)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.4)
