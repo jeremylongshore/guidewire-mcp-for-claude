@@ -41,6 +41,10 @@ export type { AllowRule } from './policy/in-memory.js';
 
 export { createInMemoryApprovalSink } from './approvals/in-memory.js';
 
+// ─── Production sinks (Postgres-backed) ──────────────────────────────────────
+export { createPgApprovalSink } from './approvals/pg.js';
+export type { PgApprovalSinkOpts } from './approvals/pg.js';
+
 export { createEvidenceExporter } from './evidence/exporter.js';
 
 // ─── Re-exports from @intentsolutions/guidewire-schemas ──────────────────────

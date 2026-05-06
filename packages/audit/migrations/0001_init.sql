@@ -135,6 +135,17 @@ BEGIN
 END
 $$;
 
+-- PostgreSQL 15+ removed the implicit `USAGE` grant on the public schema
+-- (https://www.postgresql.org/docs/15/release-15.html "Remove PUBLIC
+-- creation permission on the public schema"). Without an explicit grant
+-- here, table-level INSERT/SELECT/UPDATE permissions cannot be exercised
+-- because the role has no schema visibility — every query throws
+-- "permission denied for table …". Discovered the hard way during the
+-- pg ApprovalSink testcontainers test (PG 16). Granting USAGE to both
+-- runtime roles is the minimum required for the table grants below to
+-- have effect.
+GRANT USAGE ON SCHEMA public TO audit_writer, audit_reader;
+
 GRANT INSERT ON audit_entries TO audit_writer;
 GRANT SELECT, UPDATE ON audit_chain_heads TO audit_writer;
 GRANT INSERT ON audit_chain_heads TO audit_writer;
@@ -149,6 +160,24 @@ GRANT INSERT ON audit_chain_heads TO audit_writer;
 -- per the same rationale as audit_entries.
 GRANT INSERT ON approvals TO audit_writer;
 GRANT UPDATE (state, approvers, updated_at) ON approvals TO audit_writer;
+-- The audit_writer ALSO gets SELECT on `approvals` (but NOT on
+-- `audit_entries`). This is the asymmetry between the two tables:
+--   • `audit_entries` is append-only from the writer's perspective —
+--     the writer NEVER reads its own log entries; verifyChain() runs
+--     as `audit_reader` (a separate operational identity per D-019).
+--   • `approvals` is a state machine the writer DRIVES — the harness
+--     must poll the row inside `wait()` to observe an external
+--     decision, and the same process is the one that flipped the
+--     state via UPDATE in `decide()`. Forcing a separate reader pool
+--     for the polling path adds connection-management complexity
+--     without buying any tamper-evidence (the chain has none on
+--     approvals; provenance comes from audit_entries rows that
+--     reference the approval_id).
+-- Reading what you wrote on the same row you control is not a
+-- privilege escalation. The defense-in-depth that matters for the
+-- approval table is the column-restricted UPDATE + denied DELETE
+-- below — both intact under this SELECT grant.
+GRANT SELECT ON approvals TO audit_writer;
 
 GRANT SELECT ON audit_entries TO audit_reader;
 GRANT SELECT ON audit_chain_heads TO audit_reader;
