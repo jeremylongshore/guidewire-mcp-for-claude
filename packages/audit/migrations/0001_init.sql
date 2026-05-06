@@ -33,6 +33,11 @@ CREATE TABLE IF NOT EXISTS audit_entries (
   prev_hash        TEXT NOT NULL,
   entry_hash       TEXT NOT NULL,
   blob_ref         TEXT,
+  -- GA-3: which OAuth scope authorized this call (read|write|admin|producer).
+  -- Recorded per-call so a compromised harness cannot quietly broaden access
+  -- without a chain-visible trail. NULL for entries written before HR-3
+  -- landed; canonical hash filters undefined → backward-compatible.
+  oauth_scope      TEXT,
   UNIQUE (tenant_id, chain_seq)
 );
 

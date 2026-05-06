@@ -48,6 +48,7 @@ export function createPgAuditStore(pool: Pool): AuditStore {
         recordedAt: input.recordedAt,
         prevHash,
         ...(input.blobRef !== undefined && { blobRef: input.blobRef }),
+        ...(input.oauthScope !== undefined && { oauthScope: input.oauthScope }),
       };
       const entryHash = computeEntryHash(partial);
 
@@ -55,8 +56,8 @@ export function createPgAuditStore(pool: Pool): AuditStore {
         `INSERT INTO audit_entries
            (entry_id, tenant_id, chain_seq, event_type, plan_id, trace_id,
             actor_id, tool_name, tool_version, mode, idempotency_key,
-            recorded_at, prev_hash, entry_hash, blob_ref)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+            recorded_at, prev_hash, entry_hash, blob_ref, oauth_scope)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
         [
           input.entryId,
           input.tenantId,
@@ -73,6 +74,7 @@ export function createPgAuditStore(pool: Pool): AuditStore {
           prevHash,
           entryHash,
           input.blobRef ?? null,
+          input.oauthScope ?? null,
         ],
       );
 
@@ -118,6 +120,7 @@ export function createPgAuditStore(pool: Pool): AuditStore {
       prev_hash: string;
       entry_hash: string;
       blob_ref: string | null;
+      oauth_scope: string | null;
     }>(
       `SELECT * FROM audit_entries
        WHERE tenant_id = $1 AND chain_seq >= $2
@@ -155,6 +158,9 @@ export function createPgAuditStore(pool: Pool): AuditStore {
         recordedAt: row.recorded_at,
         prevHash: row.prev_hash,
         ...(row.blob_ref !== null && { blobRef: row.blob_ref }),
+        ...(row.oauth_scope !== null && {
+          oauthScope: row.oauth_scope as AuditEntry['oauthScope'],
+        }),
       };
       const recomputed = computeEntryHash(partial);
       if (recomputed !== row.entry_hash) {
@@ -224,6 +230,9 @@ export function createPgAuditStore(pool: Pool): AuditStore {
         prevHash: row.prev_hash,
         entryHash: row.entry_hash,
         ...(row.blob_ref !== null && { blobRef: row.blob_ref }),
+        ...(row.oauth_scope !== null && {
+          oauthScope: row.oauth_scope as AuditEntry['oauthScope'],
+        }),
       };
     }
   }

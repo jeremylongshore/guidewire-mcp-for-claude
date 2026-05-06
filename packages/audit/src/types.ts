@@ -3,6 +3,7 @@ import type {
   AuditEventType,
   AuditQuery,
   ChainVerification,
+  OAuthScope,
   ToolMode,
 } from '@intentsolutions/guidewire-schemas';
 
@@ -25,6 +26,7 @@ export interface AuditAppendInput {
   readonly idempotencyKey: string;
   readonly recordedAt: string;
   readonly blobRef?: string;
+  readonly oauthScope?: OAuthScope;
 }
 
 export interface AuditStore {
