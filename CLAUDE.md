@@ -28,8 +28,8 @@ API wire contract.
 
 ```bash
 pnpm install                                    # prepare hook builds all workspaces
-pnpm -r build                                   # rebuild all 7 workspaces (6 packages + 1 server)
-pnpm -r test                                    # 54 tests across all workspaces
+pnpm -r build                                   # rebuild all 8 workspaces (7 packages + 1 server)
+pnpm -r test                                    # 94 tests across all workspaces
 pnpm --filter @intentsolutions/guidewire-audit test                            # single workspace
 pnpm --filter @intentsolutions/guidewire-audit test -- audit-store.test.ts     # single test file
 pnpm typecheck                                  # tsc --noEmit across all workspaces
@@ -88,8 +88,8 @@ fires on every `pnpm install` so plugin-install end-users get a built
 `read_only` (E2 ships these), `draft_only` (E5), `approved_execute`
 (E3 + harness). The harness is the only path to writes — depcruise
 + AST rules in CI prevent server code from importing
-`packages/guidewire-client` write methods except inside an
-`execute()` callback.
+`packages/client-sdk` (npm `@intentsolutions/guidewire-client`)
+write methods except inside an `execute()` callback.
 
 ## Hard rules
 
@@ -178,7 +178,7 @@ set 4 env vars (`GUIDEWIRE_OAUTH_CLIENT_ID`,
 `GUIDEWIRE_OAUTH_CLIENT_SECRET`, `GUIDEWIRE_TOKEN_ENDPOINT`,
 `GUIDEWIRE_PC_BASE_URL`), and ask Claude carrier questions in their
 session. The plugin path is the primary product surface; the
-`pnpm install && pnpm dev` flow is the developer / contributor path.
+`pnpm install && pnpm -r build` flow is the developer / contributor path.
 
 ## Author
 
