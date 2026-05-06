@@ -29,7 +29,7 @@ API wire contract.
 ```bash
 pnpm install                                    # prepare hook builds all workspaces
 pnpm -r build                                   # rebuild all 8 workspaces (7 packages + 1 server)
-pnpm -r test                                    # 54 tests across all workspaces
+pnpm -r test                                    # 94 tests across all workspaces
 pnpm --filter @intentsolutions/guidewire-audit test                            # single workspace
 pnpm --filter @intentsolutions/guidewire-audit test -- audit-store.test.ts     # single test file
 pnpm typecheck                                  # tsc --noEmit across all workspaces
