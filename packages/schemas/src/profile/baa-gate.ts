@@ -33,10 +33,16 @@ export function checkBaaGate(lob: LobYamlV1, piiPolicy: PiiPolicyYaml): BaaGateR
   if (piiPolicy.baa_required.enabled) {
     return { ok: true };
   }
-  const offendingLobs = Object.entries(lob.lob_mappings)
-    .filter(([, mapping]) => mapping.lob_class === 'health')
-    .map(([carrierCode]) => carrierCode);
-
+  // Single-pass walk over lob_mappings: avoids the intermediate
+  // entries / filter / map arrays of the .filter().map() form.
+  // Negligible at boot-time on a profile with O(10) LOBs, but the
+  // simpler memory profile is a fair trade for the same readability.
+  const offendingLobs: string[] = [];
+  for (const [carrierCode, mapping] of Object.entries(lob.lob_mappings)) {
+    if (mapping.lob_class === 'health') {
+      offendingLobs.push(carrierCode);
+    }
+  }
   if (offendingLobs.length === 0) {
     return { ok: true };
   }
