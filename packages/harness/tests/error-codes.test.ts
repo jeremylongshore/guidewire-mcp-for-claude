@@ -1,17 +1,17 @@
+import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
+import { getObservability } from '@intentsolutions/guidewire-observability';
 /**
  * HarnessError taxonomy: every error code has a test that triggers it.
  * Per E3 brief.
  */
-import { describe, it, expect } from 'vitest';
-import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
-import { getObservability } from '@intentsolutions/guidewire-observability';
+import { describe, expect, it } from 'vitest';
 import {
-  createHarness,
-  createInMemoryPolicyEngine,
-  createInMemoryApprovalSink,
-  createEvidenceExporter,
   HarnessError,
   type PlanInput,
+  createEvidenceExporter,
+  createHarness,
+  createInMemoryApprovalSink,
+  createInMemoryPolicyEngine,
 } from '../src/index.js';
 
 function makeHarness(opts?: {
@@ -23,15 +23,13 @@ function makeHarness(opts?: {
   const obs = getObservability({ server_name: 'error-test', tenant_id: 'error-tenant' });
 
   const policy = createInMemoryPolicyEngine({
-    allowRules: opts?.allowExecute
-      ? [{ mode: 'approved_execute' as const }]
-      : [],
+    allowRules: opts?.allowExecute ? [{ mode: 'approved_execute' as const }] : [],
   });
 
   const approvals = opts?.denyApprovals
     ? createInMemoryApprovalSink({ denyMode: true })
     : opts?.timeoutApprovals
-      ? createInMemoryApprovalSink({ ttlMs: 1 })   // 1 ms TTL → immediate expiry
+      ? createInMemoryApprovalSink({ ttlMs: 1 }) // 1 ms TTL → immediate expiry
       : createInMemoryApprovalSink();
 
   const evidence = createEvidenceExporter({ audit, tenantId: 'error-tenant' });
@@ -77,7 +75,9 @@ describe('HarnessError codes', () => {
     const audit = createMemoryAuditStore();
     const obs = getObservability({ server_name: 'err-test', tenant_id: 'err-tenant' });
     const badPolicy = {
-      evaluate: async () => { throw new Error('policy engine down'); },
+      evaluate: async () => {
+        throw new Error('policy engine down');
+      },
     };
     const harness = createHarness({
       audit,
@@ -88,7 +88,11 @@ describe('HarnessError codes', () => {
       profile: { tenantId: 'err-tenant', ruleSetVersion: 'v1.0' },
     });
 
-    const plan = harness.plan({ ...readOnlyInput, tenantId: 'err-tenant', traceId: 'trace-unreach' });
+    const plan = harness.plan({
+      ...readOnlyInput,
+      tenantId: 'err-tenant',
+      traceId: 'trace-unreach',
+    });
     await expect(harness.policy(plan)).rejects.toSatisfy((err) => {
       return err instanceof HarnessError && err.code === 'POLICY_UNREACHABLE';
     });
@@ -114,7 +118,11 @@ describe('HarnessError codes', () => {
     const approvals = createInMemoryApprovalSink();
     const evidence = createEvidenceExporter({ audit, tenantId: 'error-tenant' });
     const harness = createHarness({
-      audit, policy, approvals, evidence, observability: obs,
+      audit,
+      policy,
+      approvals,
+      evidence,
+      observability: obs,
       profile: { tenantId: 'error-tenant', ruleSetVersion: 'v1.0' },
     });
 
@@ -136,7 +144,8 @@ describe('HarnessError codes', () => {
     // Verify HarnessError.APPROVAL_TIMEOUT is thrown when state=expired.
     const { HarnessError: HE, makeHarnessError: mhe } = await import('../src/error.js');
     const err = mhe('APPROVAL_TIMEOUT', 'expired', {
-      trace_id: 'tr', tenant_id: 'ten',
+      trace_id: 'tr',
+      tenant_id: 'ten',
     });
     expect(err).toBeInstanceOf(HE);
     expect(err.code).toBe('APPROVAL_TIMEOUT');
@@ -147,11 +156,11 @@ describe('HarnessError codes', () => {
     const plan = harness.plan({ ...approvedInput, traceId: 'trace-missing-approval' });
     const decision = await harness.policy(plan);
     // decision.outcome = require_approval; we skip approve() and call execute() directly
-    await expect(
-      harness.execute(plan, decision, async () => 'should not run'),
-    ).rejects.toSatisfy((err) => {
-      return err instanceof HarnessError && err.code === 'APPROVAL_DENIED';
-    });
+    await expect(harness.execute(plan, decision, async () => 'should not run')).rejects.toSatisfy(
+      (err) => {
+        return err instanceof HarnessError && err.code === 'APPROVAL_DENIED';
+      },
+    );
   });
 
   it('GW_DBTRANSACTION_DUPLICATE: side effect throws AlreadyExecutedException → surfaces as GW_DBTRANSACTION_DUPLICATE', async () => {
@@ -161,7 +170,9 @@ describe('HarnessError codes', () => {
 
     const gwError = new Error('AlreadyExecutedException: duplicate transaction');
     await expect(
-      harness.execute(plan, decision, async () => { throw gwError; }),
+      harness.execute(plan, decision, async () => {
+        throw gwError;
+      }),
     ).rejects.toSatisfy((err) => {
       return err instanceof HarnessError && err.code === 'GW_DBTRANSACTION_DUPLICATE';
     });

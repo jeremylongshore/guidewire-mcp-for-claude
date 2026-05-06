@@ -1,17 +1,17 @@
+import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
+import { getObservability } from '@intentsolutions/guidewire-observability';
 /**
  * Idempotency replay short-circuit tests.
  * Per E3 brief: same idempotency key returns cached result without re-running
  * the callback. Execute.replayed audit entry written on replay.
  */
-import { describe, it, expect } from 'vitest';
-import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
-import { getObservability } from '@intentsolutions/guidewire-observability';
+import { describe, expect, it } from 'vitest';
 import {
-  createHarness,
-  createInMemoryPolicyEngine,
-  createInMemoryApprovalSink,
-  createEvidenceExporter,
   type PlanInput,
+  createEvidenceExporter,
+  createHarness,
+  createInMemoryApprovalSink,
+  createInMemoryPolicyEngine,
 } from '../src/index.js';
 
 function makeStack() {
@@ -21,7 +21,11 @@ function makeStack() {
   const approvals = createInMemoryApprovalSink();
   const evidence = createEvidenceExporter({ audit, tenantId: 'acme' });
   const harness = createHarness({
-    audit, policy, approvals, evidence, observability: obs,
+    audit,
+    policy,
+    approvals,
+    evidence,
+    observability: obs,
     profile: { tenantId: 'acme', ruleSetVersion: 'v1.0' },
   });
   return { harness, audit };
@@ -59,7 +63,7 @@ describe('Idempotency replay short-circuit', () => {
     // Second call with the SAME plan (same idempotencyKey) — should replay.
     const result2 = await harness.execute(plan, decision, effect);
     expect(result2.outcome).toBe('replayed');
-    expect(callCount).toBe(1);  // effect must NOT have been called again
+    expect(callCount).toBe(1); // effect must NOT have been called again
     expect(result2.value).toEqual({ submissions: ['SUB-001'] });
     expect(result2.idempotencyKey).toBe(result1.idempotencyKey);
   });
@@ -74,7 +78,7 @@ describe('Idempotency replay short-circuit', () => {
     const r1 = await harness.execute(plan, decision, async () => returnValue);
     const r2 = await harness.execute(plan, decision, async () => ({ policies: [] }));
 
-    expect(r2.value).toEqual(returnValue);  // original, not the replacement
+    expect(r2.value).toEqual(returnValue); // original, not the replacement
     expect(r2.outcome).toBe('replayed');
   });
 

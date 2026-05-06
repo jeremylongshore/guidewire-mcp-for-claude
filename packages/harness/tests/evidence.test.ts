@@ -1,17 +1,17 @@
+import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
+import { getObservability } from '@intentsolutions/guidewire-observability';
 /**
  * Evidence exporter tests.
  * Asserts that evidence().build(traceId) produces an EvidenceBundle with the
  * expected shape per 02-PRD § 5.7 + 05-TECHNICAL-SPEC § 3.7.
  */
-import { describe, it, expect } from 'vitest';
-import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
-import { getObservability } from '@intentsolutions/guidewire-observability';
+import { describe, expect, it } from 'vitest';
 import {
-  createHarness,
-  createInMemoryPolicyEngine,
-  createInMemoryApprovalSink,
-  createEvidenceExporter,
   type PlanInput,
+  createEvidenceExporter,
+  createHarness,
+  createInMemoryApprovalSink,
+  createInMemoryPolicyEngine,
 } from '../src/index.js';
 
 function makeTestStack(traceId: string) {
@@ -21,7 +21,11 @@ function makeTestStack(traceId: string) {
   const approvals = createInMemoryApprovalSink();
   const evidence = createEvidenceExporter({ audit, tenantId: 'acme' });
   const harness = createHarness({
-    audit, policy, approvals, evidence, observability: obs,
+    audit,
+    policy,
+    approvals,
+    evidence,
+    observability: obs,
     profile: { tenantId: 'acme', ruleSetVersion: 'v1.0' },
   });
 

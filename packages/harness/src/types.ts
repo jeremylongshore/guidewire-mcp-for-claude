@@ -1,16 +1,16 @@
-import type { Span } from '@opentelemetry/api';
-import type { ObservabilityHandle } from '@intentsolutions/guidewire-observability';
 import type { AuditStore } from '@intentsolutions/guidewire-audit';
+import type { ObservabilityHandle } from '@intentsolutions/guidewire-observability';
 import type {
   Approval,
   ApprovalVote,
   EvidenceBundle,
+  ExecuteResult,
   Plan,
   PlanInput,
   PolicyDecision,
-  ExecuteResult,
   RollbackHint,
 } from '@intentsolutions/guidewire-schemas';
+import type { Span } from '@opentelemetry/api';
 
 // Re-export for convenience — callers import from the single harness entry point.
 export type {
@@ -67,8 +67,8 @@ export interface EvidenceExporter {
 /** Forward-compat type — signing body is E3+. */
 export interface SignedEvidenceBundle {
   readonly bundle: EvidenceBundle;
-  readonly signature: string;    // base64url Ed25519 over bundle JSON
-  readonly publicKey: string;    // base64url DER-encoded public key
+  readonly signature: string; // base64url Ed25519 over bundle JSON
+  readonly publicKey: string; // base64url DER-encoded public key
   readonly algorithm: 'Ed25519';
 }
 
@@ -107,9 +107,17 @@ export interface Harness {
   plan(input: PlanInput): Plan;
   policy(plan: Plan): Promise<PolicyDecision>;
   approve(plan: Plan, decision: PolicyDecision): Promise<Approval>;
-  execute<T>(plan: Plan, decision: PolicyDecision, effect: SideEffect<T>, opts?: { approval?: Approval }): Promise<ExecuteResult<T>>;
+  execute<T>(
+    plan: Plan,
+    decision: PolicyDecision,
+    effect: SideEffect<T>,
+    opts?: { approval?: Approval },
+  ): Promise<ExecuteResult<T>>;
   evidence(traceId: string, opts?: { includeSpans?: boolean }): Promise<EvidenceBundle>;
-  rollback(result: ExecuteResult<unknown>, opts: { humanInstruction: string; cautions?: readonly string[] }): Promise<RollbackHint>;
+  rollback(
+    result: ExecuteResult<unknown>,
+    opts: { humanInstruction: string; cautions?: readonly string[] },
+  ): Promise<RollbackHint>;
 }
 
 // ─── HarnessConfig ───────────────────────────────────────────────────────────

@@ -18,7 +18,9 @@
       "tests/recordings/**",
       ".audit-harness/**",
       ".beads/**",
-      ".harness-hash"
+      ".claude/**",
+      ".harness-hash",
+      "tests/contract/src/test/resources/**/*.js"
     ]
   },
   "organizeImports": {

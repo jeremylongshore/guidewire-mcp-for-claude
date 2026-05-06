@@ -3,9 +3,9 @@
  * Per E3 brief: read_only allowed, approved_execute denied without allow-rule,
  * allow-rule honored.
  */
-import { describe, it, expect } from 'vitest';
-import { createInMemoryPolicyEngine } from '../src/policy/in-memory.js';
+import { describe, expect, it } from 'vitest';
 import type { Plan } from '../src/index.js';
+import { createInMemoryPolicyEngine } from '../src/policy/in-memory.js';
 
 function makePlan(overrides: Partial<Plan> = {}): Plan {
   const zero = '0'.repeat(64);
