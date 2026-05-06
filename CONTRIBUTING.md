@@ -84,7 +84,7 @@ Every PR runs:
 | `typecheck` | `tsc --noEmit` across all workspaces |
 | `test` | Vitest across all packages |
 | `build` | tsup — every package compiles to `dist/` |
-| `smoke-reach` | Endpoint reachability against the librarian KB (gated by `GUIDEWIRE_OAUTH_CLIENT_ID`) |
+| `smoke-reach` | Endpoint reachability against the librarian KB. Opt-in: set repo variable `SMOKE_REACH_ENABLED=true` and the secrets `GUIDEWIRE_OAUTH_CLIENT_ID` / `_CLIENT_SECRET` / `_TOKEN_URL`. Skips cleanly when the variable is unset (OSS quickstart default). |
 | `audit-harness` | escape-scan, harness-hash --verify, coverage --min, arch rules |
 
 The audit-harness gates reference the in-repo `@intentsolutions/audit-harness`
