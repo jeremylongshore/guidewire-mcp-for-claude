@@ -2,7 +2,7 @@
  * InMemoryApprovalSink unit tests.
  * Per E3 brief: auto-approve, timeout/expired, deny paths.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createInMemoryApprovalSink } from '../src/approvals/in-memory.js';
 import type { Plan, PolicyDecision } from '../src/index.js';
 

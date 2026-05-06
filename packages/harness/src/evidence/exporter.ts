@@ -88,9 +88,8 @@ export function createEvidenceExporter(opts: {
       };
     }
 
-    const spans: OtelSpanSnapshot[] = buildOpts?.includeSpans === true
-      ? collectSpanSnapshots(traceId)
-      : [];
+    const spans: OtelSpanSnapshot[] =
+      buildOpts?.includeSpans === true ? collectSpanSnapshots(traceId) : [];
 
     return {
       bundleVersion: '1.0',
@@ -99,7 +98,9 @@ export function createEvidenceExporter(opts: {
       generatedAt,
       plan: buildPlanFromEntry(planEntry),
       decision: buildDecisionFromEntry(policyEntry),
-      ...(approvalEntry !== undefined && { approval: buildApprovalPlaceholder(planEntry, approvalEntry) }),
+      ...(approvalEntry !== undefined && {
+        approval: buildApprovalPlaceholder(planEntry, approvalEntry),
+      }),
       ...(executeEntry !== undefined && { execution: buildExecutionFromEntry(executeEntry) }),
       auditEntries: entries,
       chainVerification,
@@ -120,7 +121,12 @@ export function createEvidenceExporter(opts: {
 // comment in the type — this is intentional and documented in the skeleton
 // contract.
 
-import type { Plan, PolicyDecision, Approval, ExecuteResult } from '@intentsolutions/guidewire-schemas';
+import type {
+  Approval,
+  ExecuteResult,
+  Plan,
+  PolicyDecision,
+} from '@intentsolutions/guidewire-schemas';
 
 function buildPlanFromEntry(entry: AuditEntry): Plan {
   return {
@@ -129,7 +135,7 @@ function buildPlanFromEntry(entry: AuditEntry): Plan {
     mode: entry.mode,
     tenantId: entry.tenantId,
     actorId: entry.actorId,
-    args: {},                              // opaque until blobRef
+    args: {}, // opaque until blobRef
     summary: `reconstructed from audit chain seq=${entry.chainSeq}`,
     traceId: entry.traceId,
     planId: entry.planId,
@@ -164,9 +170,9 @@ function buildDecisionFromEntry(entry: AuditEntry | undefined): PolicyDecision {
     return buildPlaceholderDecision();
   }
   return {
-    decisionId: entry.planId,              // decisionId stored in planId column
+    decisionId: entry.planId, // decisionId stored in planId column
     planId: entry.planId,
-    outcome: 'allow',                      // skeleton: outcome not persisted to column
+    outcome: 'allow', // skeleton: outcome not persisted to column
     tier: 'tier_0_safe',
     reason: `reconstructed from audit chain seq=${entry.chainSeq}`,
     ruleSetVersion: 'reconstructed',
@@ -203,7 +209,7 @@ function buildExecutionFromEntry(entry: AuditEntry): ExecuteResult<unknown> {
     outcome: 'executed',
     idempotencyKey: entry.idempotencyKey,
     auditEntryId: entry.entryId,
-    value: undefined,                      // serialized value lives in blobRef (E3+)
+    value: undefined, // serialized value lives in blobRef (E3+)
     evidenceBundleRef: entry.traceId,
   };
 }

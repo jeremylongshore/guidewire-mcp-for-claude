@@ -1,3 +1,5 @@
+import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
+import { getObservability } from '@intentsolutions/guidewire-observability';
 /**
  * Happy-path integration test: plan → policy(allow) → execute → audit → evidence.
  * Asserts that the audit chain has all expected entry types for a read_only tool,
@@ -5,15 +7,13 @@
  *
  * Per skeleton scope in E3 brief.
  */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
-import { getObservability } from '@intentsolutions/guidewire-observability';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  createHarness,
-  createInMemoryPolicyEngine,
-  createInMemoryApprovalSink,
-  createEvidenceExporter,
   type PlanInput,
+  createEvidenceExporter,
+  createHarness,
+  createInMemoryApprovalSink,
+  createInMemoryPolicyEngine,
 } from '../src/index.js';
 
 function makeTestObservability() {

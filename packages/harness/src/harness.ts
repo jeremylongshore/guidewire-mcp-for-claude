@@ -1,15 +1,15 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { trace, SpanStatusCode } from '@opentelemetry/api';
 import type { AuditAppendInput } from '@intentsolutions/guidewire-audit';
 import type {
   Approval,
   EvidenceBundle,
+  ExecuteResult,
   Plan,
   PlanInput,
   PolicyDecision,
-  ExecuteResult,
   RollbackHint,
 } from '@intentsolutions/guidewire-schemas';
+import { SpanStatusCode, trace } from '@opentelemetry/api';
 import { makeHarnessError } from './error.js';
 import type { Harness, HarnessConfig, SideEffect } from './types.js';
 
@@ -55,12 +55,12 @@ function canonicalizeArgs(value: unknown): string {
     return JSON.stringify(value);
   }
   if (Array.isArray(value)) {
-    return '[' + value.map((v) => canonicalizeArgs(v)).join(',') + ']';
+    return `[${value.map((v) => canonicalizeArgs(v)).join(',')}]`;
   }
   const obj = value as Record<string, unknown>;
   const sortedKeys = Object.keys(obj).sort();
   const pairs = sortedKeys.map((k) => `${JSON.stringify(k)}:${canonicalizeArgs(obj[k])}`);
-  return '{' + pairs.join(',') + '}';
+  return `{${pairs.join(',')}}`;
 }
 
 /**
@@ -98,7 +98,9 @@ function createIdempotencyCache(): {
   const cache = new Map<string, ExecuteResult<unknown>>();
   return {
     get: (key) => cache.get(key),
-    set: (key, result) => { cache.set(key, result); },
+    set: (key, result) => {
+      cache.set(key, result);
+    },
   };
 }
 
@@ -400,9 +402,8 @@ export function createHarness(cfg: HarnessConfig): Harness {
 
       let value: T;
       const approval = opts?.approval;
-      const executeCtx: import('./types.js').ExecuteContext = approval !== undefined
-        ? { plan, decision, approval, span }
-        : { plan, decision, span };
+      const executeCtx: import('./types.js').ExecuteContext =
+        approval !== undefined ? { plan, decision, approval, span } : { plan, decision, span };
 
       try {
         value = await effect(executeCtx);
@@ -522,7 +523,7 @@ export function createHarness(cfg: HarnessConfig): Harness {
 
       const hint: RollbackHint = {
         hintId,
-        planId: result.evidenceBundleRef,   // traceId used as planId reference
+        planId: result.evidenceBundleRef, // traceId used as planId reference
         auditEntryId: result.auditEntryId,
         humanInstruction: opts.humanInstruction,
         cautions: opts.cautions ?? [],
@@ -557,7 +558,7 @@ function isDbTransactionDuplicateError(err: unknown): boolean {
   if (typeof err !== 'object' || err === null) return false;
   const e = err as Record<string, unknown>;
   return (
-    e['code'] === 'GW_DBTRANSACTION_DUPLICATE' ||
-    (typeof e['message'] === 'string' && e['message'].includes('AlreadyExecutedException'))
+    e.code === 'GW_DBTRANSACTION_DUPLICATE' ||
+    (typeof e.message === 'string' && e.message.includes('AlreadyExecutedException'))
   );
 }

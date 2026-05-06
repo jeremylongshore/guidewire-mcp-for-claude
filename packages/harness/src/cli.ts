@@ -45,7 +45,7 @@ function fatal(msg: string): never {
 }
 
 function out(obj: unknown): void {
-  process.stdout.write(JSON.stringify(obj, null, 2) + '\n');
+  process.stdout.write(`${JSON.stringify(obj, null, 2)}\n`);
 }
 
 // ─── Store bootstrap (skeleton: always in-memory, real pg binding is E3+) ───
@@ -95,7 +95,7 @@ async function main(): Promise<void> {
 
     case 'audit-verify': {
       const fromSeqRaw = flag('--from-seq');
-      const fromSeq = fromSeqRaw !== undefined ? parseInt(fromSeqRaw, 10) : 1;
+      const fromSeq = fromSeqRaw !== undefined ? Number.parseInt(fromSeqRaw, 10) : 1;
       const tenantId = flag('--tenant') ?? 'default';
 
       if (Number.isNaN(fromSeq)) fatal(`--from-seq must be an integer, got: ${fromSeqRaw}`);

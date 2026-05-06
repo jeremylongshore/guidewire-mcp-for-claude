@@ -41,9 +41,7 @@ export function createInMemoryApprovalSink(opts?: {
 
   const request = async (plan: Plan, decision: PolicyDecision): Promise<Approval> => {
     const nonce = randomUUID();
-    const approvalId = createHash('sha256')
-      .update(`${plan.planId}:${nonce}`)
-      .digest('hex');
+    const approvalId = createHash('sha256').update(`${plan.planId}:${nonce}`).digest('hex');
     const now = new Date();
     const approval: Approval = {
       approvalId,
