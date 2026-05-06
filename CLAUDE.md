@@ -140,9 +140,28 @@ gh pr create --title "..." --body "..."
 gh pr merge <N> --squash --auto --delete-branch     # auto-merges after Gemini review + checks
 ```
 
-**Gemini Code Assist** is the required external review for every PR.
-Branch protection on `main` requires Gemini pass + 1 human approval.
-Never merge before Gemini completes.
+**Branch protection on `main`** is enforced by the repository ruleset
+[`main: required checks + 1 review`](https://github.com/jeremylongshore/guidewire-mcp-for-claude/rules)
+(active 2026-05-06). It binds:
+
+- **6 required status checks** — all must pass before merge:
+  `Lint (Biome)`, `Typecheck (tsc --noEmit)`, `Test (Vitest)`,
+  `Build (tsup)`, `audit-harness gates`, `gitleaks`.
+- **1 required PR approval** — author cannot self-approve.
+- **No force-push, no deletion of `main`.**
+
+Personal-repo OWNER (Jeremy) bypasses by default for emergency
+admin-merges via `gh pr merge --admin`; everyone else (including
+Claude as the PR author) is gated.
+
+**Gemini Code Assist** is the **convention** for external review on
+every PR but is NOT enforced as a required reviewer (Gemini posts as
+a bot, marking it required would break the OSS contributor flow).
+By convention: wait for Gemini's review before approving — it
+catches drift the human reviewer often misses (per session log
+2026-05-06: Gemini caught 3 real defects on PRs #84-#88, including
+a security-medium GRANT issue and an env-var name bug that would have
+silently broken smoke-reach).
 
 **5 specialist agents** in [`.claude/agents/`](./.claude/agents/) (project-scoped)
 auto-review designs:
