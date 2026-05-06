@@ -1,0 +1,65 @@
+# manifest.yaml — Profile root metadata
+#
+# Per 02-PRD § 6.0a and D-020. This is the first file the profile loader
+# validates; a missing or malformed manifest is a hard boot failure.
+#
+# Schema versioning rule (D-020):
+#   v1.0 — the 9 YAMLs as specified in PRD §§ 6.1–6.9. Default for
+#           per-tenant deployments. Sufficient for E1 through E10
+#           per-submission tools.
+#   v2.0 — v1.0 + `aggregations:` block inside lob.yaml (no 10th file).
+#           Required by E2.5 underwriting-manager aggregate-query tools
+#           (`whats-our-aggregate-on-this-class` et al.). Tools declare
+#           `requiredProfileSchema: ">=v2.0"` in metadata; boot-time
+#           validation refuses to load those tools against a v1.0 profile.
+#
+# Copy this directory to profiles/<your-tenant>/ and replace every
+# TODO: placeholder before connecting to a real tenant.
+#
+# Full schema reference: 02-PRD § 6 + packages/schemas/src/profile/
+
+schemaVersion: "v1.0"   # TODO: change to "v2.0" only if E2.5 aggregate tools are needed
+
+# Stable tenant slug. Used as the audit-log tenant_id on every emitted event.
+# Convention: kebab-case, no spaces, no special chars. Examples:
+#   "acme-insurance-prod", "beta-carriers-dev", "oss-demo"
+# TODO: replace with your tenant slug
+tenantId: "your-tenant-id"
+
+# Human-readable label shown in Cloud Console and server logs.
+# TODO: replace with your carrier / MGA name
+displayName: "Your Carrier Name"
+
+# Guidewire Cloud Platform release this tenant is pinned to.
+# Per 008 § 2 — every `profiles/<tenant>/` must declare its release.
+# Allowed values: "Innsbruck" | "Las Leñas" | "Palisades"
+# Per 005-DR-REF § 1 versioning convention — cite the release name, not
+# a YYYY-MM date, here. The date appears in base_url_pc / base_url_cc.
+# TODO: set to your tenant's actual release
+cloudRelease: "Palisades"
+
+# LOB identifiers this profile enables. Must match keys in lob.yaml.
+# The manifest is the single place where "what does this profile activate"
+# is declared; the runtime refuses to load a tool whose LOB code isn't
+# declared here if a LOB check is configured.
+# TODO: list the carrier LOB codes present in lob.yaml
+declaredLobs:
+  []  # e.g. - "BOP-CommercialProperty"
+      #      - "CommercialAuto"
+
+# MCP servers this profile is valid for. Restricts which server binaries
+# can load this profile at boot. A claimcenter-mcp binary attempting to
+# load a profile that only declares "policycenter-mcp" fails at boot-time
+# validation (per the hard-rule: no silent fallback).
+# TODO: list the servers that should accept this profile
+declaredServers:
+  - "policycenter-mcp"
+  # - "claimcenter-mcp"
+  # - "billingcenter-mcp"
+
+# Profile checksum slot. Populated by `pnpm exec audit-harness init` after
+# the profile files are finalized. Hash-pinning lets CI detect drift when
+# any profile YAML is modified without re-running init.
+# TODO: run `pnpm exec audit-harness init` in the repo root after editing
+#       all 9 YAMLs, then commit the resulting checksum here.
+profileChecksum: ""  # populated by audit-harness init

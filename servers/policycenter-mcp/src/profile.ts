@@ -29,6 +29,7 @@ import {
   EventsYamlSchema,
   type FieldAliasesYaml,
   FieldAliasesYamlSchema,
+  type HarnessErrorCode,
   type LobYamlV1,
   LobYamlV1Schema,
   ManifestYamlSchema,
@@ -38,6 +39,7 @@ import {
   RolesYamlSchema,
   type TypelistsYaml,
   TypelistsYamlSchema,
+  checkBaaGate,
 } from '@intentsolutions/guidewire-schemas';
 import jsYaml from 'js-yaml';
 
@@ -75,16 +77,28 @@ export type AliasScope =
   | 'pc.coverage'
   | 'pc.transaction';
 
-/** Typed error thrown when a profile YAML fails Zod validation at load time. */
+/**
+ * Typed error thrown when a profile fails validation at load time.
+ *
+ * `code` carries the canonical `HarnessErrorCode` for cross-file invariants
+ * that an upstream harness wrapper may want to pattern-match (e.g.
+ * `BAA_GATE_MISSING` from the SA-6 / MS-6 carve). Per-file Zod failures
+ * leave `code` undefined — the `file` + `zodPath` pair is the discriminator
+ * for those.
+ */
 export class ProfileLoadError extends Error {
   readonly file: string;
   readonly zodPath: string;
+  readonly code?: HarnessErrorCode;
 
-  constructor(file: string, zodPath: string, message: string) {
+  constructor(file: string, zodPath: string, message: string, code?: HarnessErrorCode) {
     super(message);
     this.name = 'ProfileLoadError';
     this.file = file;
     this.zodPath = zodPath;
+    if (code !== undefined) {
+      this.code = code;
+    }
   }
 }
 
@@ -216,6 +230,20 @@ export async function loadProfile(profilePath: string): Promise<ProfileHandle> {
     loadYaml(profilePath, 'pii-policy.yaml', PiiPolicyYamlSchema),
     loadYaml(profilePath, 'events.yaml', EventsYamlSchema),
   ]);
+
+  // SA-6 + MS-6: BAA gate is a cross-file invariant between lob.yaml +
+  // pii-policy.yaml. Refuse to boot with a typed code so an upstream
+  // harness wrapper can surface this as `HarnessError({ code: 'BAA_GATE_MISSING' })`.
+  // Per 02-PRD § 6.3 + § 6.8 + 05-TECHNICAL-SPEC § 8.4.
+  const baaGate = checkBaaGate(lob, piiPolicy);
+  if (!baaGate.ok) {
+    throw new ProfileLoadError(
+      'lob.yaml + pii-policy.yaml',
+      `lob_mappings.[${baaGate.offendingLobs.join(',')}].lob_class`,
+      `BAA_GATE_MISSING: lob.yaml declares lob_class:health for [${baaGate.offendingLobs.join(', ')}] but pii-policy.yaml has baa_required.enabled:false. Health LOBs require an executed BAA — set baa_required.enabled:true in pii-policy.yaml or remove lob_class:health from the offending LOB(s). Per 02-PRD § 6.3 + § 6.8.`,
+      'BAA_GATE_MISSING',
+    );
+  }
 
   const loadedFiles = new Set([
     'manifest.yaml',

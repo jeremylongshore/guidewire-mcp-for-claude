@@ -21,3 +21,4 @@ export * from './field-aliases.js';
 export * from './approval-matrix.js';
 export * from './pii-policy.js';
 export * from './events.js';
+export * from './baa-gate.js';

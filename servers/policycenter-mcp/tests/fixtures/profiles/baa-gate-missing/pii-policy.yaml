@@ -1,0 +1,61 @@
+# pii-policy.yaml — PII redaction rules
+#
+# Per 02-PRD § 6.8 and packages/schemas/src/profile/pii-policy.ts.
+#
+# PII redaction is a harness pipeline (per 006 § 7.5), not per-tool code.
+# `packages/harness/redaction/` owns the redactor (E3+); tools declare which
+# response fields are redactable; the harness applies these rules at response
+# time. Never per-tool redaction — half of tool authors will forget.
+#
+# Classes:
+#   high_pii   — always redacted in summaries (redact_in_summaries)
+#   medium_pii — redacted unless actor role is in allowed_roles
+#                (redact_unless_role_in)
+#   low_pii    — passes through with no redaction (pass_through)
+#
+# `baa_required.enabled`:
+#   false — default for P&C / commercial deployments.
+#   true  — MANDATORY for health LOB carriers. When true, the tool catalog
+#            filters down to BAA-cleared tools only. A profile carrying health
+#            LOBs without baa_required.enabled: true is a hard boot failure
+#            (006 § 6.2 + 05-TECHNICAL-SPEC § 8.4).
+#
+# Handling values (from packages/schemas/src/profile/pii-policy.ts):
+#   redact_in_summaries     — field value replaced with "[REDACTED]" in all
+#                             tool output. Visible to no one through MCP.
+#   redact_unless_role_in   — redacted unless the actor's role is in
+#                             allowed_roles. The allowed_roles list is required.
+#   pass_through            — no redaction; field surfaces as-is.
+
+classes:
+  high_pii:
+    fields:
+      []
+      # TODO: list high-sensitivity fields. Examples:
+      #   - Claim.lossDescription
+      #   - Claim.notes[*].body
+      #   - Account.contactInfo[*].email
+    handling: "redact_in_summaries"
+
+  medium_pii:
+    fields:
+      []
+      # TODO: list medium-sensitivity fields. Examples:
+      #   - Account.namedInsured
+    handling: "redact_unless_role_in"
+    allowed_roles:
+      []
+      # TODO: list the roles permitted to see medium_pii fields. Examples:
+      #   - Claims_Adjuster_II
+      #   - Claims_Manager
+
+  low_pii:
+    fields:
+      []
+      # TODO: list low-sensitivity fields (visible but logged). Examples:
+      #   - Producer.code
+    handling: "pass_through"
+
+baa_required:
+  # Set to true for health LOB deployments (006 § 6.2). Default false for P&C.
+  enabled: false

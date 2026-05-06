@@ -19,5 +19,10 @@ export const HarnessErrorCodeSchema = z.enum([
   'MODE_MISMATCH',
   'TENANT_UNKNOWN',
   'GW_DBTRANSACTION_DUPLICATE',
+  // SA-6 + MS-6: boot-time refusal when any LOB carries `lob_class:health`
+  // while `pii-policy.yaml.baa_required.enabled` is false. Cross-file
+  // invariant evaluated by `checkBaaGate()` in
+  // `@intentsolutions/guidewire-schemas/profile`. Per 02-PRD § 6.3 + § 6.8.
+  'BAA_GATE_MISSING',
 ]);
 export type HarnessErrorCode = z.infer<typeof HarnessErrorCodeSchema>;

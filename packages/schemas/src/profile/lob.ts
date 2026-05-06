@@ -10,10 +10,20 @@ import { z } from 'zod';
  * segment, region, declination-pattern, cycle-time. Each dimension declares
  * its source field, grouping rule, and rollup unit.
  */
+export const LobClassSchema = z.enum(['health', 'non_health']);
+export type LobClass = z.infer<typeof LobClassSchema>;
+
 export const LobMappingSchema = z.object({
   canonical: z.string().min(1),
   uwcenter_rule_set: z.string().min(1),
   coverage_typelist: z.string().min(1),
+  /**
+   * SA-6 + MS-6: defaults to `non_health`. LOBs declared `health` MUST be
+   * paired with `pii-policy.yaml.baa_required.enabled: true`. Cross-file
+   * enforcement lives in `checkBaaGate()` in `./baa-gate.ts` — the loader
+   * raises a `BAA_GATE_MISSING` failure at boot if the invariant is broken.
+   */
+  lob_class: LobClassSchema.default('non_health'),
 });
 export type LobMapping = z.infer<typeof LobMappingSchema>;
 
