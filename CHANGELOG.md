@@ -7,28 +7,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added — Phase 0 polish + infra hardening (2026-05-04, post v0.0.1)
-- README badges (CI, license, paperwork-first status, MCP-compatible,
-  built-with-Claude, marketplace target)
-- README **Building in public** section + cross-links to blueprint
-  inputs (master blueprint index, architecture decision log, persona
-  red-team memo, public Guidewire docs reference)
-- E11+ marketplace epic visible in the public roadmap table
-- 5th project-level specialist: [`guidewire-reference-librarian`](./.claude/agents/guidewire-reference-librarian.md)
-  + canonical public-docs reference at
-  [`000-docs/005-DR-REF-guidewire-public-resources.md`](./000-docs/005-DR-REF-guidewire-public-resources.md)
-- Workflow phase guards — `ci.yml` no-ops without `package.json`,
-  `release.yml` is `workflow_dispatch` only (no auto-cut on push)
-- Sandbox application playbook expanded with the "planet"
-  provisioning nuance (Guidewire Cloud customers get sandboxes via
-  the provisioning team; non-customers go through PartnerConnect /
-  Marketplace)
+## [0.1.0] — 2026-05-06 — E1 foundation + E2 read-only tools + E3 harness skeleton
 
-### Notes / pending customization
-- CI/release workflows ship with default `npm`-based templates from
-  `/repo-dress`. Stack-specific customization (pnpm + Biome + Vitest
-  + `@intentsolutions/audit-harness` gates) lands in **GW-2.3** (E1
-  sub-bead) when code arrives.
+First software release. E1 foundation packages, E2 PolicyCenter MCP
+with 5 read-only tools, and E3 harness skeleton are built and tested.
+133 tests pass across 8 workspaces. Live architecture diagram at
+[guidewire-mcp.intentsolutions.io](https://guidewire-mcp.intentsolutions.io/).
+
+### Added
+
+**E1 Foundation (7 packages):**
+- `@intentsolutions/guidewire-schemas` — Zod schemas + TS contracts
+- `@intentsolutions/guidewire-observability` — OTel + pino + Sentry factory
+- `@intentsolutions/guidewire-auth` — Hub OAuth + JWT propagation
+- `@intentsolutions/guidewire-audit` — Postgres + hash-chain audit store
+- `@intentsolutions/guidewire-client` — undici Cloud API client with two-key idempotency
+- `@intentsolutions/guidewire-mcp-runtime` — MCP SDK wrapper (stdio + HTTP transports)
+- `@intentsolutions/guidewire-harness` — plan/policy/approval/execute/audit/rollback pipeline (#80)
+
+**E2 PolicyCenter MCP (5 read-only tools):**
+- `find-submissions-waiting-on-me` — assigned-to-me queue
+- `show-policies-for-this-insured` — cross-LOB policy lookup
+- `summarize-this-submission` — full submission narrative
+- `did-we-lose-this-account` — non-renewal / cancellation history
+- `pull-this-submission` — single submission detail
+
+**E3 Harness skeleton:**
+- Harness library + CLI skeleton — plan/policy/approval/execute/audit/rollback pipeline (#80)
+- Postgres-backed ApprovalSink for approval workflow (#92)
+- Boot-path error translator + CLI wiring (#93)
+- BAA carve enforcement at boot when `lob_class:health` (#87)
+- `oauthScope` + `idempotency.pruned` plumbed through audit chain (#85)
+- Approvals table + grants in 0001_init.sql (#86)
+
+**E4 Profile loader scaffold:**
+- On-disk profile loader — `--profile <path>` boots policycenter-mcp against a real tenant (#75)
+- 9-YAML schema: auth, roles, lob, typelists, custom-entities, field-aliases, approval-matrix, pii-policy, events
+
+**Infrastructure + tooling:**
+- Ship as Claude Code plugin — `/plugin install jeremylongshore/guidewire-mcp-for-claude` (#76)
+- Karate contract testing for Cloud API layer (D-022) (#79)
+- Testcontainers role-separation enforcement + pg-store TIMESTAMPTZ fix (#94)
+- Live architecture diagram at guidewire-mcp.intentsolutions.io (#53)
+- 5th project-level specialist: `guidewire-reference-librarian` (#23)
+- 11-auditor staffed panel — security, MCP safety, harness contract, etc. (#52)
+- README badges (CI, license, MCP-compatible, built-with-Claude) (#24)
+- Workflow phase guards — CI no-ops without package.json, release is workflow_dispatch only
+
+**Documentation:**
+- 05-TECHNICAL-SPEC.md content (7.4k words) (#41)
+- 04-USER-JOURNEY.md content (5.4k words) (#42)
+- 01-BUSINESS-CASE.md content (3.0k words) (#39)
+- 07-ROADMAP with E2.5 aggregate-query sub-epic (#43)
+- Comprehensive CLAUDE.md rewrite reflecting current state (#77, #84)
+- Public Guidewire docs reference (librarian KB) with PartnerConnect sandbox + Swagger UI (#54)
+
+### Changed
+- Moved site from demo.intentsolutions.io to guidewire-mcp.intentsolutions.io (#53)
+- CI/release workflows customized to pnpm + Biome + Vitest + audit-harness gates
+- Main branch ruleset now enforced with 6 required status checks + 1 review (#90)
+
+### Fixed
+- CI workflow startup — dropped secrets ref from job-level if: condition (#88)
+- Lint baseline from 43 → 0 — Biome ignore for Karate JS, auto-fix harness package (#89)
+- Mobile-responsive architecture page — removed 1024px floor, added breakpoints (#71)
+- Diagram layout — clean lane layout, separate desktop + mobile views (#72)
+- Diagram mermaid syntax — frontmatter + escape primaryObject.id (#50, #55, #70)
+
+### Security
+- OWNER-bypass claim corrected — explicit bypass_actors required in ruleset (#91)
+- Audit DB role separation enforced via testcontainers — `audit_writer` cannot UPDATE/DELETE (#94)
 
 ## [v0.0.1] — 2026-05-04 — paperwork foundation
 
@@ -59,5 +107,6 @@ once code begins shipping in E1+.
 - `/validate-consistency` post-GW-1.1 audit ran clean after fix PR
   #17
 
-[Unreleased]: https://github.com/jeremylongshore/guidewire-mcp-for-claude/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/jeremylongshore/guidewire-mcp-for-claude/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/jeremylongshore/guidewire-mcp-for-claude/compare/v0.0.1...v0.1.0
 [v0.0.1]: https://github.com/jeremylongshore/guidewire-mcp-for-claude/releases/tag/v0.0.1

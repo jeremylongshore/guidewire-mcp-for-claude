@@ -75,7 +75,7 @@ hash-chained audit trail.
 hash-chain) · `@gw/client-sdk` (undici + two-key idempotency) ·
 `@gw/mcp-runtime` (stdio + HTTP transports)
 
-54 tests pass. Architecture diagram:
+133 tests pass. Architecture diagram:
 [guidewire-mcp.intentsolutions.io](https://guidewire-mcp.intentsolutions.io/).
 
 ## What's next on the public roadmap
@@ -138,7 +138,7 @@ node servers/policycenter-mcp/dist/cli.js --profile profiles/<your-tenant>
 git clone https://github.com/jeremylongshore/guidewire-mcp-for-claude.git
 cd guidewire-mcp-for-claude
 pnpm install              # prepare hook builds all workspaces
-pnpm -r test              # 54 tests (TS orchestration / unit / integration)
+pnpm -r test              # 133 tests (TS orchestration / unit / integration)
 pnpm smoke-reach          # ping Guidewire endpoints with your dev-tier creds
 
 # Cloud API contract tests use Karate (Guidewire's official OSS test framework, JDK 11 + Gradle):
