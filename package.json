@@ -1,6 +1,6 @@
 {
   "name": "guidewire-mcp-for-claude",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Carrier-native MCP servers + governance harness for Guidewire estates, designed Claude/Anthropic-first.",
   "license": "Apache-2.0",

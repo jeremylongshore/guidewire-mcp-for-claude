@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jeremylongshore/guidewire-mcp-for-claude/actions/workflows/ci.yml/badge.svg)](https://github.com/jeremylongshore/guidewire-mcp-for-claude/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Status: v0.1.0 — E1 + E2 built](https://img.shields.io/badge/Status-v0.1.0%20%C2%B7%20E1%20%2B%20E2%20built-3fb950)](./000-docs/blueprint/)
+[![Status: v0.1.1 — E1 + E2 built](https://img.shields.io/badge/Status-v0.1.1%20%C2%B7%20E1%20%2B%20E2%20built-3fb950)](./000-docs/blueprint/)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-7c3aed)](https://modelcontextprotocol.io)
 [![Built with Claude](https://img.shields.io/badge/Built%20with-Claude-d4a857)](https://claude.ai)
 [![Live architecture](https://img.shields.io/badge/Live%20diagram-guidewire--mcp.intentsolutions.io-58a6ff)](https://guidewire-mcp.intentsolutions.io/)

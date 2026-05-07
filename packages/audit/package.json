@@ -1,6 +1,6 @@
 {
   "name": "@intentsolutions/guidewire-audit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Postgres-backed hash-chain audit store for the Guidewire harness; verifyChain detects tampering.",
   "license": "Apache-2.0",
   "type": "module",
@@ -12,7 +12,11 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "migrations", "README.md"],
+  "files": [
+    "dist",
+    "migrations",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

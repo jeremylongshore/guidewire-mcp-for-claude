@@ -1,6 +1,6 @@
 {
   "name": "@intentsolutions/guidewire-schemas",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Zod schemas + TypeScript contracts for the Guidewire MCP harness, profiles, and audit chain.",
   "license": "Apache-2.0",
   "type": "module",
@@ -21,7 +21,10 @@
       "import": "./dist/profile/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

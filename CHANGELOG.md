@@ -7,14 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-05-06 — install-path patch (prepare hook)
+
+Same-day patch on top of v0.1.0. Fixes the silent-success failure
+mode in the plug-and-play install path surfaced during the v0.1.0
+release smoke-test.
+
 ### Fixed
-- `prepare` hook no longer swallows build failures via `|| true`. If
-  `pnpm -r build` fails during `pnpm install` on an end-user's machine,
-  the install now fails loudly with the underlying error instead of
-  silently succeeding and leaving a non-functional `dist/cli.js`. The
-  silent-success failure mode was the worst kind: plugin installs
-  cleanly, MCP server fails to register, user has no error message to
-  act on. Surfaced during v0.1.0 release smoke-test.
+- `prepare` hook no longer swallows build failures via `|| true`
+  ([#96](https://github.com/jeremylongshore/guidewire-mcp-for-claude/pull/96)).
+  If `pnpm -r build` fails during `pnpm install` on an end-user's
+  machine, the install now fails loudly with the underlying error
+  instead of silently succeeding and leaving a non-functional
+  `dist/cli.js`. The silent-success failure mode was the worst kind:
+  plugin installs cleanly, MCP server fails to register, user has no
+  error message to act on. Surfaced during v0.1.0 release smoke-test
+  (clone fresh to /tmp, `pnpm install`, verify `dist/cli.js` produced
+  — test passed with current dependencies, but the silent-failure
+  mode was unacceptable to leave in place).
 
 ## [0.1.0] — 2026-05-06 — E1 foundation + E2 read-only tools + E3 harness skeleton
 
@@ -116,6 +126,7 @@ once code begins shipping in E1+.
 - `/validate-consistency` post-GW-1.1 audit ran clean after fix PR
   #17
 
-[Unreleased]: https://github.com/jeremylongshore/guidewire-mcp-for-claude/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/jeremylongshore/guidewire-mcp-for-claude/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/jeremylongshore/guidewire-mcp-for-claude/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/jeremylongshore/guidewire-mcp-for-claude/compare/v0.0.1...v0.1.0
 [v0.0.1]: https://github.com/jeremylongshore/guidewire-mcp-for-claude/releases/tag/v0.0.1

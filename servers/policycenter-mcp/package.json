@@ -1,6 +1,6 @@
 {
   "name": "@intentsolutions/policycenter-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "PolicyCenter MCP server — 5 read-only carrier-vocabulary tools for line underwriters (E2 of the Guidewire MCP for Claude blueprint).",
   "license": "Apache-2.0",
   "type": "module",
@@ -15,7 +15,10 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsx src/cli.ts",

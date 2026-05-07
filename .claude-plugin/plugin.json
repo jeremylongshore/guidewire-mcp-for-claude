@@ -1,6 +1,6 @@
 {
   "name": "guidewire-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Carrier-native MCP server for Guidewire InsuranceSuite. Ask Claude underwriter / claims / billing questions in operator vocabulary; the harness gates writes. v0.1.0 ships read-only PolicyCenter (5 tools).",
   "author": {
     "name": "Jeremy Longshore",

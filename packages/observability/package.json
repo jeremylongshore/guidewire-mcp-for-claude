@@ -1,6 +1,6 @@
 {
   "name": "@intentsolutions/guidewire-observability",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "OpenTelemetry + pino + Sentry factory for the Guidewire MCP workspace.",
   "license": "Apache-2.0",
   "type": "module",
@@ -12,7 +12,10 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
