@@ -14,8 +14,11 @@ carrier-vocabulary tools. Live architecture diagram:
 The thesis: tool names are operator questions
 (`find-submissions-waiting-on-me`), never API verbs (`search_policies`).
 A governance harness gates all writes via plan → policy → approval →
-execute → audit → rollback (E3, planned). The audit hash-chain + the
-carrier vocabulary are the durable moats.
+execute → audit → rollback. The audit hash-chain + the carrier
+vocabulary are the durable moats. Harness library + CLI shipped; full
+pipeline proven end-to-end against testcontainers Postgres in
+[`packages/harness/tests/e2e.pg.test.ts`](./packages/harness/tests/e2e.pg.test.ts).
+Remaining E3 work: npm publish (bundled with E11+ marketplace push).
 
 ## Build / test / run
 
@@ -43,9 +46,17 @@ node servers/policycenter-mcp/dist/cli.js --profile profiles/oss-demo  # boot wi
 cd tests/contract && ./gradlew test
 ```
 
-The `prepare` script (`pnpm -r build || true` in root `package.json`)
-fires on every `pnpm install` so plugin-install end-users get a built
+The `prepare` script (`pnpm -r build` in root `package.json`) fires
+on every `pnpm install` so plugin-install end-users get a built
 `dist/` automatically. `dist/` is gitignored; CI rebuilds in workflows.
+**Fail-loud by design** — if the build breaks on a user's machine,
+`pnpm install` errors out with the underlying message instead of
+silently completing. Don't reintroduce `|| true` (PR #96).
+
+`pnpm.overrides` in root `package.json` pins `vite >=6.4.2` and
+`ip-address >=10.1.1` to clear transitive moderate CVEs that the
+direct devDeps don't bump on their own pace. `pnpm audit` is clean —
+keep it that way; new vulns surface here first.
 
 ## Architecture big-picture
 
@@ -54,8 +65,18 @@ fires on every `pnpm install` so plugin-install end-users get a built
 1. **Agent host** — Claude Code, Claude Desktop, Anthropic API
 2. **MCP servers** — `servers/<suite>-mcp/` (only `policycenter-mcp`
    built; claimcenter / billingcenter / producer / events planned)
-3. **Harness** — `packages/harness/` (E3, planned). Gates writes.
-   Library + CLI, **NOT an MCP server** (recursion + tool-selection problem).
+3. **Harness** — `packages/harness/` (library + CLI built; end-to-end
+   pipeline proven via testcontainers in `tests/e2e.pg.test.ts`; npm
+   publish pending). Gates writes via plan → policy → approval →
+   execute → audit → rollback. **NOT an MCP server** (recursion +
+   tool-selection problem).
+   **Production-wiring detail**: when wiring against real Postgres,
+   the harness needs **both pools** — `audit_writer` for
+   `audit.append()` (INSERT-only) and `audit_reader` for
+   `evidence.build()` (SELECT-only). Surfaced by the e2e test;
+   in-memory tests can't catch it because the memory store has no
+   role separation. The e2e test is the canonical wiring template
+   for any server that boots the harness in `approved_execute` mode.
 4. **E1 foundation packages** (all built; `packages/`):
    - `@intentsolutions/guidewire-schemas` — Zod schemas + TS contracts
    - `@intentsolutions/guidewire-observability` — OTel + pino + Sentry factory
@@ -166,6 +187,20 @@ approves via `gh pr review --approve`, normal merge works without
 the bypass. Until then, every Claude-opened PR ends with
 `gh pr merge --admin --squash --delete-branch`.
 
+**Rebase gotcha**: `.beads/issues.jsonl` conflicts on every rebase
+because both branches accrete bead activity (the file is a sqlite
+export that bd auto-rewrites on every command). Resolution is
+mechanical — take main's version, the underlying state is identical:
+`git checkout --theirs .beads/issues.jsonl && git add .beads/issues.jsonl && git rebase --continue`.
+
+**Release version-bump discipline**: do NOT use `jq '.version = "..."'`
+across multiple `package.json` files — `jq`'s default formatting
+expands short string arrays (`"files": [...]`) into multi-line which
+biome wants compact, leaving the release commit CI-red. Either bump
+via `Edit` (exact-string replace per file) or follow with
+`npx biome check --write .` before commit. Lesson learned 2026-05-07
+on the v0.1.1 release; see commit history for the cleanup PR.
+
 **Gemini Code Assist** is the **convention** for external review on
 every PR but is NOT enforced as a required reviewer (Gemini posts as
 a bot, marking it required would break the OSS contributor flow).
@@ -190,7 +225,8 @@ flags `unverified` gaps.
 
 | Topic | File |
 |---|---|
-| Architectural decisions D-001..D-021 | [`000-docs/004-DR-DEC-architecture-decisions.md`](./000-docs/004-DR-DEC-architecture-decisions.md) |
+| Architectural decisions D-001..D-022 | [`000-docs/004-DR-DEC-architecture-decisions.md`](./000-docs/004-DR-DEC-architecture-decisions.md) |
+| Harness production-wiring template (testcontainers e2e) | [`packages/harness/tests/e2e.pg.test.ts`](./packages/harness/tests/e2e.pg.test.ts) |
 | Public Guidewire docs map | [`000-docs/005-DR-REF-guidewire-public-resources.md`](./000-docs/005-DR-REF-guidewire-public-resources.md) |
 | Profile schema (9 YAMLs) | [`000-docs/blueprint/02-PRD.md`](./000-docs/blueprint/02-PRD.md) § 6.1-6.9 |
 | Per-tool spec (5 v0.1.0 tools) | [`000-docs/blueprint/02-PRD.md`](./000-docs/blueprint/02-PRD.md) § 3 + § 4 |
