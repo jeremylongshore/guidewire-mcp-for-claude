@@ -68,12 +68,15 @@ hash-chained audit trail.
 - `did-we-lose-this-account` — non-renewal / cancellation history
 - `pull-this-submission` — single submission detail
 
-**6 E1 foundation packages** (used by every server):
+**6 E1 foundation packages** (used by every server) — all published
+under the `@intentsolutions/guidewire-*` scope:
 
-`@gw/schemas` (Zod) · `@gw/observability` (OTel + pino + Sentry) ·
-`@gw/auth` (Hub OAuth + JWT propagation) · `@gw/audit` (Postgres +
-hash-chain) · `@gw/client-sdk` (undici + two-key idempotency) ·
-`@gw/mcp-runtime` (stdio + HTTP transports)
+- `@intentsolutions/guidewire-schemas` (Zod)
+- `@intentsolutions/guidewire-observability` (OTel + pino + Sentry)
+- `@intentsolutions/guidewire-auth` (Hub OAuth + JWT propagation)
+- `@intentsolutions/guidewire-audit` (Postgres + hash-chain)
+- `@intentsolutions/guidewire-client` (undici + two-key idempotency)
+- `@intentsolutions/guidewire-mcp-runtime` (stdio + HTTP transports)
 
 133 tests pass. Architecture diagram:
 [guidewire-mcp.intentsolutions.io](https://guidewire-mcp.intentsolutions.io/).
