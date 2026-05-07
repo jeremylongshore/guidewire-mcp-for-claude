@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `prepare` hook no longer swallows build failures via `|| true`. If
+  `pnpm -r build` fails during `pnpm install` on an end-user's machine,
+  the install now fails loudly with the underlying error instead of
+  silently succeeding and leaving a non-functional `dist/cli.js`. The
+  silent-success failure mode was the worst kind: plugin installs
+  cleanly, MCP server fails to register, user has no error message to
+  act on. Surfaced during v0.1.0 release smoke-test.
+
 ## [0.1.0] — 2026-05-06 — E1 foundation + E2 read-only tools + E3 harness skeleton
 
 First software release. E1 foundation packages, E2 PolicyCenter MCP

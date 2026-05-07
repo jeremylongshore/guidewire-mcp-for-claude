@@ -22,7 +22,7 @@
     "format": "biome format --write .",
     "typecheck": "pnpm -r exec tsc --noEmit",
     "smoke-reach": "tsx scripts/smoke-reach.ts",
-    "prepare": "pnpm -r build || true"
+    "prepare": "pnpm -r build"
   },
   "dependencies": {
     "undici": "^6.0.0",
