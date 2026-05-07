@@ -1578,7 +1578,14 @@ is load-bearing for `approved_execute` and persists in Postgres so
 that a restart, network partition, or CLI session ending mid-wait
 does not lose the request. The DDL lands in the same migration as
 the audit chain so E3 implementation does not re-derive the schema
-from the TS interface (and risk drift):
+from the TS interface (and risk drift).
+
+The block below is the **shipped DDL** in
+`packages/audit/migrations/0001_init.sql`. Six items deviate from
+the original blueprint draft; each is explained inline below the
+SQL and underwent code-review confirmation (Gemini Code Assist on
+PR #86 + the AR-7 testcontainers test in PR #94). The migration is
+the single source of truth — this section mirrors it.
 
 ```sql
 -- packages/audit/migrations/0001_init.sql (extended per HR-4)
@@ -1590,11 +1597,22 @@ CREATE TABLE IF NOT EXISTS approvals (
   state            TEXT NOT NULL,           -- pending | approved | denied | expired | cancelled
   requested_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   expires_at       TIMESTAMPTZ NOT NULL,
-  approver_votes   JSONB NOT NULL DEFAULT '[]',
+  approvers        JSONB NOT NULL DEFAULT '[]',  -- ① renamed from `approver_votes`
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (tenant_id, plan_id)
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+  -- ② NO `UNIQUE (tenant_id, plan_id)` — see partial unique index below
 );
+
+-- ② Replaces the originally-drafted `UNIQUE (tenant_id, plan_id)`. That
+-- constraint contradicts `approval_id = sha256(planId + nonce)`: the
+-- system is designed to allow multiple distinct approvals per plan
+-- (e.g. a re-request after a previous request expired or was denied).
+-- A hard UNIQUE blocks every legitimate re-request. The partial unique
+-- index keeps the spec's intent (only one *active* approval per plan)
+-- while allowing the historical chain to retain decided rows.
+CREATE UNIQUE INDEX IF NOT EXISTS approvals_one_pending_per_plan_idx
+  ON approvals (tenant_id, plan_id)
+  WHERE state = 'pending';
 
 -- Hot-path query: the CLI's `approve` list + the harness's wait()
 -- poll both filter pending approvals per tenant. The partial index
@@ -1604,18 +1622,87 @@ CREATE TABLE IF NOT EXISTS approvals (
 CREATE INDEX IF NOT EXISTS approvals_pending_idx
   ON approvals (tenant_id, state)
   WHERE state = 'pending';
+
+-- ③ `updated_at` trigger. Postgres does NOT auto-update DEFAULT now()
+-- on UPDATE; without a trigger, `updated_at` would equal `requested_at`
+-- for the life of the row — useless for forensic timelines. The trigger
+-- function is CREATE OR REPLACE + DROP TRIGGER IF EXISTS so the
+-- migration stays idempotent.
+CREATE OR REPLACE FUNCTION approvals_set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS approvals_updated_at_trg ON approvals;
+CREATE TRIGGER approvals_updated_at_trg
+  BEFORE UPDATE ON approvals
+  FOR EACH ROW
+  EXECUTE FUNCTION approvals_set_updated_at();
 ```
+
+Six deviations from the original blueprint draft, each carrying its
+operational rationale. Each is discoverable inline as a numbered
+comment in the migration; this list is the long-form why:
+
+- **① Column `approvers` (not `approver_votes`).** The runtime contract
+  in [`packages/schemas/src/harness/approval.ts`](../../packages/schemas/src/harness/approval.ts)
+  declares the field as `approvers` (an array of vote-shaped objects).
+  Aligning the DDL with the TS contract avoids an app-layer name remap
+  on every read/write. Caught by Gemini Code Assist on PR #86.
+
+- **② Partial unique index on `pending`, not table-level UNIQUE.**
+  Explained inline above; the originally-drafted `UNIQUE (tenant_id,
+  plan_id)` would have prevented the legitimate re-request flow that
+  `approval_id = sha256(planId + nonce)` is designed to support.
+
+- **③ `approvals_set_updated_at` trigger.** Required for
+  `updated_at` to be honest after state-machine transitions; without
+  it the column equals `requested_at` for the row's lifetime.
+
+- **④ Column-restricted `GRANT UPDATE` to `audit_writer`** —
+  `(state, approvers, updated_at)` only. A compromised harness must
+  not be able to rewrite immutable provenance (`tenant_id`, `plan_id`,
+  `decision_id`, `requested_at`, `expires_at`, `created_at`,
+  `approval_id`). See § 8.2.1's grant block. Verified by the
+  `column-restricted GRANT denies UPDATE on immutable columns` test
+  in [`packages/harness/tests/approvals.pg.test.ts`](../../packages/harness/tests/approvals.pg.test.ts).
+
+- **⑤ `GRANT USAGE ON SCHEMA public` to both runtime roles.**
+  PostgreSQL 15+ removed the implicit `USAGE` on the `public`
+  schema for new roles
+  ([PG 15 release notes](https://www.postgresql.org/docs/15/release-15.html)).
+  Without an explicit grant, the table-level GRANTs below have no
+  effect — every query throws `permission denied for table …`.
+  Discovered by the testcontainers tests in PR #92.
+
+- **⑥ `GRANT SELECT ON approvals TO audit_writer`.** This is
+  asymmetric with `audit_entries`, where the writer is purely
+  append-only and never reads its own log (verifyChain runs as
+  `audit_reader`). The `approvals` table is different: the harness
+  *drives* the state machine, and the `wait()` polling loop must
+  read what it just wrote. Forcing a separate reader pool for the
+  polling path adds connection-management complexity with zero
+  tamper-evidence benefit (provenance chains via `audit_entries`
+  rows that reference `approval_id`, not via `approvals` row
+  visibility). The defense-in-depth that matters — column-restricted
+  UPDATE + denied DELETE — remains intact.
 
 The `approvals` table is owned by `audit_owner` (same role
 separation as `audit_entries` per § 8.2.1 below). Runtime grants:
-`audit_writer` gets `INSERT, UPDATE` on `approvals` (state
-transitions are idempotent updates keyed by `approval_id`);
+`audit_writer` gets `INSERT`, column-restricted `UPDATE`, and
+`SELECT` on `approvals` (state-machine transitions + polling read);
 `audit_reader` gets `SELECT` for compliance-job replay. The
-update-path is gated by application-level state-machine rules
-(pending → approved/denied/expired/cancelled is the only legal
-transition) per the
-[02-PRD § 5.3](./02-PRD.md#53-approval--blocking-flow-as-state-machine)
-state machine; the DDL does not enforce that — the harness does.
+update-path's legal transitions
+(`pending → approved | denied | expired | cancelled`) are enforced
+by the application-layer state-precondition pattern in
+[`packages/harness/src/approvals/pg.ts`](../../packages/harness/src/approvals/pg.ts) —
+every UPDATE includes `WHERE state = 'pending'`, so illegal
+transitions match zero rows and surface as either a no-op (race
+loser) or a typed throw (user-driven illegal transition). The DDL
+does not encode the state machine; the spec lives in TS.
 
 ##### 8.2.1 Postgres role separation — operational identity
 
@@ -1640,18 +1727,36 @@ that hold the credentials, not just the SQL grants) are:
   long-lived shell history / env file before starting the harness;
   the harness's `DATABASE_URL` carries only the `audit_writer`
   grant.
-- **`audit_writer`** — INSERT-only on `audit_entries`; INSERT +
-  UPDATE on `approvals` (state-machine transitions per HR-4). The
-  **only** role used by `packages/audit/` at runtime. Loaded into
+- **`audit_writer`** — the **only** role used by `packages/audit/`
+  + `packages/harness/src/approvals/pg.ts` at runtime. Loaded into
   the MCP server / harness process via `DATABASE_URL` from the
   runtime SOPS-encrypted env. The role-separation testcontainers
-  test asserted in [E1 exit criteria](./07-ROADMAP.md#e1--foundation)
-  (per AR-7) makes this runtime constraint binding: any future
-  change that quietly broadens the runtime grant set fails CI.
-- **`audit_reader`** — SELECT-only on `audit_entries` and
-  `audit_chain_heads`. Used by `verifyChain()` in compliance jobs
-  (re-hash sweep, regulator-export bundle). Held by an ops-only
-  identity; never granted to the MCP server runtime.
+  tests in
+  [`packages/audit/tests/role-separation.pg.test.ts`](../../packages/audit/tests/role-separation.pg.test.ts)
+  + [`packages/harness/tests/approvals.pg.test.ts`](../../packages/harness/tests/approvals.pg.test.ts)
+  (per AR-7, the E1 exit criterion) make this runtime constraint
+  binding: any future change that quietly broadens the runtime grant
+  set fails CI. Grant set:
+    - `audit_entries` — `INSERT` only. No `SELECT`, no `UPDATE`,
+      no `DELETE`. The writer never reads its own log; verifyChain
+      runs as `audit_reader`.
+    - `audit_chain_heads` — `INSERT`, `SELECT`, `UPDATE`. Required
+      for the `SELECT … FOR UPDATE` + `UPDATE` pattern that drives
+      the per-tenant chain head under serializable isolation.
+      `DELETE` denied.
+    - `approvals` — `INSERT`, column-restricted `UPDATE (state,
+      approvers, updated_at)`, `SELECT`. The asymmetry vs
+      `audit_entries` is deliberate: the harness drives the
+      approval state machine and `wait()` polling reads its own
+      writes. `DELETE` denied.
+    - `USAGE` on `public` schema (PG 15+ requirement — see § 8.2.0
+      deviation ⑤).
+- **`audit_reader`** — `SELECT`-only on `audit_entries`,
+  `audit_chain_heads`, and `approvals`. Used by `verifyChain()` in
+  compliance jobs (re-hash sweep, regulator-export bundle) and any
+  out-of-band approval-history readback. Held by an ops-only
+  identity; never granted to the MCP server runtime. Also receives
+  `USAGE` on `public` schema for the same PG 15+ reason.
 
 The `audit_writer` ↔ `audit_owner` split is the **defence-in-depth
 layer D-019 names**; the `audit_reader` split is operational
