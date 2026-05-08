@@ -12,12 +12,19 @@
  * Account API resource definitions.
  */
 
+import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
 import type { AuthHandle } from '@intentsolutions/guidewire-auth';
 import {
   type GuidewireClient,
   type GuidewireFetch,
   createClient,
 } from '@intentsolutions/guidewire-client';
+import {
+  createEvidenceExporter,
+  createHarness,
+  createInMemoryApprovalSink,
+  createInMemoryPolicyEngine,
+} from '@intentsolutions/guidewire-harness';
 import { getObservability } from '@intentsolutions/guidewire-observability';
 import { trace } from '@opentelemetry/api';
 import { vi } from 'vitest';
@@ -71,6 +78,21 @@ export function buildToolContext(fetchImpl: GuidewireFetch): BuiltContext {
   const tracer = trace.getTracer('policycenter-mcp-test');
   const profile = createDefaultProfile(TEST_TENANT_ID);
 
+  const audit = createMemoryAuditStore();
+  const harness = createHarness({
+    audit,
+    policy: createInMemoryPolicyEngine({
+      rules: [{ actorId: '*', toolName: '*', mode: '*', outcome: 'allow' }],
+    }),
+    approvals: createInMemoryApprovalSink(),
+    evidence: createEvidenceExporter({ audit }),
+    observability,
+    profile: {
+      tenantId: TEST_TENANT_ID,
+      ruleSetVersion: 'v1.0',
+    },
+  });
+
   const ctx: ToolContext = {
     traceId: 'trace-test-1',
     tenantId: TEST_TENANT_ID,
@@ -80,6 +102,7 @@ export function buildToolContext(fetchImpl: GuidewireFetch): BuiltContext {
     tracer,
     observability,
     emitAudit,
+    harness,
   };
 
   return { ctx, client, auditEvents, fetchSpy };
