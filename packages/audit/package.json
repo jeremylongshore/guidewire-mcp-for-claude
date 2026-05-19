@@ -21,7 +21,7 @@
   "dependencies": {
     "@intentsolutions/guidewire-observability": "workspace:*",
     "@intentsolutions/guidewire-schemas": "workspace:*",
-    "pg": "^8.0.0"
+    "pg": "^8.21.0"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^11.14.0",
