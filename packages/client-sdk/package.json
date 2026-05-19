@@ -22,7 +22,7 @@
     "@intentsolutions/guidewire-auth": "workspace:*",
     "@intentsolutions/guidewire-observability": "workspace:*",
     "@intentsolutions/guidewire-schemas": "workspace:*",
-    "undici": "^6.0.0"
+    "undici": "^8.3.0"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
