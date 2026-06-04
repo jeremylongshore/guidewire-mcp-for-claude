@@ -23,8 +23,8 @@ importers:
         specifier: ^1.9.0
         version: 1.9.4
       '@intentsolutions/audit-harness':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^1.1.5
+        version: 1.1.5
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.17
@@ -523,8 +523,8 @@ packages:
     peerDependencies:
       hono: ^4
 
-  '@intentsolutions/audit-harness@0.1.0':
-    resolution: {integrity: sha512-7YNrX4KLEPwJUT41yKa4w94/bqWS3Bdcvxa57GfQOEF/yUtu39Yl59t+bijx+7lO3HmWS5gc/llU1Nca1+QGtg==}
+  '@intentsolutions/audit-harness@1.1.5':
+    resolution: {integrity: sha512-VbE4gPR/wtp2czWT0/Wjo5ZEtX3SRxeWMBS5nx1LhgyxdrKdZdo+deP5/km3Cl5PMyf4XbwXtVt7pDjXi0w1mQ==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -2899,7 +2899,7 @@ snapshots:
     dependencies:
       hono: 4.12.16
 
-  '@intentsolutions/audit-harness@0.1.0': {}
+  '@intentsolutions/audit-harness@1.1.5': {}
 
   '@isaacs/cliui@8.0.2':
     dependencies:
