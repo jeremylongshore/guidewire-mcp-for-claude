@@ -1,20 +1,48 @@
 version: 2
+
+# Noise-control policy (2026-07-08): 15 individual dependabot PRs piled up because
+# updates were ungrouped with a limit of 10. Fix: group routine minor+patch bumps
+# into ONE PR per ecosystem, cap concurrently-open PRs low, and auto-merge grouped
+# patch/minor on green CI (see .github/workflows/dependabot-automerge.yml).
+# MAJOR bumps stay as INDIVIDUAL PRs so a human reviews the breaking change.
+# Dependabot *security* updates (applies-to: security-updates) are unaffected by
+# these version-update groups and continue to flow individually — silence the
+# noise, never the safety.
 updates:
-  # Keep GitHub Actions up to date
+  # ── GitHub Actions ───────────────────────────────────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
+    groups:
+      actions-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
-  # Node / pnpm ecosystem (paperwork-phase: no manifest yet — dependabot
-  # finds nothing to update until E1 introduces package.json + the pnpm
-  # workspace; this entry is here so that day-1-of-E1 deps are tracked
-  # without a config change).
+  # ── Node / npm ───────────────────────────────────────────────────────────
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "npm"
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

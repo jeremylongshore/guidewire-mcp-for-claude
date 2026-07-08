@@ -1,0 +1,36 @@
+name: Dependabot auto-merge
+
+# Routine, low-risk dependency bumps (patch + minor) should land themselves once
+# CI is green, instead of piling up into a manual-review backlog. MAJOR bumps are
+# intentionally EXCLUDED — a human reviews those. Auto-merge respects every branch
+# rule (required status checks AND the required review on `main`), so nothing here
+# can merge red or unreviewed; it only removes the wait once all gates are met.
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      # For a grouped PR, update-type is the HIGHEST semver bump in the group.
+      # The version-update groups in dependabot.yml only ever group minor+patch,
+      # so grouped PRs land here; ungrouped MAJOR PRs report semver-major and skip.
+      - name: Enable auto-merge for patch & minor updates
+        if: >-
+          ${{ steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+              steps.meta.outputs.update-type == 'version-update:semver-minor' }}
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
