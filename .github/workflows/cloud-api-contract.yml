@@ -87,7 +87,7 @@ jobs:
 
       - name: Upload Karate test results
         if: steps.cred-check.outputs.skip == 'false' && always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: karate-results
           path: tests/contract/build/reports/tests/
