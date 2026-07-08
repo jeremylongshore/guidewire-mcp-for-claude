@@ -22,7 +22,7 @@
     "@intentsolutions/guidewire-schemas": "workspace:*",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/sdk-node": "^0.218.0",
-    "@sentry/node": "^8.0.0",
+    "@sentry/node": "^10.64.0",
     "pino": "^9.0.0"
   },
   "devDependencies": {
