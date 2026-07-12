@@ -23,6 +23,7 @@
  * never falls back to fixtures.
  */
 
+import * as nodeCrypto from 'node:crypto';
 import { createServer } from 'node:http';
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -30,9 +31,16 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
+import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
 import { createAuth } from '@intentsolutions/guidewire-auth';
 import { createClient } from '@intentsolutions/guidewire-client';
-import { tryAsHarnessError } from '@intentsolutions/guidewire-harness';
+import {
+  createEvidenceExporter,
+  createHarness,
+  createInMemoryApprovalSink,
+  createInMemoryPolicyEngine,
+  tryAsHarnessError,
+} from '@intentsolutions/guidewire-harness';
 import { getObservability } from '@intentsolutions/guidewire-observability';
 import { context, trace } from '@opentelemetry/api';
 
@@ -225,26 +233,30 @@ async function buildServer(
     profile = createDefaultProfile(tenantId);
   }
 
-  // Read-side audit emitter — Persona 5 wants tamper-evident records of
-  // every read for exfil detection per 006 § 1.1. The full hash-chain audit
-  // store wires in via `packages/audit` when E3 lands the harness; for now
-  // we route to the structured logger.
-  const emitAudit = async (event: AuditEventBrief): Promise<void> => {
-    observability.logger.info(
-      {
-        audit_event_type: event.eventType,
-        audit_mode: event.mode,
-        audit_tool_name: event.toolName,
-        audit_tool_version: event.toolVersion,
-        audit_result_count: event.resultCount,
-        audit_latency_ms: event.latencyMs,
-        audit_decision_reason: event.decisionReason,
-        tenant_id: tenantId,
-      },
-      'mcp.audit.event',
-    );
-  };
+  // Harness initialization — E3.
+  // Wires the plan → policy → execute pipeline. Production uses Postgres-backed
+  // stores; for dev/demo we use the in-memory stubs.
+  const audit = createMemoryAuditStore();
+  const harness = createHarness({
+    audit,
+    policy: createInMemoryPolicyEngine({
+      // Default policy: allow everything for the dev/demo roles.
+      // Per-tenant rules land in E10 customer onboarding.
+      allowRules: [{}],
+    }),
+    approvals: createInMemoryApprovalSink(),
+    evidence: createEvidenceExporter({ audit, tenantId: profile.tenantId }),
+    observability,
+    profile: {
+      tenantId: profile.tenantId,
+      ruleSetVersion: profile.schemaVersion,
+    },
+  });
 
+  // Read-side audit emitter — Persona 5 wants tamper-evident records of
+  // every read for exfil detection per 006 § 1.1. We route to the harness's
+  // audit store so both read-only tools and execute() tools share the same
+  // chain.
   const mcpServer = new McpServer(
     { name: SERVER_NAME, version: SERVER_VERSION },
     { capabilities: { tools: {} } },
@@ -298,15 +310,40 @@ async function buildServer(
         const activeSpan = trace.getSpan(context.active());
         const traceId = activeSpan?.spanContext().traceId ?? `trace-${Date.now().toString(16)}`;
 
+        // Read-side audit emitter — Persona 5 wants tamper-evident records of
+        // every read for exfil detection per 006 § 1.1. We route to the harness's
+        // audit store so both read-only tools and execute() tools share the same
+        // chain.
+        const emitAudit = async (event: AuditEventBrief): Promise<void> => {
+          try {
+            await audit.append({
+              entryId: nodeCrypto.randomUUID(),
+              tenantId: profile.tenantId,
+              eventType: event.eventType,
+              planId: `read-${Date.now()}`, // read-only tools don't have a planId yet
+              traceId, // Propagate the actual traceId
+              actorId: actorIdFallback,
+              toolName: event.toolName,
+              toolVersion: event.toolVersion,
+              mode: event.mode,
+              idempotencyKey: `read-${nodeCrypto.randomUUID()}`,
+              recordedAt: new Date().toISOString(),
+            });
+          } catch (err) {
+            observability.logger.error({ err }, 'mcp.audit.append_failed');
+          }
+        };
+
         const ctx: ToolContext = {
           traceId,
-          tenantId,
+          tenantId: profile.tenantId,
           actorId: actorIdFallback,
           client,
           profile,
           tracer: observability.tracer,
           observability,
           emitAudit,
+          harness,
         };
 
         try {
