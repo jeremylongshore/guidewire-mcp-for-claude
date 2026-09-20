@@ -69,7 +69,7 @@ jobs:
 
       - name: Validate Gradle wrapper
         if: steps.cred-check.outputs.skip == 'false'
-        uses: gradle/wrapper-validation-action@v3
+        uses: gradle/actions/wrapper-validation@v6
 
       - name: Make gradlew executable
         if: steps.cred-check.outputs.skip == 'false'
