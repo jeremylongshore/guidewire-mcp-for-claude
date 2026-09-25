@@ -7,6 +7,8 @@
 [![Built with Claude](https://img.shields.io/badge/Built%20with-Claude-d4a857)](https://claude.ai)
 [![Live architecture](https://img.shields.io/badge/Live%20diagram-guidewire--mcp.intentsolutions.io-58a6ff)](https://guidewire-mcp.intentsolutions.io/)
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U5S225PTME)
+
 > Carrier-native MCP server for the Guidewire **InsuranceSuite**
 > (PolicyCenter, ClaimCenter, BillingCenter). Ask Claude underwriter /
 > claims / billing questions in operator vocabulary; the harness gates
