@@ -13,7 +13,7 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
-import { extractSingle } from '../field-mapping.js';
+import { type GuidewireSingleEnvelope, extractSingle } from '../field-mapping.js';
 import { type ToolContext, type TypedToolManifestEntry, formatDescription } from '../manifest.js';
 
 const argsSchema = z.object({
@@ -86,7 +86,7 @@ export const tool: TypedToolManifestEntry<typeof argsSchema, DraftArtifact> = {
     try {
       // 1. Read-side: fetch submission details to anchor the draft.
       // Practitioner knowledge: Job ID in URL is submissionNumber per PC Job API.
-      const envelope = await ctx.client.get<Record<string, unknown>>({
+      const envelope = await ctx.client.get<GuidewireSingleEnvelope<JobAttributes>>({
         suite: 'pc',
         path: `/job/v1/jobs/${args.submissionNumber}`,
       });
