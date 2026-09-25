@@ -38,7 +38,7 @@
     "testcontainers": "^12.1.0",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.1"
   },
   "peerDependencies": {
     "zod": "^3.23.0"
