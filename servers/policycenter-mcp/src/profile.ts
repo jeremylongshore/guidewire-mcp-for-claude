@@ -41,7 +41,7 @@ import {
   TypelistsYamlSchema,
   checkBaaGate,
 } from '@intentsolutions/guidewire-schemas';
-import jsYaml from 'js-yaml';
+import * as jsYaml from 'js-yaml';
 
 export interface ProfileHandle {
   /** Stable tenant slug (e.g. `acme-insurance-pc-dev`). */
