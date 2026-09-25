@@ -18,7 +18,7 @@ export const OtelSpanSnapshotSchema = z
     parentSpanId: z.string().optional(),
     startTimeUnixNano: z.string(),
     endTimeUnixNano: z.string(),
-    attributes: z.record(z.unknown()),
+    attributes: z.record(z.string(), z.unknown()),
     statusCode: z.enum(['UNSET', 'OK', 'ERROR']),
   })
   .readonly();

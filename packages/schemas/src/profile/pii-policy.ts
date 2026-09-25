@@ -20,7 +20,7 @@ export const PiiClassSchema = z.object({
 export type PiiClass = z.infer<typeof PiiClassSchema>;
 
 export const PiiPolicyYamlSchema = z.object({
-  classes: z.record(PiiClassSchema),
+  classes: z.record(z.string(), PiiClassSchema),
   baa_required: z.object({
     enabled: z.boolean(),
   }),

@@ -35,11 +35,11 @@ export const AggregationDimensionSchema = z.object({
 export type AggregationDimension = z.infer<typeof AggregationDimensionSchema>;
 
 export const LobYamlV1Schema = z.object({
-  lob_mappings: z.record(LobMappingSchema),
+  lob_mappings: z.record(z.string(), LobMappingSchema),
 });
 export type LobYamlV1 = z.infer<typeof LobYamlV1Schema>;
 
 export const LobYamlV2Schema = LobYamlV1Schema.extend({
-  aggregations: z.record(AggregationDimensionSchema).optional(),
+  aggregations: z.record(z.string(), AggregationDimensionSchema).optional(),
 });
 export type LobYamlV2 = z.infer<typeof LobYamlV2Schema>;
