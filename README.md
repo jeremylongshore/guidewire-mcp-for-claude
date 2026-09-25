@@ -7,6 +7,8 @@
 [![Built with Claude](https://img.shields.io/badge/Built%20with-Claude-d4a857)](https://claude.ai)
 [![Live architecture](https://img.shields.io/badge/Live%20diagram-guidewire--mcp.intentsolutions.io-58a6ff)](https://guidewire-mcp.intentsolutions.io/)
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U5S225PTME)
+
 > Carrier-native MCP server for the Guidewire **InsuranceSuite**
 > (PolicyCenter, ClaimCenter, BillingCenter). Ask Claude underwriter /
 > claims / billing questions in operator vocabulary; the harness gates
@@ -68,15 +70,15 @@ hash-chained audit trail.
 - `did-we-lose-this-account` — non-renewal / cancellation history
 - `pull-this-submission` — single submission detail
 
-**6 E1 foundation packages** (used by every server) — all published
-under the `@intentsolutions/guidewire-*` scope:
+**6 E1 foundation packages** (used by every server) — displayed as `@gw/*` for
+readability; actual names `@intentsolutions/guidewire-*`:
 
-- `@intentsolutions/guidewire-schemas` (Zod)
-- `@intentsolutions/guidewire-observability` (OTel + pino + Sentry)
-- `@intentsolutions/guidewire-auth` (Hub OAuth + JWT propagation)
-- `@intentsolutions/guidewire-audit` (Postgres + hash-chain)
-- `@intentsolutions/guidewire-client` (undici + two-key idempotency)
-- `@intentsolutions/guidewire-mcp-runtime` (stdio + HTTP transports)
+- `@gw/schemas` (Zod)
+- `@gw/observability` (OTel + pino + Sentry)
+- `@gw/auth` (Hub OAuth + JWT propagation)
+- `@gw/audit` (Postgres + hash-chain)
+- `@gw/client` (undici + two-key idempotency)
+- `@gw/mcp-runtime` (stdio + HTTP transports)
 
 135 tests pass. Architecture diagram:
 [guidewire-mcp.intentsolutions.io](https://guidewire-mcp.intentsolutions.io/).

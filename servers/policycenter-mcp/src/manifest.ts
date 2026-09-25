@@ -25,6 +25,7 @@
  */
 
 import type { GuidewireClient } from '@intentsolutions/guidewire-client';
+import type { Harness } from '@intentsolutions/guidewire-harness';
 import type { ObservabilityHandle } from '@intentsolutions/guidewire-observability';
 import type { ToolMode } from '@intentsolutions/guidewire-schemas';
 import type { Tracer } from '@opentelemetry/api';
@@ -175,14 +176,14 @@ export type ProfileFileName =
 /**
  * Per-call context handed to every tool handler. Derived from the MCP
  * runtime's `ToolContext` (`packages/mcp-runtime`) plus the client + profile
- * + tracer + logger that read-only PolicyCenter tools need.
+ * + tracer + logger + harness that tools need.
  *
- * **Note on harness:** `read_only` tools call `client.get(...)` directly
- * here — the harness library proper (`packages/harness/`) lands in E3. The
- * audit-emit + plan-create + policy-evaluate steps are stubbed in this
- * release as direct audit-store appends to maintain the read-side audit row
- * Persona 5 requires (006 § 1.1). When E3 lands, the handlers swap the
- * direct calls for `harness.plan() → policy.evaluate() → execute()`.
+ * **Note on harness:** every tool call in this server is now governed by
+ * the harness (`packages/harness/`). `read_only` tools can still call
+ * `client.get(...)` directly for simple lookups, but MUST call
+ * `emitAudit()` to preserve the Persona 5 read-side exfil trail.
+ * `draft_only` and `approved_execute` tools MUST use `harness.execute()`
+ * to satisfy the AR-2 boundary.
  */
 export interface ToolContext {
   /** OpenTelemetry trace ID propagated from the MCP-handshake span. */
@@ -205,6 +206,11 @@ export interface ToolContext {
    * before/after the handler runs; handlers do NOT call it directly.
    */
   readonly emitAudit: (event: AuditEventBrief) => Promise<void>;
+  /**
+   * The harness handle for governed execution (plan → policy → execute).
+   * Required for `draft_only` and `approved_execute` tools (AR-2).
+   */
+  readonly harness: Harness;
 }
 
 /**

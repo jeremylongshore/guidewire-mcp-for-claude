@@ -29,12 +29,13 @@
   },
   "dependencies": {
     "@intentsolutions/guidewire-auth": "workspace:*",
+    "@intentsolutions/guidewire-audit": "workspace:*",
     "@intentsolutions/guidewire-client": "workspace:*",
     "@intentsolutions/guidewire-harness": "workspace:^",
     "@intentsolutions/guidewire-mcp-runtime": "workspace:*",
     "@intentsolutions/guidewire-observability": "workspace:*",
     "@intentsolutions/guidewire-schemas": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@opentelemetry/api": "^1.9.0",
     "js-yaml": "^4.1.1",
     "zod": "^3.23.0"
