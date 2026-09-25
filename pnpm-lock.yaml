@@ -13,8 +13,8 @@ importers:
   .:
     dependencies:
       undici:
-        specifier: ^8.3.0
-        version: 8.3.0
+        specifier: ^8.11.0
+        version: 8.11.0
       zod:
         specifier: ^3.23.0
         version: 3.25.76
@@ -106,8 +106,8 @@ importers:
         specifier: workspace:*
         version: link:../schemas
       undici:
-        specifier: ^8.3.0
-        version: 8.3.0
+        specifier: ^8.11.0
+        version: 8.11.0
     devDependencies:
       tsup:
         specifier: ^8.0.0
@@ -2535,8 +2535,8 @@ packages:
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
-  undici@8.3.0:
-    resolution: {integrity: sha512-TkUDgb6tl7KOGZ+7e8E3d2FYgUQgF6z5YypqjWmixVQSQERFcVrVg0ySADm2LVLRh5ljAaHTCR5Fmz3Q34rB7Q==}
+  undici@8.11.0:
+    resolution: {integrity: sha512-AdzuGcAkzhbha3GgCSoUBx2P0quwym6qdFNCQz/fDGZc8w9XJ741wHUbt2kTmfPz+ZIOMkySFkiY7RXmiDDC8w==}
     engines: {node: '>=22.19.0'}
 
   undici@8.7.0:
@@ -4927,7 +4927,7 @@ snapshots:
 
   undici-types@8.3.0: {}
 
-  undici@8.3.0: {}
+  undici@8.11.0: {}
 
   undici@8.7.0: {}
 
