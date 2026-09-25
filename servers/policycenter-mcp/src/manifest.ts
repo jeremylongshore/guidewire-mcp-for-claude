@@ -233,10 +233,7 @@ export interface AuditEventBrief {
  * per the CV-6 `<carrier-question> · <when-to-use>` rule. Centralised so the
  * shape is the same across tools + future vocab-lint can verify by hash.
  */
-export function formatDescription(vocabulary: {
-  question: string;
-  whenToUse: string;
-}): string {
+export function formatDescription(vocabulary: { question: string; whenToUse: string }): string {
   return `${vocabulary.question} · ${vocabulary.whenToUse}`;
 }
 

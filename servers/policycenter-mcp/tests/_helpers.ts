@@ -15,9 +15,9 @@
 import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
 import type { AuthHandle } from '@intentsolutions/guidewire-auth';
 import {
+  createClient,
   type GuidewireClient,
   type GuidewireFetch,
-  createClient,
 } from '@intentsolutions/guidewire-client';
 import {
   createEvidenceExporter,

@@ -13,6 +13,7 @@
  * Per 07-ROADMAP § E2 + 02-PRD § 3.1.
  */
 
+import { type ToolManifestEntry, widenManifestEntry } from './manifest.js';
 import { tool as didWeLoseThisAccount } from './tools/did-we-lose-this-account.js';
 import { tool as draftEndorsement } from './tools/draft-endorsement.js';
 import { tool as draftReferralNote } from './tools/draft-referral-note.js';
@@ -23,28 +24,26 @@ import { tool as showPoliciesForThisInsured } from './tools/show-policies-for-th
 import { tool as summarizeThisSubmission } from './tools/summarize-this-submission.js';
 import { tool as whatsOurAppetiteOnThisRisk } from './tools/whats-our-appetite-on-this-risk.js';
 
-import { type ToolManifestEntry, widenManifestEntry } from './manifest.js';
-
-export type {
-  ToolManifestEntry,
-  TypedToolManifestEntry,
-  ToolContext,
-  AuditEventBrief,
-  ProfileFileName,
-} from './manifest.js';
-export { formatDescription, widenManifestEntry } from './manifest.js';
-export type { ProfileHandle, AliasScope } from './profile.js';
-export { createDefaultProfile } from './profile.js';
 export {
   applyFieldAliases,
   extractList,
   extractSingle,
+  type GuidewireListEnvelope,
+  type GuidewireResource,
+  type GuidewireSingleEnvelope,
   isMoney,
   type Money,
-  type GuidewireResource,
-  type GuidewireListEnvelope,
-  type GuidewireSingleEnvelope,
 } from './field-mapping.js';
+export type {
+  AuditEventBrief,
+  ProfileFileName,
+  ToolContext,
+  ToolManifestEntry,
+  TypedToolManifestEntry,
+} from './manifest.js';
+export { formatDescription, widenManifestEntry } from './manifest.js';
+export type { AliasScope, ProfileHandle } from './profile.js';
+export { createDefaultProfile } from './profile.js';
 
 /**
  * The canonical PolicyCenter tool catalog. Order matches the roadmap.

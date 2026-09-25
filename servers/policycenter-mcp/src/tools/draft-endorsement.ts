@@ -13,8 +13,8 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
-import { type GuidewireSingleEnvelope, extractSingle } from '../field-mapping.js';
-import { type ToolContext, type TypedToolManifestEntry, formatDescription } from '../manifest.js';
+import { extractSingle, type GuidewireSingleEnvelope } from '../field-mapping.js';
+import { formatDescription, type ToolContext, type TypedToolManifestEntry } from '../manifest.js';
 
 const argsSchema = z.object({
   /** Policy number (e.g. "42-123456"). */

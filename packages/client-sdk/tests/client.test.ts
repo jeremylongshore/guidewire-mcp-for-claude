@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-
 import type { AuthHandle } from '@intentsolutions/guidewire-auth';
+import { describe, expect, it, vi } from 'vitest';
 import { createClient } from '../src/client.js';
 import { withPagination } from '../src/paginate.js';
 import type { GuidewireFetch, GuidewireRequest } from '../src/types.js';

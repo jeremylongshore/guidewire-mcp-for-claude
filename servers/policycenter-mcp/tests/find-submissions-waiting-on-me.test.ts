@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { tool } from '../src/tools/find-submissions-waiting-on-me.js';
-import { TEST_ACTOR_ID, buildToolContext, jsonResponse } from './_helpers.js';
+import { buildToolContext, jsonResponse, TEST_ACTOR_ID } from './_helpers.js';
 
 describe('find-submissions-waiting-on-me', () => {
   it('declares carrier-vocabulary metadata per E2 manifest contract', () => {
