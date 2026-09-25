@@ -25,6 +25,7 @@ import {
   AuthYamlSchema,
   type CustomEntitiesYaml,
   CustomEntitiesYamlSchema,
+  checkBaaGate,
   type EventsYaml,
   EventsYamlSchema,
   type FieldAliasesYaml,
@@ -39,7 +40,6 @@ import {
   RolesYamlSchema,
   type TypelistsYaml,
   TypelistsYamlSchema,
-  checkBaaGate,
 } from '@intentsolutions/guidewire-schemas';
 import jsYaml from 'js-yaml';
 

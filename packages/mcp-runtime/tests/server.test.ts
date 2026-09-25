@@ -1,7 +1,6 @@
+import { getObservability } from '@intentsolutions/guidewire-observability';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-
-import { getObservability } from '@intentsolutions/guidewire-observability';
 
 import { createMcpServer } from '../src/server.js';
 import type { ToolRegistration } from '../src/types.js';

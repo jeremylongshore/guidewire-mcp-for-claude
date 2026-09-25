@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { ProfileLoadError, loadProfile } from '../src/profile.js';
+import { loadProfile, ProfileLoadError } from '../src/profile.js';
 
 // Repo root is 3 levels up from servers/policycenter-mcp/tests/
 // (tests → policycenter-mcp → servers → guidewire repo root)

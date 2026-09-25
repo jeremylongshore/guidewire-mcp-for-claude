@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -7,25 +7,24 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "ignore": [
-      "**/dist/**",
-      "**/node_modules/**",
-      "**/.tsbuildinfo",
-      "**/coverage/**",
-      "**/.turbo/**",
-      "pages/**",
-      "000-docs/**",
-      "tests/recordings/**",
-      ".audit-harness/**",
-      ".beads/**",
-      ".claude/**",
-      ".harness-hash",
-      "tests/contract/src/test/resources/**/*.js"
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/.tsbuildinfo",
+      "!**/coverage",
+      "!**/.turbo",
+      "!**/pages",
+      "!**/000-docs",
+      "!**/tests/recordings",
+      "!**/.audit-harness",
+      "!**/.beads",
+      "!**/.claude",
+      "!**/.harness-hash",
+      "!**/tests/contract/src/test/resources/**/*.js"
     ]
   },
-  "organizeImports": {
-    "enabled": true
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -44,7 +43,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "style": {
         "noNonNullAssertion": "warn",
         "useImportType": "error"

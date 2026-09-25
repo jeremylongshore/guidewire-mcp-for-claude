@@ -1,6 +1,5 @@
 import { AppError, type AppErrorOpts } from '@intentsolutions/guidewire-observability';
-import type { HarnessErrorCode } from '@intentsolutions/guidewire-schemas';
-import type { ToolMode } from '@intentsolutions/guidewire-schemas';
+import type { HarnessErrorCode, ToolMode } from '@intentsolutions/guidewire-schemas';
 
 /**
  * Constructor options for HarnessError. Extends AppErrorOpts but narrows

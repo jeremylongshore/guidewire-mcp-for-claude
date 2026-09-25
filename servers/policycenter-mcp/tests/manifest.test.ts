@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { POLICYCENTER_TOOLS, SERVER_NAME, SERVER_VERSION, listTools } from '../src/index.js';
+import { listTools, POLICYCENTER_TOOLS, SERVER_NAME, SERVER_VERSION } from '../src/index.js';
 import { formatDescription } from '../src/manifest.js';
 
 describe('PolicyCenter manifest catalog', () => {

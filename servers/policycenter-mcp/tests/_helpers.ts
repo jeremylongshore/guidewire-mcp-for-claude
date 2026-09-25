@@ -14,9 +14,9 @@
 
 import type { AuthHandle } from '@intentsolutions/guidewire-auth';
 import {
+  createClient,
   type GuidewireClient,
   type GuidewireFetch,
-  createClient,
 } from '@intentsolutions/guidewire-client';
 import { getObservability } from '@intentsolutions/guidewire-observability';
 import { trace } from '@opentelemetry/api';

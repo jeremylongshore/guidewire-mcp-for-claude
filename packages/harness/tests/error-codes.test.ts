@@ -6,12 +6,12 @@ import { getObservability } from '@intentsolutions/guidewire-observability';
  */
 import { describe, expect, it } from 'vitest';
 import {
-  HarnessError,
-  type PlanInput,
   createEvidenceExporter,
   createHarness,
   createInMemoryApprovalSink,
   createInMemoryPolicyEngine,
+  HarnessError,
+  type PlanInput,
 } from '../src/index.js';
 
 function makeHarness(opts?: {
