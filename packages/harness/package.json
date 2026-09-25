@@ -30,7 +30,7 @@
     "@intentsolutions/guidewire-schemas": "workspace:*",
     "@opentelemetry/api": "^1.9.0",
     "pg": "^8.23.0",
-    "zod": "^3.23.0"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^12.1.0",
@@ -41,6 +41,6 @@
     "vitest": "^4.1.10"
   },
   "peerDependencies": {
-    "zod": "^3.23.0"
+    "zod": "^4.6.5"
   }
 }
