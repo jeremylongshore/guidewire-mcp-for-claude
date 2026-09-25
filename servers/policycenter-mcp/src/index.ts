@@ -14,10 +14,14 @@
  */
 
 import { tool as didWeLoseThisAccount } from './tools/did-we-lose-this-account.js';
+import { tool as draftEndorsement } from './tools/draft-endorsement.js';
+import { tool as draftReferralNote } from './tools/draft-referral-note.js';
+import { tool as explainWhyThisGotReferred } from './tools/explain-why-this-got-referred.js';
 import { tool as findSubmissionsWaitingOnMe } from './tools/find-submissions-waiting-on-me.js';
 import { tool as pullThisSubmission } from './tools/pull-this-submission.js';
 import { tool as showPoliciesForThisInsured } from './tools/show-policies-for-this-insured.js';
 import { tool as summarizeThisSubmission } from './tools/summarize-this-submission.js';
+import { tool as whatsOurAppetiteOnThisRisk } from './tools/whats-our-appetite-on-this-risk.js';
 
 import { type ToolManifestEntry, widenManifestEntry } from './manifest.js';
 
@@ -43,16 +47,21 @@ export {
 } from './field-mapping.js';
 
 /**
- * The canonical PolicyCenter tool catalog for E2. Order is irrelevant for
- * MCP `tools/list` semantics, but matches the order presented in
- * 02-PRD § 3.1.1 for human readability.
+ * The canonical PolicyCenter tool catalog. Order matches the roadmap.
  */
 export const POLICYCENTER_TOOLS: ReadonlyArray<ToolManifestEntry> = [
+  // E2: Read-only
   widenManifestEntry(findSubmissionsWaitingOnMe),
   widenManifestEntry(showPoliciesForThisInsured),
   widenManifestEntry(summarizeThisSubmission),
   widenManifestEntry(didWeLoseThisAccount),
   widenManifestEntry(pullThisSubmission),
+  // E5: Drafting
+  widenManifestEntry(draftReferralNote),
+  widenManifestEntry(draftEndorsement),
+  // E5: ⚠ Incomplete without profile
+  widenManifestEntry(whatsOurAppetiteOnThisRisk),
+  widenManifestEntry(explainWhyThisGotReferred),
 ];
 
 export const SERVER_NAME = 'policycenter-mcp';
@@ -60,10 +69,14 @@ export const SERVER_VERSION = '0.1.0';
 
 export {
   didWeLoseThisAccount,
+  draftEndorsement,
+  draftReferralNote,
+  explainWhyThisGotReferred,
   findSubmissionsWaitingOnMe,
   pullThisSubmission,
   showPoliciesForThisInsured,
   summarizeThisSubmission,
+  whatsOurAppetiteOnThisRisk,
 };
 
 /**

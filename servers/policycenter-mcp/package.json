@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@intentsolutions/guidewire-auth": "workspace:*",
+    "@intentsolutions/guidewire-audit": "workspace:*",
     "@intentsolutions/guidewire-client": "workspace:*",
     "@intentsolutions/guidewire-harness": "workspace:^",
     "@intentsolutions/guidewire-mcp-runtime": "workspace:*",
