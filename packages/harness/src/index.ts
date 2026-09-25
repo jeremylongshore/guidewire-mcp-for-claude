@@ -17,87 +17,80 @@
  * clients/star-star directly. Every write goes through the harness.
  */
 
-// ─── Factory + config ────────────────────────────────────────────────────────
-export { createHarness } from './harness.js';
-export type { Harness, HarnessConfig } from './types.js';
-
-// ─── Typed error ─────────────────────────────────────────────────────────────
-export { HarnessError, makeHarnessError } from './error.js';
-export { tryAsHarnessError } from './error-translation.js';
-export type { HarnessErrorOpts } from './error.js';
-
-// ─── Pipeline interfaces ──────────────────────────────────────────────────────
-export type {
-  PolicyEngine,
-  ApprovalSink,
-  EvidenceExporter,
-  SignedEvidenceBundle,
-  ExecuteContext,
-  SideEffect,
-} from './types.js';
-
-// ─── In-memory stubs (dev + tests) ───────────────────────────────────────────
-export { createInMemoryPolicyEngine } from './policy/in-memory.js';
-export type { AllowRule } from './policy/in-memory.js';
-
-export { createInMemoryApprovalSink } from './approvals/in-memory.js';
-
-// ─── Production sinks (Postgres-backed) ──────────────────────────────────────
-export { createPgApprovalSink } from './approvals/pg.js';
-export type { PgApprovalSinkOpts } from './approvals/pg.js';
-
-export { createEvidenceExporter } from './evidence/exporter.js';
-
 // ─── Re-exports from @intentsolutions/guidewire-schemas ──────────────────────
 // Tools and tests import everything they need from this single entry point.
 export type {
-  // Plan
-  ToolMode,
-  PlanInput,
-  Plan,
-  // Policy
-  PolicyOutcome,
-  PolicyTier,
-  PolicyDecision,
+  Approval,
   // Approval
   ApprovalState,
   ApprovalVote,
-  Approval,
+  AuditEntry,
+  // Audit
+  AuditEventType,
+  AuditQuery,
+  ChainVerification,
+  // Evidence
+  EvidenceBundle,
   // Execute
   ExecuteOutcome,
   ExecuteResult,
-  // Audit
-  AuditEventType,
-  AuditEntry,
-  AuditQuery,
-  ChainVerification,
-  // Rollback
-  RollbackHint,
-  // Evidence
-  EvidenceBundle,
-  OtelSpanSnapshot,
   // Error codes
   HarnessErrorCode,
+  OtelSpanSnapshot,
+  Plan,
+  PlanInput,
+  PolicyDecision,
+  // Policy
+  PolicyOutcome,
+  PolicyTier,
+  // Rollback
+  RollbackHint,
+  // Plan
+  ToolMode,
 } from '@intentsolutions/guidewire-schemas';
-
 // Schema validators — exported so callers can round-trip their own data.
 export {
-  ToolModeSchema,
-  PlanInputSchema,
-  PlanSchema,
-  PolicyOutcomeSchema,
-  PolicyTierSchema,
-  PolicyDecisionSchema,
+  ApprovalSchema,
   ApprovalStateSchema,
   ApprovalVoteSchema,
-  ApprovalSchema,
-  ExecuteOutcomeSchema,
-  ExecuteResultSchema,
-  AuditEventTypeSchema,
   AuditEntrySchema,
+  AuditEventTypeSchema,
   AuditQuerySchema,
   ChainVerificationSchema,
-  RollbackHintSchema,
   EvidenceBundleSchema,
+  ExecuteOutcomeSchema,
+  ExecuteResultSchema,
   HarnessErrorCodeSchema,
+  PlanInputSchema,
+  PlanSchema,
+  PolicyDecisionSchema,
+  PolicyOutcomeSchema,
+  PolicyTierSchema,
+  RollbackHintSchema,
+  ToolModeSchema,
 } from '@intentsolutions/guidewire-schemas';
+export { createInMemoryApprovalSink } from './approvals/in-memory.js';
+export type { PgApprovalSinkOpts } from './approvals/pg.js';
+// ─── Production sinks (Postgres-backed) ──────────────────────────────────────
+export { createPgApprovalSink } from './approvals/pg.js';
+export type { HarnessErrorOpts } from './error.js';
+// ─── Typed error ─────────────────────────────────────────────────────────────
+export { HarnessError, makeHarnessError } from './error.js';
+export { tryAsHarnessError } from './error-translation.js';
+export { createEvidenceExporter } from './evidence/exporter.js';
+// ─── Factory + config ────────────────────────────────────────────────────────
+export { createHarness } from './harness.js';
+export type { AllowRule } from './policy/in-memory.js';
+// ─── In-memory stubs (dev + tests) ───────────────────────────────────────────
+export { createInMemoryPolicyEngine } from './policy/in-memory.js';
+// ─── Pipeline interfaces ──────────────────────────────────────────────────────
+export type {
+  ApprovalSink,
+  EvidenceExporter,
+  ExecuteContext,
+  Harness,
+  HarnessConfig,
+  PolicyEngine,
+  SideEffect,
+  SignedEvidenceBundle,
+} from './types.js';

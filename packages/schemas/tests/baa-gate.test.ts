@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { LobYamlV1Schema, PiiPolicyYamlSchema, checkBaaGate } from '../src/index.js';
+import { checkBaaGate, LobYamlV1Schema, PiiPolicyYamlSchema } from '../src/index.js';
 
 const lob = (overrides: Record<string, unknown> = {}) =>
   LobYamlV1Schema.parse({

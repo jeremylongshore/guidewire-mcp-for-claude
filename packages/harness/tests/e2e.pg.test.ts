@@ -40,10 +40,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { createPgApprovalSink } from '../src/approvals/pg.js';
 import {
-  type PlanInput,
   createEvidenceExporter,
   createHarness,
   createInMemoryPolicyEngine,
+  type PlanInput,
 } from '../src/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

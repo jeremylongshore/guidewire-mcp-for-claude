@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { tool } from '../src/tools/draft-referral-note.js';
-import { TEST_ACTOR_ID, buildToolContext, jsonResponse } from './_helpers.js';
+import { buildToolContext, jsonResponse, TEST_ACTOR_ID } from './_helpers.js';
 
 describe('draft-referral-note', () => {
   it('declares carrier-vocabulary metadata per E5 manifest contract', () => {

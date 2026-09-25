@@ -25,12 +25,6 @@
 
 import * as nodeCrypto from 'node:crypto';
 import { createServer } from 'node:http';
-
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-
 import { createMemoryAuditStore } from '@intentsolutions/guidewire-audit';
 import { createAuth } from '@intentsolutions/guidewire-auth';
 import { createClient } from '@intentsolutions/guidewire-client';
@@ -42,11 +36,15 @@ import {
   tryAsHarnessError,
 } from '@intentsolutions/guidewire-harness';
 import { getObservability } from '@intentsolutions/guidewire-observability';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { context, trace } from '@opentelemetry/api';
 
 import { POLICYCENTER_TOOLS, SERVER_NAME, SERVER_VERSION } from './index.js';
 import type { AuditEventBrief, ToolContext } from './manifest.js';
-import { ProfileLoadError, createDefaultProfile, loadProfile } from './profile.js';
+import { createDefaultProfile, loadProfile, ProfileLoadError } from './profile.js';
 
 interface CliArgs {
   readonly transport: 'stdio' | 'http';

@@ -17,10 +17,10 @@ export type {
   Approval,
   ApprovalVote,
   EvidenceBundle,
+  ExecuteResult,
   Plan,
   PlanInput,
   PolicyDecision,
-  ExecuteResult,
   RollbackHint,
 };
 

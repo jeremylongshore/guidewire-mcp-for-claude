@@ -15,7 +15,7 @@
 
 import { z } from 'zod';
 
-import { type ToolContext, type TypedToolManifestEntry, formatDescription } from '../manifest.js';
+import { formatDescription, type ToolContext, type TypedToolManifestEntry } from '../manifest.js';
 
 const argsSchema = z.object({
   /** Submission number to check appetite against. */
