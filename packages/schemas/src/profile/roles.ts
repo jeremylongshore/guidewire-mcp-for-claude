@@ -7,6 +7,6 @@ import { ToolModeSchema } from '../harness/plan.js';
  * server's manifest (boot-time fail-fast).
  */
 export const RolesYamlSchema = z.object({
-  roles: z.record(z.record(z.record(ToolModeSchema))),
+  roles: z.record(z.string(), z.record(z.string(), z.record(z.string(), ToolModeSchema))),
 });
 export type RolesYaml = z.infer<typeof RolesYamlSchema>;

@@ -14,7 +14,7 @@ import { z } from 'zod';
 export const DateFormatSchema = z.enum(['ISO_8601_date', 'ISO_8601_datetime']);
 
 export const FieldAliasesYamlSchema = z.object({
-  aliases: z.record(z.record(z.string())),
+  aliases: z.record(z.string(), z.record(z.string(), z.string())),
   money_fields: z.array(z.string()),
   date_fields: z.array(
     z.object({

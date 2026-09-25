@@ -17,6 +17,6 @@ export const CustomEntitySchema = z.object({
 export type CustomEntity = z.infer<typeof CustomEntitySchema>;
 
 export const CustomEntitiesYamlSchema = z.object({
-  custom_entities: z.record(CustomEntitySchema),
+  custom_entities: z.record(z.string(), CustomEntitySchema),
 });
 export type CustomEntitiesYaml = z.infer<typeof CustomEntitiesYamlSchema>;

@@ -22,6 +22,6 @@ export const TypelistEntrySchema = z.object({
 export type TypelistEntry = z.infer<typeof TypelistEntrySchema>;
 
 export const TypelistsYamlSchema = z.object({
-  typelists: z.record(TypelistEntrySchema),
+  typelists: z.record(z.string(), TypelistEntrySchema),
 });
 export type TypelistsYaml = z.infer<typeof TypelistsYamlSchema>;

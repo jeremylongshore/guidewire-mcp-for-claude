@@ -26,6 +26,6 @@ export const ApprovalMatrixEntrySchema = z.object({
 export type ApprovalMatrixEntry = z.infer<typeof ApprovalMatrixEntrySchema>;
 
 export const ApprovalMatrixYamlSchema = z.object({
-  matrix: z.record(z.array(ApprovalMatrixEntrySchema)),
+  matrix: z.record(z.string(), z.array(ApprovalMatrixEntrySchema)),
 });
 export type ApprovalMatrixYaml = z.infer<typeof ApprovalMatrixYamlSchema>;
