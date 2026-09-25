@@ -15,7 +15,10 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsx src/cli.ts",
@@ -26,22 +29,23 @@
   },
   "dependencies": {
     "@intentsolutions/guidewire-auth": "workspace:*",
+    "@intentsolutions/guidewire-audit": "workspace:*",
     "@intentsolutions/guidewire-client": "workspace:*",
     "@intentsolutions/guidewire-harness": "workspace:^",
     "@intentsolutions/guidewire-mcp-runtime": "workspace:*",
     "@intentsolutions/guidewire-observability": "workspace:*",
     "@intentsolutions/guidewire-schemas": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@opentelemetry/api": "^1.9.0",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^5.2.2",
     "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^22.0.0",
+    "@types/node": "^26.1.1",
     "tsup": "^8.0.0",
-    "tsx": "^4.23.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.5.0",
-    "vitest": "^3.0.0"
+    "vitest": "^4.1.10"
   }
 }

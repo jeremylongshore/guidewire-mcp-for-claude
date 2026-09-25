@@ -7,11 +7,11 @@ import { getObservability } from '@intentsolutions/guidewire-observability';
  */
 import { describe, expect, it } from 'vitest';
 import {
-  type PlanInput,
   createEvidenceExporter,
   createHarness,
   createInMemoryApprovalSink,
   createInMemoryPolicyEngine,
+  type PlanInput,
 } from '../src/index.js';
 
 function makeStack() {

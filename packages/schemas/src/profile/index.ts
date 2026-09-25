@@ -11,14 +11,14 @@
  * loaders consume them.
  */
 
-export * from './profile-version.js';
-export * from './auth.js';
-export * from './roles.js';
-export * from './lob.js';
-export * from './typelists.js';
-export * from './custom-entities.js';
-export * from './field-aliases.js';
 export * from './approval-matrix.js';
-export * from './pii-policy.js';
-export * from './events.js';
+export * from './auth.js';
 export * from './baa-gate.js';
+export * from './custom-entities.js';
+export * from './events.js';
+export * from './field-aliases.js';
+export * from './lob.js';
+export * from './pii-policy.js';
+export * from './profile-version.js';
+export * from './roles.js';
+export * from './typelists.js';

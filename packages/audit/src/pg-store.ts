@@ -1,7 +1,7 @@
 import type { AuditEntry, AuditQuery, ChainVerification } from '@intentsolutions/guidewire-schemas';
 import type { Pool } from 'pg';
 
-import { GENESIS_PREV_HASH, computeEntryHash } from './hash.js';
+import { computeEntryHash, GENESIS_PREV_HASH } from './hash.js';
 import type { AuditAppendInput, AuditStore } from './types.js';
 
 /**

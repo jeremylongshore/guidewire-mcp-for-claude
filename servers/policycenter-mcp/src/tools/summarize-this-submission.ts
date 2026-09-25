@@ -23,11 +23,11 @@
 import { z } from 'zod';
 
 import {
-  type GuidewireSingleEnvelope,
   applyFieldAliases,
   extractSingle,
+  type GuidewireSingleEnvelope,
 } from '../field-mapping.js';
-import { type ToolContext, type TypedToolManifestEntry, formatDescription } from '../manifest.js';
+import { formatDescription, type ToolContext, type TypedToolManifestEntry } from '../manifest.js';
 
 const argsSchema = z.object({
   /** Guidewire `Job.id` (submission jobs are a subtype of Job per PC apiref). */

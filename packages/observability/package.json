@@ -12,7 +12,10 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -21,13 +24,13 @@
   "dependencies": {
     "@intentsolutions/guidewire-schemas": "workspace:*",
     "@opentelemetry/api": "^1.9.0",
-    "@opentelemetry/sdk-node": "^0.218.0",
-    "@sentry/node": "^8.0.0",
+    "@opentelemetry/sdk-node": "^0.222.0",
+    "@sentry/node": "^10.75.2",
     "pino": "^9.0.0"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
-    "vitest": "^3.0.0"
+    "vitest": "^4.1.10"
   }
 }

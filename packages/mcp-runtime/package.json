@@ -12,7 +12,10 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -21,12 +24,12 @@
   "dependencies": {
     "@intentsolutions/guidewire-observability": "workspace:*",
     "@intentsolutions/guidewire-schemas": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
-    "vitest": "^3.0.0"
+    "vitest": "^4.1.10"
   }
 }

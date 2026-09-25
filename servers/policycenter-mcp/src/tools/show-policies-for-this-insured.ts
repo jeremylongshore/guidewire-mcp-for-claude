@@ -19,8 +19,8 @@
 
 import { z } from 'zod';
 
-import { type GuidewireListEnvelope, applyFieldAliases, extractList } from '../field-mapping.js';
-import { type ToolContext, type TypedToolManifestEntry, formatDescription } from '../manifest.js';
+import { applyFieldAliases, extractList, type GuidewireListEnvelope } from '../field-mapping.js';
+import { formatDescription, type ToolContext, type TypedToolManifestEntry } from '../manifest.js';
 
 const argsSchema = z.object({
   /** Guidewire `Account.id` for the insured. */
