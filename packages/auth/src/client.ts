@@ -1,4 +1,4 @@
-import { Issuer } from 'openid-client';
+import { ClientSecretBasic, Configuration, clientCredentialsGrant } from 'openid-client';
 
 import { parseJwtUnverified } from './jwt.js';
 import type { AuthConfig, AuthHandle, TokenBundle } from './types.js';
@@ -17,22 +17,22 @@ const REFRESH_FRACTION = 0.8;
  * JWKS validation lands when first integration tenant connects).
  */
 export async function createAuth(config: AuthConfig): Promise<AuthHandle> {
-  const issuer = new Issuer({
-    issuer: config.profile.oauth.token_endpoint,
-    token_endpoint: config.profile.oauth.token_endpoint,
-  });
-
-  const client = new issuer.Client({
-    client_id: config.clientId,
-    client_secret: config.clientSecret,
-    token_endpoint_auth_method: 'client_secret_basic',
-  });
+  // openid-client v6: a Configuration built from static server metadata
+  // replaces v5's Issuer/Client classes. HTTPS is enforced by default.
+  const oidc = new Configuration(
+    {
+      issuer: config.profile.oauth.token_endpoint,
+      token_endpoint: config.profile.oauth.token_endpoint,
+    },
+    config.clientId,
+    undefined,
+    ClientSecretBasic(config.clientSecret),
+  );
 
   let cached: TokenBundle | undefined;
 
   const fetchToken = async (): Promise<TokenBundle> => {
-    const tokenSet = await client.grant({
-      grant_type: 'client_credentials',
+    const tokenSet = await clientCredentialsGrant(oidc, {
       scope: config.profile.oauth.scopes.join(' '),
     });
     if (typeof tokenSet.access_token !== 'string') {
