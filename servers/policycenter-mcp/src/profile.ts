@@ -132,7 +132,7 @@ async function loadYaml<T>(
       data: unknown,
     ):
       | { success: true; data: T }
-      | { success: false; error: { issues: { path: (string | number)[]; message: string }[] } };
+      | { success: false; error: { issues: { path: PropertyKey[]; message: string }[] } };
   },
 ): Promise<T> {
   const filePath = join(profilePath, fileName);
@@ -161,7 +161,7 @@ async function loadYaml<T>(
   const result = schema.safeParse(parsed);
   if (!result.success) {
     const firstIssue = result.error.issues[0];
-    const path = firstIssue?.path.join('.') ?? '';
+    const path = firstIssue?.path.map(String).join('.') ?? '';
     const msg = firstIssue?.message ?? 'unknown validation error';
     throw new ProfileLoadError(
       fileName,

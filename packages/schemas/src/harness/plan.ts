@@ -21,7 +21,7 @@ export const PlanInputSchema = z.object({
   mode: ToolModeSchema,
   tenantId: z.string().min(1),
   actorId: z.string().min(1),
-  args: z.record(z.unknown()),
+  args: z.record(z.string(), z.unknown()),
   summary: z.string(),
   traceId: z.string().min(1),
 });

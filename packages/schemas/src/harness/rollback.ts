@@ -14,7 +14,7 @@ export const RollbackHintSchema = z
     auditEntryId: z.string().min(1),
     humanInstruction: z.string().min(1),
     suggestedTool: z.string().optional(),
-    suggestedArgs: z.record(z.unknown()).optional(),
+    suggestedArgs: z.record(z.string(), z.unknown()).optional(),
     cautions: z.array(z.string()).readonly(),
     issuedAt: z.string().datetime(),
   })
