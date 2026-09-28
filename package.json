@@ -25,7 +25,7 @@
     "prepare": "pnpm -r build"
   },
   "dependencies": {
-    "undici": "^8.11.0",
+    "undici": "^8.11.2",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -35,7 +35,7 @@
     "tsup": "^8.0.0",
     "tsx": "^4.23.15",
     "typescript": "^5.5.0",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.2"
   },
   "pnpm": {
     "overrides": {
