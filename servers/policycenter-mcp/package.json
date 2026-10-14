@@ -35,14 +35,14 @@
     "@intentsolutions/guidewire-mcp-runtime": "workspace:*",
     "@intentsolutions/guidewire-observability": "workspace:*",
     "@intentsolutions/guidewire-schemas": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.32.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@opentelemetry/api": "^1.9.0",
-    "js-yaml": "^5.2.2",
+    "js-yaml": "^5.4.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "tsup": "^8.0.0",
     "tsx": "^4.23.15",
     "typescript": "^5.5.0",
