@@ -35,8 +35,8 @@
     "@intentsolutions/guidewire-mcp-runtime": "workspace:*",
     "@intentsolutions/guidewire-observability": "workspace:*",
     "@intentsolutions/guidewire-schemas": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.32.1",
-    "@opentelemetry/api": "^1.9.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@opentelemetry/api": "^1.10.0",
     "js-yaml": "^5.5.0",
     "zod": "^4.6.7"
   },

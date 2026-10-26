@@ -28,7 +28,7 @@
     "@intentsolutions/guidewire-audit": "workspace:*",
     "@intentsolutions/guidewire-observability": "workspace:*",
     "@intentsolutions/guidewire-schemas": "workspace:*",
-    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/api": "^1.10.0",
     "pg": "^8.23.1",
     "zod": "^4.6.7"
   },
